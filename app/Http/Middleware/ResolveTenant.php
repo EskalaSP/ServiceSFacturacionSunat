@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Models\Tenant;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class ResolveTenant
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $apiKey = $request->header('X-Api-Key');
+        $apiSecret = $request->header('X-Api-Secret');
+
+        if (! $apiKey || ! $apiSecret) {
+            return response()->json([
+                'success' => false,
+                'message' => 'API Key y API Secret son requeridos.',
+            ], 401);
+        }
+
+        $tenant = Tenant::where('api_key', $apiKey)->first();
+
+        if (! $tenant || ! hash_equals($tenant->api_secret, $apiSecret)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Credenciales de API inválidas.',
+            ], 401);
+        }
+
+        if (! $tenant->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant desactivado. Contacte al administrador.',
+            ], 403);
+        }
+
+        $request->merge(['tenant' => $tenant]);
+
+        return $next($request);
+    }
+}
