@@ -21,16 +21,11 @@ class InvoiceController extends Controller
     public function store(StoreInvoiceRequest $request, CreateInvoiceAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
-        $async = $request->boolean('async', false);
 
         try {
-            $invoice = $action->execute($tenant, $request->validated(), $async);
+            $invoice = $action->execute($tenant, $request->validated());
 
-            $message = $async
-                ? 'Factura creada y encolada para envío a SUNAT.'
-                : 'Factura creada y enviada a SUNAT.';
-
-            return $this->created(new InvoiceResource($invoice), $message);
+            return $this->created(new InvoiceResource($invoice), 'Factura creada y encolada para envío a SUNAT.');
         } catch (\Throwable $e) {
             return $this->error('Error al crear factura: ' . $e->getMessage(), 500);
         }

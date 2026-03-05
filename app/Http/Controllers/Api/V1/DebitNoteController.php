@@ -21,16 +21,11 @@ class DebitNoteController extends Controller
     public function store(StoreDebitNoteRequest $request, CreateDebitNoteAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
-        $async = $request->boolean('async', false);
 
         try {
-            $debitNote = $action->execute($tenant, $request->validated(), $async);
+            $debitNote = $action->execute($tenant, $request->validated());
 
-            $message = $async
-                ? 'Nota de débito creada y encolada para envío a SUNAT.'
-                : 'Nota de débito creada y enviada a SUNAT.';
-
-            return $this->created(new DebitNoteResource($debitNote), $message);
+            return $this->created(new DebitNoteResource($debitNote), 'Nota de débito creada y encolada para envío a SUNAT.');
         } catch (\Throwable $e) {
             return $this->error('Error al crear nota de débito: ' . $e->getMessage(), 500);
         }

@@ -6,6 +6,7 @@ use App\Contracts\Documentable;
 use App\Events\DocumentRejected;
 use App\Events\DocumentSent;
 use App\Services\Greenter\GreenterService;
+use App\Services\Pdf\PdfGeneratorService;
 use App\Services\Storage\DocumentStorageService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
@@ -15,9 +16,9 @@ class SendDocumentToSunat implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 3;
+    public int $tries = 10;
 
-    public int $backoff = 30;
+    public array $backoff = [15, 30, 60, 60, 120, 120, 300, 300, 600, 600];
 
     public function __construct(
         private string $modelClass,
@@ -36,13 +37,23 @@ class SendDocumentToSunat implements ShouldQueue
             ? $document->getTipoDocumento()
             : $document->tipo_documento;
 
-        $greenterDoc = match ($tipoDocumento) {
-            '01', '03' => $service->buildInvoice($this->documentToArray($document, $tipoDocumento)),
-            '07', '08' => $service->buildNote($this->documentToArray($document, $tipoDocumento)),
-            default => throw new \RuntimeException("Tipo de documento {$tipoDocumento} no soportado para envío async"),
-        };
+        try {
+            $greenterDoc = match ($tipoDocumento) {
+                '01', '03' => $service->buildInvoice($this->documentToArray($document, $tipoDocumento)),
+                '07', '08' => $service->buildNote($this->documentToArray($document, $tipoDocumento)),
+                default => throw new \RuntimeException("Tipo de documento {$tipoDocumento} no soportado"),
+            };
 
-        $result = $service->send($greenterDoc);
+            $result = $service->send($greenterDoc);
+        } catch (\SoapFault $e) {
+            // Error de conexión SOAP (SUNAT caído, timeout) → reintentar
+            $this->handleRetryableError($document, $e->getMessage());
+            return;
+        } catch (\Greenter\XMLSecLibs\Exception\XmlSignException $e) {
+            // Certificado inválido → error permanente, no reintentar
+            $this->markAsRejected($document, $tenant, 'CERT_ERROR', 'Error de certificado: ' . $e->getMessage());
+            return;
+        }
 
         if ($result['success']) {
             $document->update([
@@ -61,23 +72,78 @@ class SendDocumentToSunat implements ShouldQueue
                 $storage->storeCdr($document, $tenant, $result['cdr_zip']);
             }
 
-            event(new DocumentSent($document, $result));
-        } else {
-            $document->update([
-                'sunat_status' => 'rechazado',
-                'sunat_code' => $result['error_code'] ?? null,
-                'sunat_description' => $result['error_message'] ?? null,
-            ]);
-
-            if (! empty($result['xml'])) {
-                $storage->storeXml($document, $tenant, $result['xml']);
+            if (config('pdf.auto_generate', true)) {
+                try {
+                    app(PdfGeneratorService::class)->generateAndStore($document, $tenant);
+                } catch (\Throwable) {
+                }
             }
+
+            event(new DocumentSent($document, $result));
+
+            if ($tenant->webhook_url) {
+                NotifyWebhookJob::dispatch($this->modelClass, $document->id, 'document.sent');
+            }
+        } else {
+            $errorCode = $result['error_code'] ?? '';
+
+            // Errores temporales de SUNAT → reintentar
+            if ($this->isRetryableError($errorCode)) {
+                $this->handleRetryableError($document, $result['error_message'] ?? 'Error temporal SUNAT');
+                return;
+            }
+
+            // Error permanente de SUNAT → marcar rechazado
+            $this->markAsRejected($document, $tenant, $errorCode, $result['error_message'] ?? null, $result['xml'] ?? null);
 
             event(new DocumentRejected($document, $result));
         }
+    }
+
+    private function isRetryableError(string $errorCode): bool
+    {
+        // Códigos SUNAT que indican error temporal (servidor ocupado, en mantenimiento, etc.)
+        $retryableCodes = ['0', '100', '109', '500', '1033', '2800'];
+
+        return in_array($errorCode, $retryableCodes, true);
+    }
+
+    private function handleRetryableError($document, string $message): void
+    {
+        if ($this->attempts() >= $this->tries) {
+            // Último intento → marcar como rechazado
+            $document->update([
+                'sunat_status' => 'rechazado',
+                'sunat_code' => 'MAX_RETRIES',
+                'sunat_description' => "Agotados {$this->tries} intentos: {$message}",
+            ]);
+
+            if ($document->tenant->webhook_url) {
+                NotifyWebhookJob::dispatch($this->modelClass, $document->id, 'document.rejected');
+            }
+
+            return;
+        }
+
+        // Reintentar con backoff
+        $delay = $this->backoff[$this->attempts() - 1] ?? 600;
+        $this->release($delay);
+    }
+
+    private function markAsRejected($document, $tenant, string $code, ?string $message, ?string $xml = null): void
+    {
+        $document->update([
+            'sunat_status' => 'rechazado',
+            'sunat_code' => substr($code, 0, 20),
+            'sunat_description' => $message ? substr($message, 0, 500) : null,
+        ]);
+
+        if ($xml) {
+            (new DocumentStorageService())->storeXml($document, $tenant, $xml);
+        }
 
         if ($tenant->webhook_url) {
-            NotifyWebhookJob::dispatch($this->modelClass, $document->id, $result['success'] ? 'document.sent' : 'document.rejected');
+            NotifyWebhookJob::dispatch($this->modelClass, $document->id, 'document.rejected');
         }
     }
 
@@ -85,6 +151,11 @@ class SendDocumentToSunat implements ShouldQueue
     {
         $data = $document->toArray();
         $data['tipo_documento'] = $tipoDocumento;
+        // Fechas como string plano (Y-m-d) para evitar desfase por timezone UTC→Lima
+        $data['fecha_emision'] = $document->fecha_emision->format('Y-m-d');
+        if ($document->fecha_vencimiento) {
+            $data['fecha_vencimiento'] = $document->fecha_vencimiento->format('Y-m-d');
+        }
         $data['cliente'] = [
             'tipo_doc' => $document->client_tipo_doc,
             'num_doc' => $document->client_num_doc,

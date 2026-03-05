@@ -4,6 +4,7 @@ namespace App\Services\Greenter\Builders;
 
 use App\Models\Tenant;
 use DateTime;
+use DateTimeZone;
 use Greenter\Model\Client\Client;
 use Greenter\Model\Company\Address;
 use Greenter\Model\Company\Company;
@@ -38,13 +39,13 @@ class InvoiceBuilder
             ->setTipoDoc($data['tipo_documento'])
             ->setSerie($data['serie'])
             ->setCorrelativo((string) $data['correlativo'])
-            ->setFechaEmision(new DateTime($data['fecha_emision']))
+            ->setFechaEmision(new DateTime($data['fecha_emision'], new DateTimeZone('America/Lima')))
             ->setTipoMoneda($data['tipo_moneda'] ?? 'PEN')
             ->setCompany($this->buildCompany($data['cod_local'] ?? '0000'))
             ->setClient($this->buildClient($data['cliente']));
 
         if (! empty($data['fecha_vencimiento'])) {
-            $invoice->setFecVencimiento(new DateTime($data['fecha_vencimiento']));
+            $invoice->setFecVencimiento(new DateTime($data['fecha_vencimiento'], new DateTimeZone('America/Lima')));
         }
 
         // Forma de pago
@@ -57,7 +58,7 @@ class InvoiceBuilder
                 foreach ($data['cuotas'] as $i => $cuota) {
                     $cuotas[] = (new Cuota())
                         ->setMonto($cuota['monto'])
-                        ->setFechaPago(new DateTime($cuota['fecha_pago']));
+                        ->setFechaPago(new DateTime($cuota['fecha_pago'], new DateTimeZone('America/Lima')));
                 }
                 $invoice->setCuotas($cuotas);
             }

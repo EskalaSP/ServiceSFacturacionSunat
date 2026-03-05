@@ -4,6 +4,7 @@ namespace App\Services\Greenter\Builders;
 
 use App\Models\Tenant;
 use DateTime;
+use DateTimeZone;
 use Greenter\Model\Company\Company;
 use Greenter\Model\Voided\Voided;
 use Greenter\Model\Voided\VoidedDetail;
@@ -23,8 +24,8 @@ class VoidedBuilder
 
         $voided
             ->setCorrelativo($data['correlativo'])
-            ->setFecGeneracion(new DateTime($data['fecha_generacion']))
-            ->setFecComunicacion(new DateTime($data['fecha_comunicacion']))
+            ->setFecGeneracion(new DateTime($data['fecha_generacion'], new DateTimeZone('America/Lima')))
+            ->setFecComunicacion(new DateTime($data['fecha_comunicacion'], new DateTimeZone('America/Lima')))
             ->setCompany($this->buildCompany());
 
         $details = [];

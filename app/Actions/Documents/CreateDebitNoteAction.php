@@ -3,18 +3,12 @@
 namespace App\Actions\Documents;
 
 use App\Events\DocumentCreated;
-use App\Events\DocumentRejected;
-use App\Events\DocumentSent;
-use App\Jobs\NotifyWebhookJob;
 use App\Jobs\SendDocumentToSunat;
 use App\Models\DebitNote;
 use App\Models\Serie;
 use App\Models\Tenant;
 use App\Services\ClientResolverService;
 use App\Services\DocumentCalculationService;
-use App\Services\Greenter\GreenterService;
-use App\Services\Pdf\PdfGeneratorService;
-use App\Services\Storage\DocumentStorageService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -25,9 +19,9 @@ class CreateDebitNoteAction
         private ClientResolverService $clientResolver,
     ) {}
 
-    public function execute(Tenant $tenant, array $data, bool $async = false): DebitNote
+    public function execute(Tenant $tenant, array $data): DebitNote
     {
-        return DB::transaction(function () use ($tenant, $data, $async) {
+        return DB::transaction(function () use ($tenant, $data) {
             $serie = Serie::where('tenant_id', $tenant->id)
                 ->where('tipo_documento', '08')
                 ->where('serie', $data['serie'])
@@ -96,67 +90,10 @@ class CreateDebitNoteAction
             event(new DocumentCreated($debitNote));
             Cache::forget("tenant:{$tenant->id}:doc_count:" . now()->format('Y-m'));
 
-            if ($async) {
-                SendDocumentToSunat::dispatch(DebitNote::class, $debitNote->id);
-                $debitNote->update(['sunat_status' => 'enviado']);
-            } else {
-                $this->sendToSunat($tenant, $debitNote, $data);
-            }
+            SendDocumentToSunat::dispatch(DebitNote::class, $debitNote->id);
+            $debitNote->update(['sunat_status' => 'enviado']);
 
             return $debitNote->fresh(['items']);
         });
-    }
-
-    private function sendToSunat(Tenant $tenant, DebitNote $debitNote, array $data): void
-    {
-        $service = new GreenterService($tenant);
-        $storage = new DocumentStorageService();
-
-        $greenterDoc = $service->buildNote($data);
-        $result = $service->send($greenterDoc);
-
-        if ($result['success']) {
-            $debitNote->update([
-                'sunat_status' => ($result['accepted'] ?? true) ? 'aceptado' : 'rechazado',
-                'sunat_code' => $result['code'] ?? null,
-                'sunat_description' => $result['description'] ?? null,
-                'sunat_notes' => $result['notes'] ?? null,
-                'hash_cpe' => $result['hash'] ?? null,
-                'sent_at' => now(),
-            ]);
-
-            if (! empty($result['xml'])) {
-                $storage->storeXml($debitNote, $tenant, $result['xml']);
-            }
-            if (! empty($result['cdr_zip'])) {
-                $storage->storeCdr($debitNote, $tenant, $result['cdr_zip']);
-            }
-
-            if (config('pdf.auto_generate', true)) {
-                try {
-                    app(PdfGeneratorService::class)->generateAndStore($debitNote, $tenant);
-                } catch (\Throwable $e) {
-                    // PDF generation failure should not block the main flow
-                }
-            }
-
-            event(new DocumentSent($debitNote, $result));
-
-            if ($tenant->webhook_url) {
-                NotifyWebhookJob::dispatch(DebitNote::class, $debitNote->id, 'document.sent');
-            }
-        } else {
-            $debitNote->update([
-                'sunat_status' => 'rechazado',
-                'sunat_code' => $result['error_code'] ?? null,
-                'sunat_description' => $result['error_message'] ?? null,
-            ]);
-
-            if (! empty($result['xml'])) {
-                $storage->storeXml($debitNote, $tenant, $result['xml']);
-            }
-
-            event(new DocumentRejected($debitNote, $result));
-        }
     }
 }

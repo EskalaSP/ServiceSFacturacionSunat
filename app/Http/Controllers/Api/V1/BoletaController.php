@@ -21,17 +21,14 @@ class BoletaController extends Controller
     public function store(StoreBoletaRequest $request, CreateBoletaAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
-        $async = $request->boolean('async', false);
         $soloRegistro = $request->boolean('solo_registro', false);
 
         try {
-            $boleta = $action->execute($tenant, $request->validated(), $async, $soloRegistro);
+            $boleta = $action->execute($tenant, $request->validated(), $soloRegistro);
 
-            $message = match (true) {
-                $soloRegistro => 'Boleta registrada. Pendiente de envío vía resumen diario.',
-                $async => 'Boleta creada y encolada para envío a SUNAT.',
-                default => 'Boleta creada y enviada a SUNAT.',
-            };
+            $message = $soloRegistro
+                ? 'Boleta registrada. Pendiente de envío vía resumen diario.'
+                : 'Boleta creada y encolada para envío a SUNAT.';
 
             return $this->created(new BoletaResource($boleta), $message);
         } catch (\Throwable $e) {

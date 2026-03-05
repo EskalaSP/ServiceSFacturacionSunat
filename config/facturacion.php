@@ -22,8 +22,8 @@ return [
         'beta' => [
             'fe' => 'https://e-beta.sunat.gob.pe/ol-ti-itcpfegem-beta/billService',
             'retention' => 'https://e-beta.sunat.gob.pe/ol-ti-itemision-otroscpe-gem-beta/billService',
-            'guias_auth' => 'https://gre-test.nubefact.com/v1',
-            'guias_cpe' => 'https://gre-test.nubefact.com/v1',
+            'guias_auth' => env('SUNAT_BETA_GRE_AUTH', 'https://gre-test.nubefact.com/v1'),
+            'guias_cpe' => env('SUNAT_BETA_GRE_CPE', 'https://gre-test.nubefact.com/v1'),
             'gre_client_id' => env('SUNAT_BETA_GRE_CLIENT_ID', 'test-85e5b0ae-255c-4891-a595-0b98c65c9854'),
             'gre_client_secret' => env('SUNAT_BETA_GRE_CLIENT_SECRET', 'test-Hty/M6QshYvPgItX2P0+Kw=='),
             'consulta_cdr' => 'https://e-beta.sunat.gob.pe/ol-it-wsconscpegem-beta/billConsultService',

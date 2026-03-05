@@ -4,6 +4,7 @@ namespace App\Services\Greenter\Builders;
 
 use App\Models\Tenant;
 use DateTime;
+use DateTimeZone;
 use Greenter\Model\Client\Client;
 use Greenter\Model\Company\Address;
 use Greenter\Model\Company\Company;
@@ -30,7 +31,7 @@ class NoteBuilder
             ->setTipoDoc($data['tipo_documento'])
             ->setSerie($data['serie'])
             ->setCorrelativo((string) $data['correlativo'])
-            ->setFechaEmision(new DateTime($data['fecha_emision']))
+            ->setFechaEmision(new DateTime($data['fecha_emision'], new DateTimeZone('America/Lima')))
             ->setTipoMoneda($data['tipo_moneda'] ?? 'PEN')
             ->setCompany($this->buildCompany($data['cod_local'] ?? '0000'))
             ->setClient($this->buildClient($data['cliente']));

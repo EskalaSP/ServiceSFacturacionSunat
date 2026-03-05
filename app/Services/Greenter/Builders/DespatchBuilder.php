@@ -4,6 +4,7 @@ namespace App\Services\Greenter\Builders;
 
 use App\Models\Tenant;
 use DateTime;
+use DateTimeZone;
 use Greenter\Model\Client\Client;
 use Greenter\Model\Company\Company;
 use Greenter\Model\Despatch\Despatch;
@@ -32,7 +33,7 @@ class DespatchBuilder
             ->setTipoDoc('09')
             ->setSerie($data['serie'])
             ->setCorrelativo((string) $data['correlativo'])
-            ->setFechaEmision(new DateTime($data['fecha_emision']))
+            ->setFechaEmision(new DateTime($data['fecha_emision'], new DateTimeZone('America/Lima')))
             ->setCompany($this->buildCompany());
 
         // Observación
@@ -98,7 +99,7 @@ class DespatchBuilder
         $shipment
             ->setCodTraslado($data['cod_traslado'])
             ->setModTraslado($data['mod_traslado'])
-            ->setFecTraslado(new DateTime($data['fecha_traslado']))
+            ->setFecTraslado(new DateTime($data['fecha_traslado'], new DateTimeZone('America/Lima')))
             ->setPesoTotal((float) $data['peso_total'])
             ->setUndPesoTotal($data['und_peso_total'] ?? 'KGM');
 

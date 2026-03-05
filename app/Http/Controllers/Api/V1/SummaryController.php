@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Actions\Documents\CreateSummaryAction;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\ApiResponse;
+use App\Jobs\SendSummaryToSunat;
 use App\Models\Boleta;
 use App\Models\Summary;
-use App\Services\Greenter\GreenterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -18,13 +17,13 @@ class SummaryController extends Controller
     use ApiResponse;
 
     /**
-     * Generar y enviar resumen diario de boletas.
+     * Generar y encolar resumen diario de boletas.
      *
      * Modos:
      * 1. Enviar boletas pendientes: POST { "fecha_resumen": "2026-03-05" }
-     * 2. Anular boletas: POST { "fecha_resumen": "2026-03-05", "anular": [15, 16] }
+     * 2. Anular boletas: POST { "fecha_resumen": "2026-03-05", "anular": [{"id": 15, "motivo": "..."}, ...] }
      */
-    public function store(Request $request, CreateSummaryAction $action): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         $request->validate([
             'fecha_resumen' => 'required|date',
@@ -46,13 +45,11 @@ class SummaryController extends Controller
         }
 
         $isAnulacion = ! empty($request->input('anular'));
-        $motivosMap = [];
 
         try {
             if ($isAnulacion) {
                 $anularItems = $request->input('anular');
                 $documentIds = collect($anularItems)->pluck('id')->toArray();
-                $motivosMap = collect($anularItems)->pluck('motivo', 'id')->toArray();
 
                 $boletas = Boleta::where('tenant_id', $tenant->id)
                     ->whereIn('id', $documentIds)
@@ -62,8 +59,6 @@ class SummaryController extends Controller
                 if ($boletas->isEmpty()) {
                     return $this->error('No se encontraron boletas válidas para anular. Deben estar aceptadas o enviadas.', 422);
                 }
-
-                $estado = '3'; // Anular
             } else {
                 $boletas = Boleta::where('tenant_id', $tenant->id)
                     ->whereDate('fecha_emision', $fechaResumen)
@@ -76,166 +71,89 @@ class SummaryController extends Controller
                         422
                     );
                 }
-
-                $estado = '1'; // Agregar
             }
 
             $correlativo = $this->generateCorrelativo($tenant, $fechaResumen);
-
             $fechaEnvio = Carbon::now('America/Lima')->format('Y-m-d');
-            $data = [
+            $fechaId = str_replace('-', '', $fechaEnvio);
+            $identifier = "RC-{$fechaId}-{$correlativo}";
+
+            // Crear registro en tabla summaries
+            $summary = Summary::create([
+                'tenant_id' => $tenant->id,
+                'identifier' => $identifier,
                 'correlativo' => $correlativo,
                 'fecha_referencia' => $fechaResumen->format('Y-m-d'),
                 'fecha_envio' => $fechaEnvio,
-                'fecha_resumen' => $fechaResumen->format('Y-m-d'),
-                'detalles' => $boletas->map(fn (Boleta $doc) => [
-                    'tipo_documento' => '03',
-                    'serie_nro' => $doc->serie . '-' . $doc->correlativo,
-                    'estado' => $estado,
-                    'cliente_tipo_doc' => $doc->client_tipo_doc,
-                    'cliente_num_doc' => $doc->client_num_doc,
-                    'total' => (float) $doc->mto_imp_venta,
-                    'mto_oper_gravadas' => (float) $doc->mto_oper_gravadas,
-                    'mto_oper_exoneradas' => (float) $doc->mto_oper_exoneradas,
-                    'mto_oper_inafectas' => (float) $doc->mto_oper_inafectas,
-                    'mto_oper_gratuitas' => (float) $doc->mto_oper_gratuitas,
-                    'mto_igv' => (float) $doc->mto_igv,
-                ])->toArray(),
-            ];
+                'total_documentos' => $boletas->count(),
+                'tipo' => $isAnulacion ? 'anulacion' : 'envio',
+                'document_ids' => $boletas->pluck('id')->toArray(),
+                'sunat_status' => 'pendiente',
+            ]);
 
-            $result = $action->execute($tenant, $data);
-
-            if ($result['success']) {
-                $newStatus = $isAnulacion ? 'anulado' : 'enviado';
-                Boleta::whereIn('id', $boletas->pluck('id'))
-                    ->update([
-                        'sunat_status' => $newStatus,
-                        'ticket' => $result['ticket'],
-                        'sent_at' => now(),
-                    ]);
-
-                // Persistir en tabla summaries
-                Summary::create([
-                    'tenant_id' => $tenant->id,
-                    'identifier' => $result['identifier'],
-                    'correlativo' => $correlativo,
-                    'fecha_referencia' => $fechaResumen->format('Y-m-d'),
-                    'fecha_envio' => $fechaEnvio,
-                    'total_documentos' => $boletas->count(),
-                    'tipo' => $isAnulacion ? 'anulacion' : 'envio',
-                    'document_ids' => $boletas->pluck('id')->toArray(),
-                    'xml_path' => $result['xml_path'],
-                    'ticket' => $result['ticket'],
-                    'sunat_status' => 'enviado',
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => $isAnulacion
-                        ? 'Resumen de anulación enviado exitosamente.'
-                        : 'Resumen diario enviado exitosamente.',
-                    'data' => [
-                        'identifier' => $result['identifier'],
-                        'ticket' => $result['ticket'],
-                        'fecha_envio' => $data['fecha_envio'],
-                        'fecha_documentos' => $data['fecha_resumen'],
-                        'correlativo' => $correlativo,
-                        'accion' => $isAnulacion ? 'anulacion' : 'envio',
-                        'total_documentos' => $boletas->count(),
-                        'documentos' => $boletas->map(fn (Boleta $doc) => array_filter([
-                            'id' => $doc->id,
-                            'tipo_documento' => '03',
-                            'numero' => $doc->numero_completo,
-                            'cliente' => $doc->client_razon_social,
-                            'total' => (float) $doc->mto_imp_venta,
-                            'motivo' => $isAnulacion ? ($motivosMap[$doc->id] ?? null) : null,
-                        ]))->toArray(),
-                        'consulta_estado' => url("/api/v1/summaries/{$result['ticket']}/status"),
-                        'archivos' => [
-                            'xml' => $result['xml_path']
-                                ? url("/storage/{$result['xml_path']}")
-                                : null,
-                        ],
-                    ],
-                ], 201);
-            }
+            // Encolar el envío a SUNAT
+            SendSummaryToSunat::dispatch($summary->id);
+            $summary->update(['sunat_status' => 'enviado']);
 
             return response()->json([
-                'success' => false,
-                'message' => 'Error al enviar resumen a SUNAT',
-                'error' => [
-                    'identifier' => $result['identifier'],
-                    'code' => $result['error_code'],
-                    'description' => $result['error_message'],
+                'success' => true,
+                'message' => $isAnulacion
+                    ? 'Resumen de anulación encolado para envío a SUNAT.'
+                    : 'Resumen diario encolado para envío a SUNAT.',
+                'data' => [
+                    'summary_id' => $summary->id,
+                    'identifier' => $identifier,
+                    'fecha_envio' => $fechaEnvio,
+                    'fecha_documentos' => $fechaResumen->format('Y-m-d'),
+                    'correlativo' => $correlativo,
+                    'accion' => $isAnulacion ? 'anulacion' : 'envio',
+                    'total_documentos' => $boletas->count(),
+                    'sunat_status' => 'enviado',
+                    'documentos' => $boletas->map(fn (Boleta $doc) => [
+                        'id' => $doc->id,
+                        'numero' => $doc->numero_completo,
+                        'total' => (float) $doc->mto_imp_venta,
+                    ])->toArray(),
+                    'consulta_estado' => url("/api/v1/summaries/{$summary->id}/status"),
                 ],
-            ], 422);
+            ], 201);
         } catch (\Throwable $e) {
             return $this->error('Error al crear resumen: ' . $e->getMessage(), 500);
         }
     }
 
     /**
-     * Consultar estado de un ticket de resumen.
+     * Consultar estado de un resumen por ID.
      */
-    public function checkStatus(Request $request, string $ticket): JsonResponse
+    public function checkStatus(Request $request, int $id): JsonResponse
     {
         $tenant = $request->get('tenant');
 
-        try {
-            $service = new GreenterService($tenant);
-            $result = $service->getStatus($ticket);
+        $summary = Summary::where('tenant_id', $tenant->id)->findOrFail($id);
 
-            // Actualizar summary record
-            $summary = Summary::where('tenant_id', $tenant->id)
-                ->where('ticket', $ticket)
-                ->first();
+        $boletas = Boleta::whereIn('id', $summary->document_ids ?? [])
+            ->get(['id', 'serie', 'correlativo', 'mto_imp_venta', 'sunat_status', 'sunat_code', 'sunat_description']);
 
-            if ($result['success'] && ($result['accepted'] ?? false)) {
-                // Actualizar boletas asociadas
-                Boleta::where('tenant_id', $tenant->id)
-                    ->where('ticket', $ticket)
-                    ->update([
-                        'sunat_status' => 'aceptado',
-                        'sunat_code' => $result['code'] ?? null,
-                        'sunat_description' => $result['description'] ?? null,
-                        'sunat_notes' => $result['notes'] ?? null,
-                    ]);
-
-                if ($summary) {
-                    $summary->update([
-                        'sunat_status' => 'aceptado',
-                        'sunat_code' => $result['code'] ?? null,
-                        'sunat_description' => $result['description'] ?? null,
-                        'sunat_notes' => $result['notes'] ?? null,
-                    ]);
-                }
-            }
-
-            $boletas = Boleta::where('tenant_id', $tenant->id)
-                ->where('ticket', $ticket)
-                ->get(['id', 'serie', 'correlativo', 'mto_imp_venta', 'sunat_status']);
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'ticket' => $ticket,
-                    'sunat' => [
-                        'accepted' => $result['accepted'] ?? false,
-                        'code' => $result['code'] ?? null,
-                        'description' => $result['description'] ?? null,
-                        'notes' => $result['notes'] ?? null,
-                    ],
-                    'documentos' => $boletas->map(fn (Boleta $doc) => [
-                        'id' => $doc->id,
-                        'numero' => $doc->serie . '-' . $doc->correlativo,
-                        'total' => (float) $doc->mto_imp_venta,
-                        'status' => $doc->sunat_status,
-                    ])->toArray(),
-                ],
-            ]);
-        } catch (\Throwable $e) {
-            return $this->error('Error al consultar ticket: ' . $e->getMessage(), 500);
-        }
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'summary_id' => $summary->id,
+                'identifier' => $summary->identifier,
+                'ticket' => $summary->ticket,
+                'sunat_status' => $summary->sunat_status,
+                'sunat_code' => $summary->sunat_code,
+                'sunat_description' => $summary->sunat_description,
+                'sunat_notes' => $summary->sunat_notes,
+                'tipo' => $summary->tipo,
+                'total_documentos' => $summary->total_documentos,
+                'documentos' => $boletas->map(fn (Boleta $doc) => [
+                    'id' => $doc->id,
+                    'numero' => $doc->serie . '-' . $doc->correlativo,
+                    'total' => (float) $doc->mto_imp_venta,
+                    'sunat_status' => $doc->sunat_status,
+                ])->toArray(),
+            ],
+        ]);
     }
 
     private function generateCorrelativo($tenant, Carbon $fecha): string

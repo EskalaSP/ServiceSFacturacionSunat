@@ -66,11 +66,11 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api'])->
 
     // Resúmenes diarios
     Route::post('summaries', [SummaryController::class, 'store']);
-    Route::get('summaries/{ticket}/status', [SummaryController::class, 'checkStatus']);
+    Route::get('summaries/{id}/status', [SummaryController::class, 'checkStatus']);
 
     // Comunicaciones de baja
     Route::post('voided', [VoidedController::class, 'store']);
-    Route::get('voided/{ticket}/status', [VoidedController::class, 'checkStatus']);
+    Route::get('voided/{id}/status', [VoidedController::class, 'checkStatus']);
 
     // Consultar CDR en SUNAT
     Route::post('consult-cdr', [ConsultController::class, 'cdrStatus']);

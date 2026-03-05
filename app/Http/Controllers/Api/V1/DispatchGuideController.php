@@ -26,7 +26,7 @@ class DispatchGuideController extends Controller
         try {
             $guide = $action->execute($tenant, $request->validated());
 
-            return $this->created(new DispatchGuideResource($guide), 'Guía de remisión creada y enviada a SUNAT.');
+            return $this->created(new DispatchGuideResource($guide), 'Guía de remisión creada y encolada para envío a SUNAT.');
         } catch (\Throwable $e) {
             return $this->error('Error al crear guía: '.$e->getMessage(), 500);
         }

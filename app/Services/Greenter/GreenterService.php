@@ -210,6 +210,42 @@ class GreenterService
         ];
     }
 
+    public function getGreStatus(string $ticket): array
+    {
+        $api = $this->createApi();
+
+        try {
+            $result = $api->getStatus($ticket);
+        } catch (\Greenter\Sunat\GRE\ApiException $e) {
+            return [
+                'success' => false,
+                'error_code' => (string) $e->getCode(),
+                'error_message' => $this->sanitizeUtf8($e->getMessage()),
+            ];
+        }
+
+        if (! $result->isSuccess()) {
+            $error = $result->getError();
+
+            return [
+                'success' => false,
+                'error_code' => (string) $error->getCode(),
+                'error_message' => $this->sanitizeUtf8($error->getMessage()),
+            ];
+        }
+
+        $cdr = $result->getCdrResponse();
+
+        return [
+            'success' => true,
+            'cdr_zip' => $result->getCdrZip(),
+            'code' => $cdr ? (string) $cdr->getCode() : null,
+            'description' => $cdr ? $this->sanitizeUtf8($cdr->getDescription()) : null,
+            'notes' => $cdr ? array_map(fn ($n) => $this->sanitizeUtf8($n), $cdr->getNotes() ?? []) : [],
+            'accepted' => $cdr ? $cdr->isAccepted() : true,
+        ];
+    }
+
     public function getXmlSigned(DocumentInterface $document): string
     {
         $see = $this->resolveSee($document);

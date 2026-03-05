@@ -2,13 +2,10 @@
 
 namespace App\Actions\Documents;
 
-use App\Jobs\CheckTicketStatus;
+use App\Jobs\SendDispatchGuideToSunat;
 use App\Models\DispatchGuide;
 use App\Models\Serie;
 use App\Models\Tenant;
-use App\Services\Greenter\GreenterService;
-use App\Services\Pdf\PdfGeneratorService;
-use App\Services\Storage\DocumentStorageService;
 use Illuminate\Support\Facades\DB;
 
 class CreateDispatchGuideAction
@@ -56,50 +53,8 @@ class CreateDispatchGuideAction
                 'sunat_status' => 'pendiente',
             ]);
 
-            // Enviar a SUNAT vía API REST (GRE)
-            $service = new GreenterService($tenant);
-            $storage = new DocumentStorageService();
-            $despatch = $service->buildDespatch($data);
-            $api = $service->createApi();
-
-            $result = $api->send($despatch);
-            $xml = $api->getLastXml();
-
-            // Guardar XML en disco
-            if ($xml) {
-                $storage->storeXml($guide, $tenant, $xml);
-            }
-
-            if ($result->isSuccess()) {
-                $ticket = $result->getTicket();
-                $guide->update([
-                    'ticket' => $ticket,
-                    'sunat_status' => 'enviado',
-                ]);
-
-                if (config('pdf.auto_generate', true)) {
-                    try {
-                        app(PdfGeneratorService::class)->generateAndStore($guide, $tenant);
-                    } catch (\Throwable $e) {
-                        // PDF generation failure should not block the main flow
-                    }
-                }
-
-                // Encolar verificación de ticket
-                CheckTicketStatus::dispatch(
-                    $tenant->id,
-                    $ticket,
-                    DispatchGuide::class,
-                    $guide->id
-                )->delay(now()->addSeconds(15));
-            } else {
-                $error = $result->getError();
-                $guide->update([
-                    'sunat_status' => 'rechazado',
-                    'sunat_code' => $error->getCode(),
-                    'sunat_description' => $error->getMessage(),
-                ]);
-            }
+            SendDispatchGuideToSunat::dispatch($guide->id);
+            $guide->update(['sunat_status' => 'enviado']);
 
             return $guide->fresh();
         });

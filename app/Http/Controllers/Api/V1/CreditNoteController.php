@@ -21,16 +21,11 @@ class CreditNoteController extends Controller
     public function store(StoreCreditNoteRequest $request, CreateCreditNoteAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
-        $async = $request->boolean('async', false);
 
         try {
-            $creditNote = $action->execute($tenant, $request->validated(), $async);
+            $creditNote = $action->execute($tenant, $request->validated());
 
-            $message = $async
-                ? 'Nota de crédito creada y encolada para envío a SUNAT.'
-                : 'Nota de crédito creada y enviada a SUNAT.';
-
-            return $this->created(new CreditNoteResource($creditNote), $message);
+            return $this->created(new CreditNoteResource($creditNote), 'Nota de crédito creada y encolada para envío a SUNAT.');
         } catch (\Throwable $e) {
             return $this->error('Error al crear nota de crédito: ' . $e->getMessage(), 500);
         }
