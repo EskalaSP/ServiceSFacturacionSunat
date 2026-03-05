@@ -9,11 +9,11 @@ enum PdfFormatConfig: string
     case TICKET_80 = 'ticket-80';
     case TICKET_58 = 'ticket-58';
 
-    public function dimensions(): array
+    public function paperSize(): array|string
     {
         return match ($this) {
-            self::A4 => [0, 0, 595.28, 841.89],
-            self::A5 => [0, 0, 419.53, 595.28],
+            self::A4 => 'a4',
+            self::A5 => 'a5',
             self::TICKET_80 => [0, 0, 226.77, 841.89],  // 80mm width
             self::TICKET_58 => [0, 0, 164.41, 841.89],  // 58mm width
         };

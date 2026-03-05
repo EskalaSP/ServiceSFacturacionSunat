@@ -29,25 +29,72 @@ class TenantController extends Controller
             'nombre_comercial' => 'nullable|string|max:255',
             'direccion' => 'nullable|string|max:500',
             'ubigeo' => 'nullable|string|size:6',
-            'webhook_url' => 'nullable|url|max:500',
+            'departamento' => 'nullable|string|max:100',
+            'provincia' => 'nullable|string|max:100',
+            'distrito' => 'nullable|string|max:100',
+            'sol_user' => 'nullable|string|max:50',
+            'sol_pass' => 'nullable|string|max:50',
             'client_id' => 'nullable|string|max:100',
             'client_secret' => 'nullable|string|max:255',
+            'environment' => 'nullable|string|in:beta,production',
+            'webhook_url' => 'nullable|url|max:500',
+            'logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $tenant = $request->get('tenant');
-        $tenant->update($request->only([
+
+        $data = $request->only([
             'razon_social',
             'nombre_comercial',
             'direccion',
             'ubigeo',
-            'webhook_url',
+            'departamento',
+            'provincia',
+            'distrito',
+            'sol_user',
+            'sol_pass',
             'client_id',
             'client_secret',
-        ]));
+            'environment',
+            'webhook_url',
+        ]);
+
+        if ($request->hasFile('logo')) {
+            $data['logo_path'] = $request->file('logo')->storeAs(
+                "logos/{$tenant->ruc}",
+                'logo.' . $request->file('logo')->getClientOriginalExtension(),
+                'public'
+            );
+        }
+
+        $tenant->update($data);
 
         Cache::forget("tenant:key:{$tenant->api_key}");
 
         return $this->success(new TenantResource($tenant->fresh()), 'Tenant actualizado.');
+    }
+
+    public function uploadLogo(Request $request): JsonResponse
+    {
+        $request->validate([
+            'logo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        $tenant = $request->get('tenant');
+
+        $logoPath = $request->file('logo')->storeAs(
+            "logos/{$tenant->ruc}",
+            'logo.' . $request->file('logo')->getClientOriginalExtension(),
+            'public'
+        );
+
+        $tenant->update(['logo_path' => $logoPath]);
+
+        Cache::forget("tenant:key:{$tenant->api_key}");
+
+        return $this->success([
+            'logo_path' => $logoPath,
+        ], 'Logo actualizado.');
     }
 
     public function uploadCertificate(Request $request): JsonResponse

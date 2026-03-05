@@ -5,6 +5,7 @@
     @include('pdf.styles.base')
     @include('pdf.styles.a4')
     <style>
+        @page { margin: 10mm; }
         body { font-size: 8.5pt; }
         .emitter-name { font-size: 10pt; }
         .badge-title { font-size: 8.5pt; }

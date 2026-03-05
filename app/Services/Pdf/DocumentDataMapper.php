@@ -191,6 +191,19 @@ class DocumentDataMapper
                     ]],
             ],
 
+            // Totales (cero para guías)
+            'mto_oper_gravadas' => 0,
+            'mto_oper_exoneradas' => 0,
+            'mto_oper_inafectas' => 0,
+            'mto_oper_gratuitas' => 0,
+            'mto_igv' => 0,
+            'mto_isc' => 0,
+            'mto_icbper' => 0,
+            'mto_imp_venta' => 0,
+            'total_anticipos' => 0,
+            'total_descuentos' => 0,
+            'fecha_vencimiento' => null,
+
             'hash_cpe' => $guide->hash_cpe ?? '',
             'sunat_status' => $guide->sunat_status ?? '',
             'sunat_description' => $guide->sunat_description ?? '',

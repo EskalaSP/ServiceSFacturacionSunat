@@ -2,12 +2,12 @@
 @if($is_ticket)
     <div class="footer-section">
         @if(!empty($hash_cpe))
-        <div>Hash: {{ $hash_cpe }}</div>
+        <div class="footer-hash">Hash: {{ $hash_cpe }}</div>
         @endif
         @if(!empty($observacion))
-        <div>{{ $observacion }}</div>
+        <div style="margin-bottom: 3px;">{{ $observacion }}</div>
         @endif
-        <div style="margin-top: 4px;">Representación impresa del comprobante electrónico</div>
+        <div class="footer-legal">Representación impresa del<br>comprobante electrónico</div>
     </div>
 @else
     <div class="footer-section">

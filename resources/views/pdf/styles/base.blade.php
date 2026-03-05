@@ -1,13 +1,14 @@
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
     body {
         font-family: Helvetica, Arial, sans-serif;
-        color: #333;
+        color: #000;
         line-height: 1.4;
+        margin: 0;
+        padding: 0;
+    }
+    h1, h2, h3, h4, h5, h6, p, div, table {
+        margin: 0;
+        padding: 0;
     }
     .text-center { text-align: center; }
     .text-right { text-align: right; }
@@ -20,11 +21,11 @@
     .mt-4 { margin-top: 8px; }
     .mt-6 { margin-top: 12px; }
     .separator {
-        border-top: 1px solid #CCC;
+        border-top: 1px solid #000;
         margin: 8px 0;
     }
     .separator-dashed {
-        border-top: 1px dashed #CCC;
+        border-top: 1px dashed #000;
         margin: 6px 0;
     }
     table {

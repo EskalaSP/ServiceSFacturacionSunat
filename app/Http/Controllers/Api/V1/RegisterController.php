@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Traits\ApiResponse;
-use App\Models\Sucursal;
 use App\Models\Tenant;
 use App\Services\CertificateService;
 use App\Services\Storage\DocumentStorageService;
@@ -23,6 +22,9 @@ class RegisterController extends Controller
             'nombre_comercial' => 'nullable|string|max:255',
             'direccion' => 'required|string|max:500',
             'ubigeo' => 'required|string|size:6',
+            'departamento' => 'nullable|string|max:100',
+            'provincia' => 'nullable|string|max:100',
+            'distrito' => 'nullable|string|max:100',
             'sol_user' => 'required|string|max:20',
             'sol_pass' => 'required|string|max:50',
             'environment' => 'sometimes|string|in:beta,production',
@@ -31,6 +33,7 @@ class RegisterController extends Controller
             'client_secret' => 'nullable|string|max:255',
             'certificate' => 'required|file|max:100',
             'certificate_password' => 'nullable|string|max:100',
+            'logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         // Validar extensión del certificado
@@ -67,6 +70,9 @@ class RegisterController extends Controller
             'nombre_comercial' => $request->input('nombre_comercial'),
             'direccion' => $request->input('direccion'),
             'ubigeo' => $request->input('ubigeo'),
+            'departamento' => $request->input('departamento'),
+            'provincia' => $request->input('provincia'),
+            'distrito' => $request->input('distrito'),
             'sol_user' => $request->input('sol_user'),
             'sol_pass' => $request->input('sol_pass'),
             'client_id' => $request->input('client_id'),
@@ -81,18 +87,17 @@ class RegisterController extends Controller
         // Guardar certificado convertido a PEM
         $storage = new DocumentStorageService();
         $certPath = $storage->storeCertificate($tenant, $pemContent);
-        $tenant->update(['certificate_path' => $certPath]);
 
-        // Crear sucursal principal automáticamente
-        $sucursal = Sucursal::create([
-            'tenant_id' => $tenant->id,
-            'nombre' => 'Principal',
-            'cod_local' => '0000',
-            'direccion' => $request->input('direccion'),
-            'ubigeo' => $request->input('ubigeo'),
-            'is_principal' => true,
-            'is_active' => true,
-        ]);
+        $updateData = ['certificate_path' => $certPath];
+
+        if ($request->hasFile('logo')) {
+            $updateData['logo_path'] = $request->file('logo')->store(
+                "logos/{$tenant->ruc}",
+                'public'
+            );
+        }
+
+        $tenant->update($updateData);
 
         return $this->created([
             'tenant_id' => $tenant->id,
@@ -102,11 +107,6 @@ class RegisterController extends Controller
             'plan' => $tenant->plan,
             'api_key' => $tenant->api_key,
             'api_secret' => $tenant->api_secret,
-            'sucursal_principal' => [
-                'id' => $sucursal->id,
-                'nombre' => $sucursal->nombre,
-                'cod_local' => $sucursal->cod_local,
-            ],
             'importante' => 'Guarde sus credenciales. El api_secret NO se puede recuperar.',
         ]);
     }

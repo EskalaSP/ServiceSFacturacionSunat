@@ -13,9 +13,10 @@
 
     @if($is_ticket)
         <div class="note-reference">
-            <div><span class="info-label">Doc. Afectado:</span> {{ $tipoAfectadoLabel }} {{ $numAfectado }}</div>
+            <div class="ref-title">Documento Afectado</div>
+            <div class="info-line">{{ $tipoAfectadoLabel }}: {{ $numAfectado }}</div>
             @if(!empty($cod_motivo))
-            <div><span class="info-label">Motivo:</span> [{{ $cod_motivo }}] {{ $des_motivo ?? '' }}</div>
+            <div class="info-line"><span class="info-label">Motivo:</span> [{{ $cod_motivo }}] {{ $des_motivo ?? '' }}</div>
             @endif
         </div>
     @else

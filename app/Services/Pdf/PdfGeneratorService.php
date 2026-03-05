@@ -23,15 +23,8 @@ class PdfGeneratorService
         $data['is_ticket'] = $format->isTicket();
         $data['sections'] = DocumentTypeConfig::sections($data['tipo_documento']);
 
-        $dimensions = $format->dimensions();
-        $margins = $format->margins();
-
         $pdf = Pdf::loadView($format->viewName(), $data)
-            ->setPaper($dimensions, $format->orientation())
-            ->setOption('margin-top', $margins['top'])
-            ->setOption('margin-right', $margins['right'])
-            ->setOption('margin-bottom', $margins['bottom'])
-            ->setOption('margin-left', $margins['left'])
+            ->setPaper($format->paperSize(), $format->orientation())
             ->setOption('isRemoteEnabled', true);
 
         return $pdf->output();

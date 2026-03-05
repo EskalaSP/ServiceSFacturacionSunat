@@ -1,32 +1,25 @@
 {{-- Datos del receptor/cliente --}}
+@php
+    $tipoDocLabel = match($receptor['tipo_doc']) {
+        '6' => 'RUC',
+        '1' => 'DNI',
+        '4' => $is_ticket ? 'C.E.' : 'Carnet Extranjería',
+        '7' => 'Pasaporte',
+        default => $is_ticket ? 'Doc' : 'Documento',
+    };
+@endphp
+
 @if($is_ticket)
-    <div class="separator-dashed"></div>
-    <div class="info-line"><span class="info-label">Cliente:</span> {{ $receptor['razon_social'] }}</div>
-    @php
-        $tipoDocLabel = match($receptor['tipo_doc']) {
-            '6' => 'RUC',
-            '1' => 'DNI',
-            '4' => 'C.E.',
-            '7' => 'Pasaporte',
-            default => 'Doc',
-        };
-    @endphp
-    <div class="info-line"><span class="info-label">{{ $tipoDocLabel }}:</span> {{ $receptor['num_doc'] }}</div>
-    @if(!empty($receptor['direccion']))
-        <div class="info-line">{{ $receptor['direccion'] }}</div>
-    @endif
-    <div class="separator-dashed"></div>
+    <div class="info-block">
+        <div class="info-line"><span class="info-label">Cliente:</span> {{ $receptor['razon_social'] }}</div>
+        <div class="info-line"><span class="info-label">{{ $tipoDocLabel }}:</span> {{ $receptor['num_doc'] }}</div>
+        @if(!empty($receptor['direccion']))
+            <div class="info-line"><span class="info-label">Dir.:</span> {{ $receptor['direccion'] }}</div>
+        @endif
+        <div class="info-line"><span class="info-label">Moneda:</span> {{ $tipo_moneda }} ({{ $moneda_simbolo }})</div>
+    </div>
 @else
     <table class="info-section">
-        @php
-            $tipoDocLabel = match($receptor['tipo_doc']) {
-                '6' => 'RUC',
-                '1' => 'DNI',
-                '4' => 'Carnet Extranjería',
-                '7' => 'Pasaporte',
-                default => 'Documento',
-            };
-        @endphp
         <tr>
             <td class="info-label">Cliente:</td>
             <td>{{ $receptor['razon_social'] }}</td>

@@ -164,7 +164,7 @@ class GreenterService
                 'success' => true,
                 'xml' => $xml,
                 'cdr_zip' => $result->getCdrZip(),
-                'hash' => $cdr->getId(),
+                'hash' => $this->extractHashFromXml($xml),
                 'code' => $cdr->getCode(),
                 'description' => $this->sanitizeUtf8($cdr->getDescription()),
                 'notes' => array_map(fn ($n) => $this->sanitizeUtf8($n), $cdr->getNotes() ?? []),
@@ -215,6 +215,29 @@ class GreenterService
         $see = $this->resolveSee($document);
 
         return $see->getXmlSigned($document);
+    }
+
+    private function extractHashFromXml(?string $xml): ?string
+    {
+        if (empty($xml)) {
+            return null;
+        }
+
+        try {
+            $doc = new \DOMDocument();
+            $doc->loadXML($xml);
+            $xpath = new \DOMXPath($doc);
+            $xpath->registerNamespace('ds', 'http://www.w3.org/2000/09/xmldsig#');
+            $nodes = $xpath->query('//ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestValue');
+
+            if ($nodes && $nodes->length > 0) {
+                return $nodes->item(0)->nodeValue;
+            }
+        } catch (\Throwable) {
+            // fallback
+        }
+
+        return null;
     }
 
     private function sanitizeUtf8(?string $value): ?string

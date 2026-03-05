@@ -3,32 +3,35 @@
     @if($is_ticket)
         <div class="dispatch-section">
             <div class="section-title">Datos del Traslado</div>
-            <div>Fecha: {{ $dispatch['fecha_traslado'] }}</div>
-            <div>Motivo: {{ $dispatch['cod_traslado'] }} | Modalidad: {{ $dispatch['mod_traslado'] }}</div>
-            <div>Peso: {{ number_format($dispatch['peso_total'], 3) }} {{ $dispatch['und_peso_total'] }}</div>
+            <div class="info-line"><span class="info-label">Fecha:</span> {{ $dispatch['fecha_traslado'] }}</div>
+            <div class="info-line"><span class="info-label">Motivo:</span> {{ $dispatch['cod_traslado'] }}</div>
+            <div class="info-line"><span class="info-label">Modalidad:</span> {{ $dispatch['mod_traslado'] }}</div>
+            <div class="info-line"><span class="info-label">Peso:</span> {{ number_format($dispatch['peso_total'], 3) }} {{ $dispatch['und_peso_total'] }}</div>
             @if($dispatch['num_bultos'])
-            <div>Bultos: {{ $dispatch['num_bultos'] }}</div>
+            <div class="info-line"><span class="info-label">Bultos:</span> {{ $dispatch['num_bultos'] }}</div>
             @endif
-            <div class="separator-dashed"></div>
-            <div class="section-title">Partida</div>
-            <div>[{{ $dispatch['partida_ubigeo'] }}] {{ $dispatch['partida_direccion'] }}</div>
-            <div class="section-title">Llegada</div>
-            <div>[{{ $dispatch['llegada_ubigeo'] }}] {{ $dispatch['llegada_direccion'] }}</div>
+
+            <div class="section-title">Partida / Llegada</div>
+            <div class="info-line"><span class="info-label">De:</span> [{{ $dispatch['partida_ubigeo'] }}] {{ $dispatch['partida_direccion'] }}</div>
+            <div class="info-line"><span class="info-label">A:</span> [{{ $dispatch['llegada_ubigeo'] }}] {{ $dispatch['llegada_direccion'] }}</div>
+
             @if(!empty($dispatch['transportista']['razon_social']))
-            <div class="separator-dashed"></div>
             <div class="section-title">Transportista</div>
-            <div>{{ $dispatch['transportista']['razon_social'] }}</div>
-            <div>{{ $dispatch['transportista']['num_doc'] }}</div>
+            <div class="info-line">{{ $dispatch['transportista']['razon_social'] }}</div>
+            <div class="info-line"><span class="info-label">Doc:</span> {{ $dispatch['transportista']['num_doc'] }}</div>
             @endif
+
             @if(!empty($dispatch['vehiculo']['placa']))
-            <div>Placa: {{ $dispatch['vehiculo']['placa'] }}</div>
+            <div class="info-line"><span class="info-label">Placa:</span> {{ $dispatch['vehiculo']['placa'] }}</div>
             @endif
+
             @if(!empty($dispatch['conductor']))
-            <div class="separator-dashed"></div>
             <div class="section-title">Conductor(es)</div>
             @foreach($dispatch['conductor'] as $c)
-            <div>{{ $c['nombres'] }} {{ $c['apellidos'] }} - {{ $c['num_doc'] }}</div>
-            @if(!empty($c['licencia']))<div>Lic: {{ $c['licencia'] }}</div>@endif
+            <div class="info-line">{{ $c['nombres'] }} {{ $c['apellidos'] }} — {{ $c['num_doc'] }}</div>
+            @if(!empty($c['licencia']))
+            <div class="info-line"><span class="info-label">Lic:</span> {{ $c['licencia'] }}</div>
+            @endif
             @endforeach
             @endif
         </div>

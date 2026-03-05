@@ -78,6 +78,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api'])->
     // Tenant (perfil)
     Route::get('tenant', [TenantController::class, 'show']);
     Route::put('tenant', [TenantController::class, 'update']);
+    Route::post('tenant/logo', [TenantController::class, 'uploadLogo']);
     Route::post('tenant/certificate', [TenantController::class, 'uploadCertificate']);
 
     // Sucursales

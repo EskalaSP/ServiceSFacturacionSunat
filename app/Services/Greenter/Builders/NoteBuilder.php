@@ -169,6 +169,15 @@ class NoteBuilder
         if ($this->tenant->ubigeo) {
             $address->setUbigueo($this->tenant->ubigeo);
         }
+        if ($this->tenant->departamento) {
+            $address->setDepartamento($this->tenant->departamento);
+        }
+        if ($this->tenant->provincia) {
+            $address->setProvincia($this->tenant->provincia);
+        }
+        if ($this->tenant->distrito) {
+            $address->setDistrito($this->tenant->distrito);
+        }
 
         $company->setAddress($address);
 

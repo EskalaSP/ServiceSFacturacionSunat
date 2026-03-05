@@ -1,4 +1,5 @@
 <style>
+    @page { margin: 20mm 15mm; }
     body { font-size: 10pt; }
     .header-table { margin-bottom: 12px; }
     .header-table td { vertical-align: top; }

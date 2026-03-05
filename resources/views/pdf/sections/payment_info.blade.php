@@ -1,25 +1,38 @@
 {{-- Información de pago: forma de pago, cuotas, detracción --}}
 @if($tipo_documento === '01' || $tipo_documento === '03')
     @if($is_ticket)
+        @if(!empty($forma_pago) || !empty($cuotas) || !empty($detraccion))
         <div class="payment-section">
             @if(!empty($forma_pago))
-            <div><span class="info-label">Pago:</span> {{ $forma_pago }}</div>
+            <div class="payment-title">Forma de Pago: {{ $forma_pago }}</div>
             @endif
             @if(!empty($cuotas))
+            <table class="payment-table-ticket">
                 @foreach($cuotas as $cuota)
-                <div>{{ $cuota['fecha'] ?? '' }} - {{ $moneda_simbolo }} {{ number_format($cuota['monto'] ?? 0, 2) }}</div>
+                <tr>
+                    <td class="pay-label">Cuota {{ $loop->iteration }}:</td>
+                    <td class="pay-value">{{ $cuota['fecha_pago'] ?? $cuota['fecha'] ?? '' }} - {{ $moneda_simbolo }} {{ number_format($cuota['monto'] ?? 0, 2) }}</td>
+                </tr>
                 @endforeach
+            </table>
             @endif
             @if(!empty($detraccion))
-            <div class="separator-dashed"></div>
-            <div><span class="info-label">Detracción:</span></div>
-            <div>{{ $detraccion['codigo'] ?? '' }} - {{ $detraccion['porcentaje'] ?? '' }}%</div>
-            <div>Monto: {{ $moneda_simbolo }} {{ number_format($detraccion['monto'] ?? 0, 2) }}</div>
-            @if(!empty($detraccion['cuenta']))
-            <div>Cta: {{ $detraccion['cuenta'] }}</div>
+            <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 3px;">
+                <div class="info-line"><span class="info-label">Detraccion:</span> {{ $detraccion['codigo'] ?? '' }} - {{ $detraccion['porcentaje'] ?? '' }}%</div>
+                <div class="info-line"><span class="info-label">Monto:</span> {{ $moneda_simbolo }} {{ number_format($detraccion['monto'] ?? 0, 2) }}</div>
+                @if(!empty($detraccion['cuenta']))
+                <div class="info-line"><span class="info-label">Cuenta:</span> {{ $detraccion['cuenta'] }}</div>
+                @endif
+            </div>
             @endif
+            @if(!empty($percepcion))
+            <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 3px;">
+                <div class="info-line"><span class="info-label">Percepcion:</span> {{ $percepcion['codigo'] ?? '' }} - {{ $percepcion['porcentaje'] ?? '' }}%</div>
+                <div class="info-line"><span class="info-label">Monto:</span> {{ $moneda_simbolo }} {{ number_format($percepcion['monto'] ?? 0, 2) }}</div>
+            </div>
             @endif
         </div>
+        @endif
     @else
         @if(!empty($forma_pago) || !empty($cuotas) || !empty($detraccion))
         <div class="payment-section">
@@ -34,7 +47,7 @@
                     @foreach($cuotas as $cuota)
                     <tr>
                         <td><strong>{{ $loop->first ? 'Cuotas:' : '' }}</strong></td>
-                        <td>{{ $cuota['fecha'] ?? '' }} — {{ $moneda_simbolo }} {{ number_format($cuota['monto'] ?? 0, 2) }}</td>
+                        <td>{{ $cuota['fecha_pago'] ?? $cuota['fecha'] ?? '' }} — {{ $moneda_simbolo }} {{ number_format($cuota['monto'] ?? 0, 2) }}</td>
                     </tr>
                     @endforeach
                 @endif
