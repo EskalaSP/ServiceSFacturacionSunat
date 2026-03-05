@@ -17,10 +17,8 @@ class LogApiRequest
 
         $duration = (int) ((microtime(true) - $start) * 1000);
 
-        $tenant = $request->get('tenant');
-
-        ApiLog::create([
-            'tenant_id' => $tenant?->id,
+        $logData = [
+            'tenant_id' => $request->get('tenant')?->id,
             'endpoint' => $request->path(),
             'method' => $request->method(),
             'request_body' => $request->except(['tenant']),
@@ -30,7 +28,11 @@ class LogApiRequest
             'user_agent' => $request->userAgent(),
             'duration_ms' => $duration,
             'created_at' => now(),
-        ]);
+        ];
+
+        dispatch(function () use ($logData) {
+            ApiLog::create($logData);
+        })->afterResponse();
 
         return $response;
     }

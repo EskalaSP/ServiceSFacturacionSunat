@@ -40,7 +40,7 @@ class InvoiceBuilder
             ->setCorrelativo((string) $data['correlativo'])
             ->setFechaEmision(new DateTime($data['fecha_emision']))
             ->setTipoMoneda($data['tipo_moneda'] ?? 'PEN')
-            ->setCompany($this->buildCompany())
+            ->setCompany($this->buildCompany($data['cod_local'] ?? '0000'))
             ->setClient($this->buildClient($data['cliente']));
 
         if (! empty($data['fecha_vencimiento'])) {
@@ -65,23 +65,56 @@ class InvoiceBuilder
             $invoice->setFormaPago(new FormaPagoContado());
         }
 
-        // Montos
+        // Montos - solo setear > 0 para evitar nodos de tributo vacíos en el XML
+        $mtoOperGravadas = (float) ($data['mto_oper_gravadas'] ?? 0);
+        $mtoOperExoneradas = (float) ($data['mto_oper_exoneradas'] ?? 0);
+        $mtoOperInafectas = (float) ($data['mto_oper_inafectas'] ?? 0);
+        $mtoOperGratuitas = (float) ($data['mto_oper_gratuitas'] ?? 0);
+        $mtoOperExportacion = (float) ($data['mto_oper_exportacion'] ?? 0);
+        $mtoIgv = (float) ($data['mto_igv'] ?? 0);
+
+        if ($mtoOperGravadas > 0) {
+            $invoice->setMtoOperGravadas($mtoOperGravadas);
+        }
+        if ($mtoOperExoneradas > 0) {
+            $invoice->setMtoOperExoneradas($mtoOperExoneradas);
+        }
+        if ($mtoOperInafectas > 0) {
+            $invoice->setMtoOperInafectas($mtoOperInafectas);
+        }
+        if ($mtoOperGratuitas > 0) {
+            $invoice->setMtoOperGratuitas($mtoOperGratuitas);
+        }
+        if ($mtoOperExportacion > 0) {
+            $invoice->setMtoOperExportacion($mtoOperExportacion);
+        }
+        if ($mtoIgv > 0) {
+            $invoice->setMtoIGV($mtoIgv);
+        }
+
         $invoice
-            ->setMtoOperGravadas((float) ($data['mto_oper_gravadas'] ?? 0))
-            ->setMtoOperExoneradas((float) ($data['mto_oper_exoneradas'] ?? 0))
-            ->setMtoOperInafectas((float) ($data['mto_oper_inafectas'] ?? 0))
-            ->setMtoOperGratuitas((float) ($data['mto_oper_gratuitas'] ?? 0))
-            ->setMtoIGV((float) ($data['mto_igv'] ?? 0))
-            ->setTotalImpuestos((float) ($data['total_impuestos'] ?? $data['mto_igv'] ?? 0))
+            ->setTotalImpuestos((float) ($data['total_impuestos'] ?? $mtoIgv))
             ->setValorVenta((float) ($data['valor_venta'] ?? 0))
             ->setSubTotal((float) ($data['sub_total'] ?? 0))
             ->setMtoImpVenta((float) ($data['mto_imp_venta'] ?? 0));
 
+        if (! empty($data['mto_igv_gratuitas'])) {
+            $invoice->setMtoIGVGratuitas((float) $data['mto_igv_gratuitas']);
+        }
         if (! empty($data['mto_isc'])) {
             $invoice->setMtoISC((float) $data['mto_isc']);
         }
         if (! empty($data['mto_icbper'])) {
             $invoice->setIcbper((float) $data['mto_icbper']);
+        }
+        if (! empty($data['mto_base_ivap'])) {
+            $invoice->setMtoBaseIvap((float) $data['mto_base_ivap']);
+        }
+        if (! empty($data['mto_ivap'])) {
+            $invoice->setMtoIvap((float) $data['mto_ivap']);
+        }
+        if (! empty($data['sum_otros_descuentos'])) {
+            $invoice->setSumOtrosDescuentos((float) $data['sum_otros_descuentos']);
         }
 
         // Items
@@ -173,34 +206,70 @@ class InvoiceBuilder
 
     private function buildItem(array $item): SaleDetail
     {
+        $gratuitoGravadoCodes = ['11', '12', '13', '14', '15', '16'];
+        $gratuitoInafectoCodes = ['21', '31', '32', '33', '34', '35', '36'];
+        $gratuitoCodes = array_merge($gratuitoGravadoCodes, $gratuitoInafectoCodes);
+
         $detail = new SaleDetail();
 
         $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? 18);
         $tipAfeIgv = $item['tip_afe_igv'] ?? '10';
         $cantidad = (float) $item['cantidad'];
         $precioUnitario = (float) $item['precio_unitario'];
+        $isGratuito = in_array($tipAfeIgv, $gratuitoCodes);
+        $isGratuitoGravado = in_array($tipAfeIgv, $gratuitoGravadoCodes);
+
+        // Calcular descuentos por línea que afectan la base (cod_tipo '00')
+        $descuentoBase = 0;
+        if (! empty($item['descuentos'])) {
+            foreach ($item['descuentos'] as $desc) {
+                if (($desc['cod_tipo'] ?? '00') === '00') {
+                    $descuentoBase += (float) $desc['monto'];
+                }
+            }
+        }
 
         // Calcular valores según tipo de afectación
         if ($tipAfeIgv === '10') {
             // Gravado: precio_unitario incluye IGV
             $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 4);
-            $valorVenta = round($valorUnitario * $cantidad, 2);
+            $valorVenta = round($valorUnitario * $cantidad - $descuentoBase, 2);
             $igv = round($valorVenta * $porcentajeIgv / 100, 2);
-        } elseif (in_array($tipAfeIgv, ['20', '30'])) {
-            // Exonerado/Inafecto: precio = valor (sin IGV)
+        } elseif ($tipAfeIgv === '17') {
+            // IVAP: como gravado pero con tasa especial (4%)
+            $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 4);
+            $valorVenta = round($valorUnitario * $cantidad - $descuentoBase, 2);
+            $igv = round($valorVenta * $porcentajeIgv / 100, 2);
+        } elseif (in_array($tipAfeIgv, ['20', '30', '40'])) {
+            // Exonerado/Inafecto/Exportación: precio = valor (sin IGV)
             $valorUnitario = $precioUnitario;
-            $valorVenta = round($valorUnitario * $cantidad, 2);
+            $valorVenta = round($valorUnitario * $cantidad - $descuentoBase, 2);
+            $igv = 0;
+            $porcentajeIgv = 0;
+        } elseif ($isGratuitoGravado) {
+            // Gratuita gravada (11-17): lleva IGV
+            $valorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            $valorUnitario = 0;
+            $valorVenta = round($valorGratuito * $cantidad, 2);
+            $igv = (float) ($item['igv'] ?? round($valorVenta * $porcentajeIgv / 100, 2));
+        } elseif ($isGratuito) {
+            // Gratuita inafecta/exonerada (21, 31-36): NO lleva IGV
+            $valorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            $valorUnitario = 0;
+            $valorVenta = round($valorGratuito * $cantidad, 2);
             $igv = 0;
             $porcentajeIgv = 0;
         } else {
-            // Gratuito u otros
+            // Otros
             $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
             $valorVenta = round($valorUnitario * $cantidad, 2);
             $igv = (float) ($item['igv'] ?? 0);
         }
 
         // Permitir override manual de valores calculados
-        $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $valorUnitario);
+        if (! $isGratuito) {
+            $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $valorUnitario);
+        }
         $valorVenta = (float) ($item['mto_valor_venta'] ?? $valorVenta);
         $igv = (float) ($item['igv'] ?? $igv);
         $baseIgv = (float) ($item['mto_base_igv'] ?? $valorVenta);
@@ -208,7 +277,7 @@ class InvoiceBuilder
 
         $detail
             ->setCodProducto($item['codigo'] ?? '')
-            ->setUnidad($item['unidad'] ?? 'NIU')
+            ->setUnidad($item['unidad'])
             ->setDescripcion($item['descripcion'])
             ->setCantidad($cantidad)
             ->setMtoValorUnitario($valorUnitario)
@@ -219,6 +288,25 @@ class InvoiceBuilder
             ->setTipAfeIgv($tipAfeIgv)
             ->setTotalImpuestos($totalImpuestos)
             ->setMtoPrecioUnitario($precioUnitario);
+
+        // Gratuito: setMtoValorGratuito con el valor referencial por unidad
+        if ($isGratuito) {
+            $mtoValorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            $detail->setMtoValorGratuito($mtoValorGratuito);
+        }
+
+        // Descuentos por línea
+        if (! empty($item['descuentos'])) {
+            $descuentos = [];
+            foreach ($item['descuentos'] as $desc) {
+                $descuentos[] = (new Charge())
+                    ->setCodTipo($desc['cod_tipo'] ?? '00')
+                    ->setMontoBase((float) ($desc['monto_base'] ?? 0))
+                    ->setFactor((float) ($desc['factor'] ?? 1))
+                    ->setMonto((float) $desc['monto']);
+            }
+            $detail->setDescuentos($descuentos);
+        }
 
         if (! empty($item['isc'])) {
             $detail->setIsc((float) $item['isc']);
@@ -234,7 +322,7 @@ class InvoiceBuilder
         return $detail;
     }
 
-    private function buildCompany(): Company
+    private function buildCompany(string $codLocal = '0000'): Company
     {
         $company = new Company();
         $company
@@ -246,7 +334,7 @@ class InvoiceBuilder
         }
 
         $address = (new Address())
-            ->setCodLocal('0000')
+            ->setCodLocal($codLocal)
             ->setDireccion($this->tenant->direccion ?? '-');
 
         if ($this->tenant->ubigeo) {

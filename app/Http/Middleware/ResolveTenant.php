@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Tenant;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 class ResolveTenant
@@ -21,7 +22,9 @@ class ResolveTenant
             ], 401);
         }
 
-        $tenant = Tenant::where('api_key', $apiKey)->first();
+        $tenant = Cache::remember("tenant:key:{$apiKey}", 600, function () use ($apiKey) {
+            return Tenant::where('api_key', $apiKey)->first();
+        });
 
         if (! $tenant || ! hash_equals($tenant->api_secret, $apiSecret)) {
             return response()->json([

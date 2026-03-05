@@ -16,9 +16,8 @@ class StoreVoidedRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'correlativo' => 'required|string',
             'fecha_generacion' => 'required|date',
-            'fecha_comunicacion' => 'required|date',
+            'fecha_comunicacion' => 'sometimes|date',
             'detalles' => 'required|array|min:1',
             'detalles.*.tipo_documento' => 'required|string|in:01,03,07,08',
             'detalles.*.serie' => 'required|string|size:4',

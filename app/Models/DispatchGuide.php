@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DispatchGuide extends Model
@@ -63,11 +62,6 @@ class DispatchGuide extends Model
             'items' => 'array',
             'sent_at' => 'datetime',
         ];
-    }
-
-    public function document(): BelongsTo
-    {
-        return $this->belongsTo(Document::class);
     }
 
     public function getNumeroCompletoAttribute(): string

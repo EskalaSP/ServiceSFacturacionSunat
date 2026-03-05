@@ -3,8 +3,12 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
+use App\Services\Pdf\PdfGeneratorService;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -15,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(PdfGeneratorService::class);
     }
 
     /**
@@ -24,11 +28,27 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureRateLimiting();
     }
 
     /**
      * Configure default behaviors for production-ready applications.
      */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('api', function (Request $request) {
+            $tenant = $request->get('tenant');
+            $limit = match ($tenant?->plan ?? 'free') {
+                'free' => 30,
+                'pro' => 120,
+                'business' => 300,
+                default => 30,
+            };
+
+            return Limit::perMinute($limit)->by($tenant?->id ?? $request->ip());
+        });
+    }
+
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);

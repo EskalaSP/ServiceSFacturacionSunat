@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    @include('pdf.styles.base')
+    @include('pdf.styles.ticket')
+</head>
+<body>
+    @foreach($sections as $section)
+        @switch($section)
+            @case('header')
+                @include('pdf.sections.header')
+                @break
+            @case('document-badge')
+                @include('pdf.sections.document_badge')
+                @break
+            @case('emitter')
+                @include('pdf.sections.emitter')
+                @break
+            @case('receiver')
+                @include('pdf.sections.receiver')
+                @break
+            @case('note-reference')
+                @include('pdf.sections.note_reference')
+                @break
+            @case('dispatch-info')
+                @include('pdf.sections.dispatch_info')
+                @break
+            @case('items')
+                @include('pdf.sections.items_list')
+                @break
+            @case('totals')
+                @include('pdf.sections.totals_compact')
+                @break
+            @case('leyenda')
+                @include('pdf.sections.leyenda')
+                @break
+            @case('payment-info')
+                @include('pdf.sections.payment_info')
+                @break
+            @case('qr-code')
+                @include('pdf.sections.qr_code')
+                @break
+            @case('footer')
+                @include('pdf.sections.footer')
+                @break
+        @endswitch
+    @endforeach
+</body>
+</html>

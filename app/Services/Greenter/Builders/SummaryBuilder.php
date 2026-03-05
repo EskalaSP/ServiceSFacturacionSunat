@@ -4,6 +4,7 @@ namespace App\Services\Greenter\Builders;
 
 use App\Models\Tenant;
 use DateTime;
+use DateTimeZone;
 use Greenter\Model\Company\Company;
 use Greenter\Model\Sale\Document;
 use Greenter\Model\Summary\Summary;
@@ -23,8 +24,9 @@ class SummaryBuilder
         $summary = new Summary();
 
         $summary
-            ->setFecGeneracion(new DateTime($data['fecha_generacion']))
-            ->setFecResumen(new DateTime($data['fecha_resumen']))
+            // Greenter mapea: fecGeneracion → ReferenceDate (fecha docs), fecResumen → IssueDate (fecha envío)
+            ->setFecGeneracion(new DateTime($data['fecha_referencia'], new DateTimeZone('America/Lima')))
+            ->setFecResumen(new DateTime($data['fecha_envio'], new DateTimeZone('America/Lima')))
             ->setCorrelativo($data['correlativo'])
             ->setCompany($this->buildCompany());
 
@@ -35,13 +37,15 @@ class SummaryBuilder
                 ->setTipoDoc($det['tipo_documento'])
                 ->setSerieNro($det['serie_nro'])
                 ->setEstado($det['estado'])
-                ->setClienteTipo($det['cliente_tipo'] ?? '0')
-                ->setClienteNro($det['cliente_nro'] ?? '00000000')
+                ->setClienteTipo($det['cliente_tipo_doc'] ?? $det['cliente_tipo'] ?? '0')
+                ->setClienteNro($det['cliente_num_doc'] ?? $det['cliente_nro'] ?? '00000000')
                 ->setTotal((float) ($det['total'] ?? 0))
                 ->setMtoOperGravadas((float) ($det['mto_oper_gravadas'] ?? 0))
                 ->setMtoOperInafectas((float) ($det['mto_oper_inafectas'] ?? 0))
                 ->setMtoOperExoneradas((float) ($det['mto_oper_exoneradas'] ?? 0))
-                ->setMtoIGV((float) ($det['mto_igv'] ?? 0));
+                ->setMtoOperGratuitas((float) ($det['mto_oper_gratuitas'] ?? 0))
+                ->setMtoIGV((float) ($det['mto_igv'] ?? 0))
+                ->setPorcentajeIgv((float) ($det['porcentaje_igv'] ?? 18));
 
             if (! empty($det['mto_oper_exportacion'])) {
                 $detail->setMtoOperExportacion((float) $det['mto_oper_exportacion']);

@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\DispatchGuide;
-use App\Models\Document;
 use App\Models\Tenant;
 use App\Services\Greenter\GreenterService;
 use App\Services\Storage\DocumentStorageService;
@@ -48,7 +47,7 @@ class CheckTicketStatus implements ShouldQueue
             }
 
             if ($tenant->webhook_url) {
-                NotifyWebhookJob::dispatch($this->modelId, 'document.status_updated');
+                NotifyWebhookJob::dispatch($this->modelClass, $this->modelId, 'document.status_updated');
             }
         } else {
             // Si aún está procesando, se reintentará automáticamente

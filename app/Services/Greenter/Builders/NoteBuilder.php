@@ -32,7 +32,7 @@ class NoteBuilder
             ->setCorrelativo((string) $data['correlativo'])
             ->setFechaEmision(new DateTime($data['fecha_emision']))
             ->setTipoMoneda($data['tipo_moneda'] ?? 'PEN')
-            ->setCompany($this->buildCompany())
+            ->setCompany($this->buildCompany($data['cod_local'] ?? '0000'))
             ->setClient($this->buildClient($data['cliente']));
 
         // Documento afectado
@@ -48,9 +48,14 @@ class NoteBuilder
             ->setMtoOperGravadas((float) ($data['mto_oper_gravadas'] ?? 0))
             ->setMtoOperExoneradas((float) ($data['mto_oper_exoneradas'] ?? 0))
             ->setMtoOperInafectas((float) ($data['mto_oper_inafectas'] ?? 0))
+            ->setMtoOperGratuitas((float) ($data['mto_oper_gratuitas'] ?? 0))
             ->setMtoIGV((float) ($data['mto_igv'] ?? 0))
             ->setTotalImpuestos((float) ($data['total_impuestos'] ?? $data['mto_igv'] ?? 0))
             ->setMtoImpVenta((float) ($data['mto_imp_venta'] ?? 0));
+
+        if (! empty($data['mto_igv_gratuitas'])) {
+            $note->setMtoIGVGratuitas((float) $data['mto_igv_gratuitas']);
+        }
 
         // Items
         $items = [];
@@ -80,31 +85,54 @@ class NoteBuilder
 
     private function buildItem(array $item): SaleDetail
     {
+        $gratuitoGravadoCodes = ['11', '12', '13', '14', '15', '16'];
+        $gratuitoInafectoCodes = ['21', '31', '32', '33', '34', '35', '36'];
+        $gratuitoCodes = array_merge($gratuitoGravadoCodes, $gratuitoInafectoCodes);
+
         $detail = new SaleDetail();
 
         $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? 18);
         $tipAfeIgv = $item['tip_afe_igv'] ?? '10';
         $cantidad = (float) $item['cantidad'];
         $precioUnitario = (float) $item['precio_unitario'];
+        $isGratuito = in_array($tipAfeIgv, $gratuitoCodes);
+        $isGratuitoGravado = in_array($tipAfeIgv, $gratuitoGravadoCodes);
 
         if ($tipAfeIgv === '10') {
             $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 4);
             $valorVenta = round($valorUnitario * $cantidad, 2);
             $igv = round($valorVenta * $porcentajeIgv / 100, 2);
-        } else {
+        } elseif (in_array($tipAfeIgv, ['20', '30'])) {
             $valorUnitario = $precioUnitario;
             $valorVenta = round($valorUnitario * $cantidad, 2);
             $igv = 0;
             $porcentajeIgv = 0;
+        } elseif ($isGratuitoGravado) {
+            $valorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            $valorUnitario = 0;
+            $valorVenta = round($valorGratuito * $cantidad, 2);
+            $igv = (float) ($item['igv'] ?? round($valorVenta * $porcentajeIgv / 100, 2));
+        } elseif ($isGratuito) {
+            $valorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            $valorUnitario = 0;
+            $valorVenta = round($valorGratuito * $cantidad, 2);
+            $igv = 0;
+            $porcentajeIgv = 0;
+        } else {
+            $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            $valorVenta = round($valorUnitario * $cantidad, 2);
+            $igv = (float) ($item['igv'] ?? 0);
         }
 
-        $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $valorUnitario);
+        if (! $isGratuito) {
+            $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $valorUnitario);
+        }
         $valorVenta = (float) ($item['mto_valor_venta'] ?? $valorVenta);
         $igv = (float) ($item['igv'] ?? $igv);
 
         $detail
             ->setCodProducto($item['codigo'] ?? '')
-            ->setUnidad($item['unidad'] ?? 'NIU')
+            ->setUnidad($item['unidad'])
             ->setDescripcion($item['descripcion'])
             ->setCantidad($cantidad)
             ->setMtoValorUnitario($valorUnitario)
@@ -116,10 +144,15 @@ class NoteBuilder
             ->setTotalImpuestos((float) ($item['total_impuestos'] ?? $igv))
             ->setMtoPrecioUnitario($precioUnitario);
 
+        if ($isGratuito) {
+            $mtoValorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            $detail->setMtoValorGratuito($mtoValorGratuito);
+        }
+
         return $detail;
     }
 
-    private function buildCompany(): Company
+    private function buildCompany(string $codLocal = '0000'): Company
     {
         $company = (new Company())
             ->setRuc($this->tenant->ruc)
@@ -130,7 +163,7 @@ class NoteBuilder
         }
 
         $address = (new Address())
-            ->setCodLocal('0000')
+            ->setCodLocal($codLocal)
             ->setDireccion($this->tenant->direccion ?? '-');
 
         if ($this->tenant->ubigeo) {

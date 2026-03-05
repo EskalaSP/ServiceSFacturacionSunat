@@ -7,6 +7,7 @@ use App\Models\DispatchGuide;
 use App\Models\Serie;
 use App\Models\Tenant;
 use App\Services\Greenter\GreenterService;
+use App\Services\Pdf\PdfGeneratorService;
 use App\Services\Storage\DocumentStorageService;
 use Illuminate\Support\Facades\DB;
 
@@ -15,7 +16,8 @@ class CreateDispatchGuideAction
     public function execute(Tenant $tenant, array $data): DispatchGuide
     {
         return DB::transaction(function () use ($tenant, $data) {
-            $serie = Serie::where('tenant_id', $tenant->id)
+            $serie = Serie::with('sucursal')
+                ->where('tenant_id', $tenant->id)
                 ->where('tipo_documento', '09')
                 ->where('serie', $data['serie'])
                 ->where('is_active', true)
@@ -25,9 +27,12 @@ class CreateDispatchGuideAction
             $correlativo = $serie->nextCorrelativo();
             $data['correlativo'] = $correlativo;
 
+            $sucursal = $serie->sucursal;
+
             $guide = DispatchGuide::create([
                 'tenant_id' => $tenant->id,
-                'cod_local' => $data['cod_local'] ?? '0000',
+                'sucursal_id' => $sucursal?->id,
+                'cod_local' => $sucursal?->cod_local ?? $data['cod_local'] ?? '0000',
                 'serie' => $data['serie'],
                 'correlativo' => $correlativo,
                 'fecha_emision' => $data['fecha_emision'],
@@ -46,7 +51,7 @@ class CreateDispatchGuideAction
                 'partida_direccion' => $data['partida_direccion'],
                 'transportista' => $data['transportista'] ?? null,
                 'vehiculo' => $data['vehiculo'] ?? null,
-                'conductor' => $data['conductor'] ?? null,
+                'conductor' => $data['conductor'] ?? $data['conductores'] ?? null,
                 'items' => $data['items'],
                 'sunat_status' => 'pendiente',
             ]);
@@ -71,6 +76,14 @@ class CreateDispatchGuideAction
                     'ticket' => $ticket,
                     'sunat_status' => 'enviado',
                 ]);
+
+                if (config('pdf.auto_generate', true)) {
+                    try {
+                        app(PdfGeneratorService::class)->generateAndStore($guide, $tenant);
+                    } catch (\Throwable $e) {
+                        // PDF generation failure should not block the main flow
+                    }
+                }
 
                 // Encolar verificación de ticket
                 CheckTicketStatus::dispatch(

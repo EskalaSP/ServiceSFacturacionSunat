@@ -85,6 +85,25 @@ class GreenterService
             'cache' => false,
         ]);
 
+        // Credenciales OAuth2 GRE (requeridas para guías de remisión)
+        $clientId = $this->tenant->client_id;
+        $clientSecret = $this->tenant->client_secret;
+
+        // En beta, usar credenciales de prueba de SUNAT si no están configuradas
+        if ($env === 'beta' && (! $clientId || ! $clientSecret)) {
+            $clientId = config('facturacion.sunat.beta.gre_client_id');
+            $clientSecret = config('facturacion.sunat.beta.gre_client_secret');
+        }
+
+        if (! $clientId || ! $clientSecret) {
+            throw new \RuntimeException(
+                'Credenciales GRE (client_id/client_secret) no configuradas para el tenant ' . $this->tenant->ruc
+                . '. Regístrelas en SUNAT → Clave SOL → Servicios en línea → API SUNAT.'
+            );
+        }
+
+        $api->setApiCredentials($clientId, $clientSecret);
+
         $api->setClaveSOL(
             $this->tenant->ruc,
             $this->tenant->sol_user,
@@ -147,8 +166,8 @@ class GreenterService
                 'cdr_zip' => $result->getCdrZip(),
                 'hash' => $cdr->getId(),
                 'code' => $cdr->getCode(),
-                'description' => $cdr->getDescription(),
-                'notes' => $cdr->getNotes(),
+                'description' => $this->sanitizeUtf8($cdr->getDescription()),
+                'notes' => array_map(fn ($n) => $this->sanitizeUtf8($n), $cdr->getNotes() ?? []),
                 'accepted' => $cdr->isAccepted(),
             ];
         }
@@ -175,7 +194,7 @@ class GreenterService
             return [
                 'success' => false,
                 'error_code' => $error->getCode(),
-                'error_message' => $error->getMessage(),
+                'error_message' => $this->sanitizeUtf8($error->getMessage()),
             ];
         }
 
@@ -185,8 +204,8 @@ class GreenterService
             'success' => true,
             'cdr_zip' => $result->getCdrZip(),
             'code' => $cdr->getCode(),
-            'description' => $cdr->getDescription(),
-            'notes' => $cdr->getNotes(),
+            'description' => $this->sanitizeUtf8($cdr->getDescription()),
+            'notes' => array_map(fn ($n) => $this->sanitizeUtf8($n), $cdr->getNotes() ?? []),
             'accepted' => $cdr->isAccepted(),
         ];
     }
@@ -196,6 +215,20 @@ class GreenterService
         $see = $this->resolveSee($document);
 
         return $see->getXmlSigned($document);
+    }
+
+    private function sanitizeUtf8(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        // Intentar convertir desde ISO-8859-1 si no es UTF-8 válido
+        if (! mb_check_encoding($value, 'UTF-8')) {
+            $value = mb_convert_encoding($value, 'UTF-8', 'ISO-8859-1');
+        }
+
+        return $value;
     }
 
     private function resolveSee(DocumentInterface $document): See

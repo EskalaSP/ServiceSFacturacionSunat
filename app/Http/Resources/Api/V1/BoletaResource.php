@@ -5,13 +5,13 @@ namespace App\Http\Resources\Api\V1;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class DocumentResource extends JsonResource
+class BoletaResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
-            'tipo_documento' => $this->tipo_documento,
+            'tipo_documento' => '03',
             'serie' => $this->serie,
             'correlativo' => $this->correlativo,
             'numero_completo' => $this->numero_completo,
@@ -27,7 +27,7 @@ class DocumentResource extends JsonResource
                 'razon_social' => $this->client_razon_social,
                 'direccion' => $this->client_direccion,
             ],
-            'totales' => [
+            'totales' => array_filter([
                 'gravadas' => (float) $this->mto_oper_gravadas,
                 'exoneradas' => (float) $this->mto_oper_exoneradas,
                 'inafectas' => (float) $this->mto_oper_inafectas,
@@ -39,8 +39,8 @@ class DocumentResource extends JsonResource
                 'valor_venta' => (float) $this->valor_venta,
                 'sub_total' => (float) $this->sub_total,
                 'total' => (float) $this->mto_imp_venta,
-            ],
-            'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item) => [
+            ], fn ($v, $k) => $v > 0 || in_array($k, ['total_impuestos', 'valor_venta', 'sub_total', 'total']), ARRAY_FILTER_USE_BOTH),
+            'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item) => array_filter([
                 'codigo' => $item->codigo,
                 'descripcion' => $item->descripcion,
                 'unidad' => $item->unidad,
@@ -48,15 +48,11 @@ class DocumentResource extends JsonResource
                 'precio_unitario' => (float) $item->mto_precio_unitario,
                 'valor_unitario' => (float) $item->mto_valor_unitario,
                 'igv' => (float) $item->igv,
+                'descuento' => (float) $item->descuento,
                 'total' => (float) $item->mto_valor_venta,
-            ])),
-            'doc_afectado' => $this->when($this->doc_afectado_tipo, [
-                'tipo' => $this->doc_afectado_tipo,
-                'serie' => $this->doc_afectado_serie,
-                'correlativo' => $this->doc_afectado_correlativo,
-                'motivo_codigo' => $this->cod_motivo,
-                'motivo_descripcion' => $this->des_motivo,
-            ]),
+            ], fn ($v, $k) => ! ($k === 'descuento' && $v == 0), ARRAY_FILTER_USE_BOTH))),
+            'cuotas' => $this->when($this->cuotas, $this->cuotas),
+            'guias' => $this->when($this->guias, $this->guias),
             'sunat' => [
                 'status' => $this->sunat_status,
                 'code' => $this->sunat_code,
@@ -65,12 +61,9 @@ class DocumentResource extends JsonResource
                 'hash_cpe' => $this->hash_cpe,
             ],
             'archivos' => [
-                'xml' => $this->xml_path ? url("/api/v1/documents/{$this->id}/xml") : null,
-                'cdr' => $this->cdr_path ? url("/api/v1/documents/{$this->id}/cdr") : null,
-                'pdf' => $this->pdf_path ? url("/api/v1/documents/{$this->id}/pdf") : null,
-                'xml_path' => $this->xml_path,
-                'cdr_path' => $this->cdr_path,
-                'pdf_path' => $this->pdf_path,
+                'xml' => $this->xml_path ? url("/api/v1/boletas/{$this->id}/xml") : null,
+                'cdr' => $this->cdr_path ? url("/api/v1/boletas/{$this->id}/cdr") : null,
+                'pdf' => $this->pdf_path ? url("/api/v1/boletas/{$this->id}/pdf") : null,
             ],
             'leyenda' => $this->leyenda,
             'observacion' => $this->observacion,

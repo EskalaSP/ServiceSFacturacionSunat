@@ -22,8 +22,23 @@ class Client extends Model
         'telefono',
     ];
 
-    public function documents(): HasMany
+    public function invoices(): HasMany
     {
-        return $this->hasMany(Document::class);
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function boletas(): HasMany
+    {
+        return $this->hasMany(Boleta::class);
+    }
+
+    public function creditNotes(): HasMany
+    {
+        return $this->hasMany(CreditNote::class);
+    }
+
+    public function debitNotes(): HasMany
+    {
+        return $this->hasMany(DebitNote::class);
     }
 }

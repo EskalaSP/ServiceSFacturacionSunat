@@ -5,25 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class DocumentItem extends Model
+class DebitNoteItem extends Model
 {
     protected $fillable = [
-        'document_id',
-        'codigo',
-        'descripcion',
-        'unidad',
-        'cantidad',
-        'mto_valor_unitario',
-        'mto_valor_venta',
-        'mto_base_igv',
-        'porcentaje_igv',
-        'igv',
-        'tip_afe_igv',
-        'isc',
-        'icbper',
-        'total_impuestos',
-        'mto_precio_unitario',
-        'descuento',
+        'debit_note_id', 'codigo', 'descripcion', 'unidad', 'cantidad',
+        'mto_valor_unitario', 'mto_valor_venta', 'mto_base_igv',
+        'porcentaje_igv', 'igv', 'tip_afe_igv', 'isc', 'icbper',
+        'total_impuestos', 'mto_precio_unitario', 'descuento',
     ];
 
     protected function casts(): array
@@ -43,8 +31,8 @@ class DocumentItem extends Model
         ];
     }
 
-    public function document(): BelongsTo
+    public function debitNote(): BelongsTo
     {
-        return $this->belongsTo(Document::class);
+        return $this->belongsTo(DebitNote::class);
     }
 }

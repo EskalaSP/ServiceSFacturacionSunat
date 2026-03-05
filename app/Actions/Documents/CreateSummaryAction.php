@@ -2,10 +2,9 @@
 
 namespace App\Actions\Documents;
 
-use App\Jobs\CheckTicketStatus;
-use App\Models\Document;
 use App\Models\Tenant;
 use App\Services\Greenter\GreenterService;
+use Illuminate\Support\Facades\Storage;
 
 class CreateSummaryAction
 {
@@ -15,19 +14,33 @@ class CreateSummaryAction
         $summary = $service->buildSummary($data);
         $result = $service->send($summary);
 
+        // Greenter genera ID con fecResumen (que es fecha_envio/IssueDate)
+        $fechaId = str_replace('-', '', $data['fecha_envio']);
+        $identifier = "RC-{$fechaId}-{$data['correlativo']}";
+
+        // Guardar XML en disco
+        $xmlPath = null;
+        if (! empty($result['xml'])) {
+            $fecha = $data['fecha_referencia'];
+            $xmlPath = "{$tenant->ruc}/0000/{$fecha}/xml/{$identifier}.xml";
+            Storage::disk('public')->put($xmlPath, $result['xml']);
+        }
+
         if ($result['success'] && ! empty($result['ticket'])) {
             return [
                 'success' => true,
+                'identifier' => $identifier,
                 'ticket' => $result['ticket'],
-                'xml' => $result['xml'],
-                'message' => 'Resumen enviado. Use el ticket para consultar el estado.',
+                'xml_path' => $xmlPath,
             ];
         }
 
         return [
             'success' => false,
+            'identifier' => $identifier,
             'error_code' => $result['error_code'] ?? null,
             'error_message' => $result['error_message'] ?? 'Error al enviar resumen',
+            'xml_path' => $xmlPath,
         ];
     }
 }

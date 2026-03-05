@@ -35,6 +35,11 @@ class DespatchBuilder
             ->setFechaEmision(new DateTime($data['fecha_emision']))
             ->setCompany($this->buildCompany());
 
+        // Observación
+        if (! empty($data['observacion'])) {
+            $despatch->setObservacion($data['observacion']);
+        }
+
         // Destinatario
         $despatch->setDestinatario(
             (new Client())
@@ -43,7 +48,52 @@ class DespatchBuilder
                 ->setRznSocial($data['destinatario']['razon_social'])
         );
 
+        // Tercero (proveedor)
+        if (! empty($data['tercero'])) {
+            $despatch->setTercero(
+                (new Client())
+                    ->setTipoDoc($data['tercero']['tipo_doc'])
+                    ->setNumDoc($data['tercero']['num_doc'])
+                    ->setRznSocial($data['tercero']['razon_social'])
+            );
+        }
+
+        // Comprador
+        if (! empty($data['comprador'])) {
+            $despatch->setComprador(
+                (new Client())
+                    ->setTipoDoc($data['comprador']['tipo_doc'])
+                    ->setNumDoc($data['comprador']['num_doc'])
+                    ->setRznSocial($data['comprador']['razon_social'])
+            );
+        }
+
         // Envío
+        $shipment = $this->buildShipment($data);
+        $despatch->setEnvio($shipment);
+
+        // Items
+        $details = [];
+        foreach ($data['items'] as $item) {
+            $detail = (new DespatchDetail())
+                ->setCantidad((float) $item['cantidad'])
+                ->setUnidad($item['unidad'] ?? 'ZZ')
+                ->setDescripcion($item['descripcion'])
+                ->setCodigo($item['codigo'] ?? '');
+
+            if (! empty($item['cod_prod_sunat'])) {
+                $detail->setCodProdSunat($item['cod_prod_sunat']);
+            }
+
+            $details[] = $detail;
+        }
+        $despatch->setDetails($details);
+
+        return $despatch;
+    }
+
+    private function buildShipment(array $data): Shipment
+    {
         $shipment = new Shipment();
         $shipment
             ->setCodTraslado($data['cod_traslado'])
@@ -56,66 +106,103 @@ class DespatchBuilder
             $shipment->setNumBultos((int) $data['num_bultos']);
         }
 
+        // Indicadores (M1L, transbordo, retorno vacío, etc.)
+        if (! empty($data['indicadores'])) {
+            $shipment->setIndicadores($data['indicadores']);
+        }
+
         // Direcciones
-        $shipment->setLlegada(new Direction($data['llegada_ubigeo'], $data['llegada_direccion']));
-        $shipment->setPartida(new Direction($data['partida_ubigeo'], $data['partida_direccion']));
+        $llegada = new Direction($data['llegada_ubigeo'], $data['llegada_direccion']);
+        if (! empty($data['llegada_ruc'])) {
+            $llegada->setRuc($data['llegada_ruc']);
+        }
+        if (! empty($data['llegada_cod_local'])) {
+            $llegada->setCodLocal($data['llegada_cod_local']);
+        }
+
+        $partida = new Direction($data['partida_ubigeo'], $data['partida_direccion']);
+        if (! empty($data['partida_ruc'])) {
+            $partida->setRuc($data['partida_ruc']);
+        }
+        if (! empty($data['partida_cod_local'])) {
+            $partida->setCodLocal($data['partida_cod_local']);
+        }
+
+        $shipment->setLlegada($llegada);
+        $shipment->setPartida($partida);
 
         // Transportista (transporte público)
         if (! empty($data['transportista'])) {
-            $transp = $data['transportista'];
-            $transportist = (new Transportist())
-                ->setTipoDoc($transp['tipo_doc'])
-                ->setNumDoc($transp['num_doc'])
-                ->setRznSocial($transp['razon_social']);
-
-            if (! empty($transp['nro_mtc'])) {
-                $transportist->setNroMtc($transp['nro_mtc']);
-            }
-
-            $shipment->setTransportista($transportist);
+            $shipment->setTransportista($this->buildTransportist($data['transportista']));
         }
 
         // Vehículo (transporte privado)
         if (! empty($data['vehiculo'])) {
-            $shipment->setVehiculo(
-                (new Vehicle())->setPlaca($data['vehiculo']['placa'])
-            );
+            $shipment->setVehiculo($this->buildVehicle($data['vehiculo']));
         }
 
-        // Conductor
+        // Conductores
         if (! empty($data['conductor'])) {
-            $cond = $data['conductor'];
-            $driver = (new Driver())
-                ->setTipoDoc($cond['tipo_doc'])
-                ->setNroDoc($cond['num_doc']);
-
-            if (! empty($cond['nombres'])) {
-                $driver->setNombres($cond['nombres']);
-            }
-            if (! empty($cond['apellidos'])) {
-                $driver->setApellidos($cond['apellidos']);
-            }
-            if (! empty($cond['licencia'])) {
-                $driver->setNroLicencia($cond['licencia']);
-            }
-
-            $shipment->setChoferes([$driver]);
+            $shipment->setChoferes([$this->buildDriver($data['conductor'])]);
+        }
+        if (! empty($data['conductores'])) {
+            $drivers = array_map(fn ($c) => $this->buildDriver($c), $data['conductores']);
+            $shipment->setChoferes($drivers);
         }
 
-        $despatch->setEnvio($shipment);
+        return $shipment;
+    }
 
-        // Items
-        $details = [];
-        foreach ($data['items'] as $item) {
-            $details[] = (new DespatchDetail())
-                ->setCantidad((float) $item['cantidad'])
-                ->setUnidad($item['unidad'] ?? 'ZZ')
-                ->setDescripcion($item['descripcion'])
-                ->setCodigo($item['codigo'] ?? '');
+    private function buildTransportist(array $transp): Transportist
+    {
+        $transportist = (new Transportist())
+            ->setTipoDoc($transp['tipo_doc'])
+            ->setNumDoc($transp['num_doc'])
+            ->setRznSocial($transp['razon_social']);
+
+        if (! empty($transp['nro_mtc'])) {
+            $transportist->setNroMtc($transp['nro_mtc']);
         }
-        $despatch->setDetails($details);
 
-        return $despatch;
+        return $transportist;
+    }
+
+    private function buildVehicle(array $veh): Vehicle
+    {
+        $vehicle = (new Vehicle())->setPlaca($veh['placa']);
+
+        // Vehículos secundarios
+        if (! empty($veh['secundarios'])) {
+            $secundarios = array_map(
+                fn ($s) => (new Vehicle())->setPlaca($s['placa']),
+                $veh['secundarios']
+            );
+            $vehicle->setSecundarios($secundarios);
+        }
+
+        return $vehicle;
+    }
+
+    private function buildDriver(array $cond): Driver
+    {
+        $driver = (new Driver())
+            ->setTipoDoc($cond['tipo_doc'])
+            ->setNroDoc($cond['num_doc']);
+
+        if (! empty($cond['tipo'])) {
+            $driver->setTipo($cond['tipo']);
+        }
+        if (! empty($cond['nombres'])) {
+            $driver->setNombres($cond['nombres']);
+        }
+        if (! empty($cond['apellidos'])) {
+            $driver->setApellidos($cond['apellidos']);
+        }
+        if (! empty($cond['licencia'])) {
+            $driver->setLicencia($cond['licencia']);
+        }
+
+        return $driver;
     }
 
     private function buildCompany(): Company

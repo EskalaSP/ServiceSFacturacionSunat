@@ -9,6 +9,8 @@ use App\Http\Resources\Api\V1\DispatchGuideResource;
 use App\Http\Traits\ApiResponse;
 use App\Models\DispatchGuide;
 use App\Services\Greenter\GreenterService;
+use App\Services\Pdf\PdfFormatConfig;
+use App\Services\Pdf\PdfGeneratorService;
 use App\Services\Storage\DocumentStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,6 +57,37 @@ class DispatchGuideController extends Controller
         $guide = DispatchGuide::forTenant($tenant->id)->findOrFail($id);
 
         return $this->success(new DispatchGuideResource($guide));
+    }
+
+    public function pdf(Request $request, int $id): \Illuminate\Http\Response|JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $guide = DispatchGuide::forTenant($tenant->id)->findOrFail($id);
+        $formatStr = $request->input('format', config('pdf.default_format', 'a4'));
+
+        try {
+            $format = PdfFormatConfig::from($formatStr);
+        } catch (\ValueError) {
+            return $this->error('Formato inválido. Opciones: a4, a5, ticket-80, ticket-58', 422);
+        }
+
+        if (! $request->has('format') && $guide->pdf_path) {
+            $storage = new DocumentStorageService();
+            $content = $storage->getPdfContent($guide);
+            if ($content) {
+                return response($content, 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => "inline; filename=\"{$guide->numero_completo}.pdf\"",
+                ]);
+            }
+        }
+
+        $content = app(PdfGeneratorService::class)->generate($guide, $tenant, $format);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "inline; filename=\"{$guide->numero_completo}.pdf\"",
+        ]);
     }
 
     public function checkStatus(Request $request, int $id): JsonResponse
