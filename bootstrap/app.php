@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\CheckDocumentLimit;
+use App\Http\Middleware\CheckPlanLimit;
+use App\Http\Middleware\UsageWarningHeader;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LogApiRequest;
@@ -30,6 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'resolve.tenant' => ResolveTenant::class,
             'log.api' => LogApiRequest::class,
             'check.limit' => CheckDocumentLimit::class,
+            'plan' => CheckPlanLimit::class,
+            'usage.headers' => UsageWarningHeader::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

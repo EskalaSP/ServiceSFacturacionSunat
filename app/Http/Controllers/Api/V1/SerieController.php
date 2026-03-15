@@ -186,7 +186,7 @@ class SerieController extends Controller
 
         $serie->update($request->only(['is_active', 'correlativo']));
 
-        return $this->success($this->formatSerie($serie->fresh()->load('sucursal')), 'Serie actualizada.');
+        return $this->success($this->formatSerie($serie->load('sucursal')), 'Serie actualizada.');
     }
 
     private function formatSerie(Serie $serie): array

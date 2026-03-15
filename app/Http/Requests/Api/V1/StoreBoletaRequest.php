@@ -25,7 +25,7 @@ class StoreBoletaRequest extends FormRequest
             'forma_pago' => 'nullable|string|in:Contado,Credito',
 
             'cliente.tipo_doc' => 'required|string|in:0,1,4,6,7,A',
-            'cliente.num_doc' => 'required|string|max:15',
+            'cliente.num_doc' => ['required', 'string', 'max:15'],
             'cliente.razon_social' => 'required|string|max:255',
             'cliente.direccion' => 'nullable|string|max:500',
             'cliente.email' => 'nullable|email',
@@ -74,6 +74,29 @@ class StoreBoletaRequest extends FormRequest
             'guias.*.tipo_doc' => 'required_with:guias|string',
             'guias.*.nro_doc' => 'required_with:guias|string',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            $items = $this->input('items', []);
+            $total = 0;
+
+            foreach ($items as $item) {
+                $qty = (float) ($item['cantidad'] ?? 0);
+                $price = (float) ($item['precio_unitario'] ?? 0);
+                $total += $qty * $price;
+            }
+
+            $tipoDoc = $this->input('cliente.tipo_doc', '0');
+
+            if ($total > 700 && $tipoDoc === '0') {
+                $v->errors()->add(
+                    'cliente.tipo_doc',
+                    'Para boletas mayores a S/ 700.00 es obligatorio consignar el documento de identidad del cliente (DNI, RUC, CE, etc.).'
+                );
+            }
+        });
     }
 
     protected function failedValidation(Validator $validator): void

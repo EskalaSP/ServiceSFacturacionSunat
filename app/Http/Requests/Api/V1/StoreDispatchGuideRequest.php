@@ -62,33 +62,33 @@ class StoreDispatchGuideRequest extends FormRequest
             // Transportista (transporte público)
             'transportista' => 'nullable|array',
             'transportista.tipo_doc' => 'required_with:transportista|string',
-            'transportista.num_doc' => 'required_with:transportista|string',
-            'transportista.razon_social' => 'required_with:transportista|string',
+            'transportista.num_doc' => 'required_with:transportista|string|max:11',
+            'transportista.razon_social' => 'required_with:transportista|string|max:255',
             'transportista.nro_mtc' => 'nullable|string|max:20',
 
             // Vehículo (transporte privado)
             'vehiculo' => 'nullable|array',
-            'vehiculo.placa' => 'required_with:vehiculo|string',
+            'vehiculo.placa' => 'required_with:vehiculo|string|max:10',
             'vehiculo.secundarios' => 'nullable|array',
-            'vehiculo.secundarios.*.placa' => 'required|string',
+            'vehiculo.secundarios.*.placa' => 'required|string|max:10',
 
             // Conductor único
             'conductor' => 'nullable|array',
             'conductor.tipo_doc' => 'required_with:conductor|string',
-            'conductor.num_doc' => 'required_with:conductor|string',
+            'conductor.num_doc' => 'required_with:conductor|string|max:15',
             'conductor.tipo' => 'nullable|string|in:Principal,Secundario',
-            'conductor.nombres' => 'nullable|string|max:100',
-            'conductor.apellidos' => 'nullable|string|max:100',
-            'conductor.licencia' => 'nullable|string|max:20',
+            'conductor.nombres' => 'required_with:conductor|string|max:100',
+            'conductor.apellidos' => 'required_with:conductor|string|max:100',
+            'conductor.licencia' => 'required_with:conductor|string|max:20',
 
             // Múltiples conductores
             'conductores' => 'nullable|array',
             'conductores.*.tipo_doc' => 'required|string',
-            'conductores.*.num_doc' => 'required|string',
+            'conductores.*.num_doc' => 'required|string|max:15',
             'conductores.*.tipo' => 'nullable|string|in:Principal,Secundario',
-            'conductores.*.nombres' => 'nullable|string|max:100',
-            'conductores.*.apellidos' => 'nullable|string|max:100',
-            'conductores.*.licencia' => 'nullable|string|max:20',
+            'conductores.*.nombres' => 'required|string|max:100',
+            'conductores.*.apellidos' => 'required|string|max:100',
+            'conductores.*.licencia' => 'required|string|max:20',
 
             // Items
             'items' => 'required|array|min:1',
@@ -98,6 +98,32 @@ class StoreDispatchGuideRequest extends FormRequest
             'items.*.codigo' => 'nullable|string|max:50',
             'items.*.cod_prod_sunat' => 'nullable|string|max:20',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $indicadores = $this->input('indicadores', []);
+            $esM1L = is_array($indicadores) && collect($indicadores)->contains(fn ($i) => str_contains($i, 'M1L'));
+            $modTraslado = $this->input('mod_traslado');
+
+            // Transporte público (01) requiere transportista, excepto M1L
+            if ($modTraslado === '01' && ! $esM1L) {
+                if (empty($this->input('transportista'))) {
+                    $validator->errors()->add('transportista', 'El transportista es requerido para transporte público.');
+                }
+            }
+
+            // Transporte privado (02) requiere vehículo + conductor, excepto M1L
+            if ($modTraslado === '02' && ! $esM1L) {
+                if (empty($this->input('vehiculo'))) {
+                    $validator->errors()->add('vehiculo', 'El vehículo es requerido para transporte privado.');
+                }
+                if (empty($this->input('conductor')) && empty($this->input('conductores'))) {
+                    $validator->errors()->add('conductor', 'Al menos un conductor es requerido para transporte privado.');
+                }
+            }
+        });
     }
 
     protected function failedValidation(Validator $validator): void

@@ -9,6 +9,7 @@ use App\Models\Serie;
 use App\Models\Tenant;
 use App\Services\ClientResolverService;
 use App\Services\DocumentCalculationService;
+use App\Services\Plan\PlanService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -89,6 +90,8 @@ class CreateCreditNoteAction
 
             event(new DocumentCreated($creditNote));
             Cache::forget("tenant:{$tenant->id}:doc_count:" . now()->format('Y-m'));
+            Cache::forget("tenant:{$tenant->id}:sunat_count:" . now()->format('Y-m'));
+            app(PlanService::class)->incrementUsage($tenant, 'documents');
 
             SendDocumentToSunat::dispatch(CreditNote::class, $creditNote->id);
             $creditNote->update(['sunat_status' => 'enviado']);

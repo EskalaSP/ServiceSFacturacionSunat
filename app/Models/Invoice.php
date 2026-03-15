@@ -4,13 +4,14 @@ namespace App\Models;
 
 use App\Contracts\Documentable;
 use App\Models\Traits\HasDocumentFields;
+use App\Models\Traits\HasPayments;
 use App\Models\Traits\HasSunatIntegration;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model implements Documentable
 {
-    use HasDocumentFields, HasSunatIntegration;
+    use HasDocumentFields, HasPayments, HasSunatIntegration;
 
     protected $fillable = [
         'tenant_id', 'client_id', 'serie', 'correlativo', 'cod_local',
@@ -26,6 +27,7 @@ class Invoice extends Model implements Documentable
         'xml_path', 'cdr_path', 'pdf_path', 'hash_cpe',
         'sunat_status', 'sunat_code', 'sunat_description', 'sunat_notes',
         'ticket', 'sent_at',
+        'payment_status', 'monto_pagado',
     ];
 
     protected function casts(): array

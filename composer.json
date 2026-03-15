@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "*",
+        "culqi/culqi-php": "*",
         "greenter/lite": "*",
         "greenter/report": "^5.0",
         "inertiajs/inertia-laravel": "^2.0",

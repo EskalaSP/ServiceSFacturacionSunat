@@ -2,6 +2,7 @@
 
 namespace App\Actions\Documents;
 
+use App\Actions\Payments\RegisterPaymentAction;
 use App\Events\DocumentCreated;
 use App\Jobs\SendDocumentToSunat;
 use App\Models\Boleta;
@@ -9,6 +10,7 @@ use App\Models\Serie;
 use App\Models\Tenant;
 use App\Services\ClientResolverService;
 use App\Services\DocumentCalculationService;
+use App\Services\Plan\PlanService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -17,6 +19,7 @@ class CreateBoletaAction
     public function __construct(
         private DocumentCalculationService $calculator,
         private ClientResolverService $clientResolver,
+        private RegisterPaymentAction $paymentAction,
     ) {}
 
     public function execute(Tenant $tenant, array $data, bool $soloRegistro = false): Boleta
@@ -88,6 +91,8 @@ class CreateBoletaAction
 
             event(new DocumentCreated($boleta));
             Cache::forget("tenant:{$tenant->id}:doc_count:" . now()->format('Y-m'));
+            Cache::forget("tenant:{$tenant->id}:sunat_count:" . now()->format('Y-m'));
+            app(PlanService::class)->incrementUsage($tenant, 'documents');
 
             if ($soloRegistro) {
                 // Pendiente para resumen diario
@@ -96,7 +101,11 @@ class CreateBoletaAction
                 $boleta->update(['sunat_status' => 'enviado']);
             }
 
-            return $boleta->fresh(['items']);
+            if (! empty($data['pagos'])) {
+                $this->paymentAction->execute($boleta, $data['pagos']);
+            }
+
+            return $boleta->fresh(['items', 'payments']);
         });
     }
 }

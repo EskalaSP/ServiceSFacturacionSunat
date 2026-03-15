@@ -107,7 +107,7 @@ class SucursalController extends Controller
             'nombre', 'direccion', 'ubigeo', 'telefono', 'email', 'is_principal', 'is_active',
         ]));
 
-        return $this->success($this->format($sucursal->fresh()), 'Sucursal actualizada.');
+        return $this->success($this->format($sucursal), 'Sucursal actualizada.');
     }
 
     public function destroy(Request $request, int $id): JsonResponse

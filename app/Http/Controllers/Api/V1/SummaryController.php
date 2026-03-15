@@ -11,10 +11,51 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 class SummaryController extends Controller
 {
     use ApiResponse;
+
+    public function index(Request $request): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+
+        $query = Summary::where('tenant_id', $tenant->id);
+
+        if ($month = $request->query('month')) {
+            $query->whereRaw("DATE_FORMAT(fecha_envio, '%Y-%m') = ?", [$month]);
+        }
+
+        if ($tipo = $request->query('tipo')) {
+            $query->where('tipo', $tipo);
+        }
+
+        $summaries = $query->orderByDesc('created_at')
+            ->paginate($request->query('per_page', 15));
+
+        return response()->json([
+            'success' => true,
+            'data' => $summaries->map(fn (Summary $s) => [
+                'id' => $s->id,
+                'identifier' => $s->identifier,
+                'tipo' => $s->tipo,
+                'fecha_referencia' => $s->fecha_referencia->format('Y-m-d'),
+                'fecha_envio' => $s->fecha_envio->format('Y-m-d'),
+                'total_documentos' => $s->total_documentos,
+                'ticket' => $s->ticket,
+                'sunat_status' => $s->sunat_status,
+                'sunat_code' => $s->sunat_code,
+                'sunat_description' => $s->sunat_description,
+                'created_at' => $s->created_at->toIso8601String(),
+            ]),
+            'meta' => [
+                'total' => $summaries->total(),
+                'current_page' => $summaries->currentPage(),
+                'last_page' => $summaries->lastPage(),
+            ],
+        ]);
+    }
 
     /**
      * Generar y encolar resumen diario de boletas.
@@ -91,6 +132,12 @@ class SummaryController extends Controller
                 'sunat_status' => 'pendiente',
             ]);
 
+            // Mark boletas as "in annulment process" immediately
+            if ($isAnulacion) {
+                Boleta::whereIn('id', $boletas->pluck('id')->toArray())
+                    ->update(['sunat_status' => 'anulacion_en_proceso']);
+            }
+
             // Encolar el envío a SUNAT
             SendSummaryToSunat::dispatch($summary->id);
             $summary->update(['sunat_status' => 'enviado']);
@@ -153,6 +200,40 @@ class SummaryController extends Controller
                     'sunat_status' => $doc->sunat_status,
                 ])->toArray(),
             ],
+        ]);
+    }
+
+    public function xml(Request $request, int $id): \Illuminate\Http\Response|JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $summary = Summary::where('tenant_id', $tenant->id)->findOrFail($id);
+
+        if (! $summary->xml_path || ! Storage::disk('public')->exists($summary->xml_path)) {
+            return $this->error('XML no disponible', 404);
+        }
+
+        $content = Storage::disk('public')->get($summary->xml_path);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/xml',
+            'Content-Disposition' => "attachment; filename=\"{$summary->identifier}.xml\"",
+        ]);
+    }
+
+    public function cdr(Request $request, int $id): \Illuminate\Http\Response|JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $summary = Summary::where('tenant_id', $tenant->id)->findOrFail($id);
+
+        if (! $summary->cdr_path || ! Storage::disk('public')->exists($summary->cdr_path)) {
+            return $this->error('CDR no disponible', 404);
+        }
+
+        $content = Storage::disk('public')->get($summary->cdr_path);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/zip',
+            'Content-Disposition' => "attachment; filename=\"R-{$summary->identifier}.zip\"",
         ]);
     }
 

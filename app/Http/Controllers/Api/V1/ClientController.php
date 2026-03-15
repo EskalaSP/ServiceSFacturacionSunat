@@ -88,7 +88,7 @@ class ClientController extends Controller
         $client = Client::forTenant($tenant->id)->findOrFail($id);
         $client->update($request->only(['razon_social', 'nombre_comercial', 'direccion', 'email', 'telefono']));
 
-        return $this->success(new ClientResource($client->fresh()), 'Cliente actualizado.');
+        return $this->success(new ClientResource($client), 'Cliente actualizado.');
     }
 
     public function destroy(Request $request, int $id): JsonResponse

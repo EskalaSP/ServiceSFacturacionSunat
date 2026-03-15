@@ -12,7 +12,7 @@ class Summary extends Model
     protected $fillable = [
         'tenant_id', 'identifier', 'correlativo', 'fecha_referencia',
         'fecha_envio', 'total_documentos', 'tipo', 'document_ids',
-        'xml_path', 'ticket', 'sunat_status', 'sunat_code',
+        'xml_path', 'cdr_path', 'ticket', 'sunat_status', 'sunat_code',
         'sunat_description', 'sunat_notes',
     ];
 

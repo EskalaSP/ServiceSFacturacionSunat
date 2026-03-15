@@ -7,16 +7,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreBoletaRequest;
 use App\Http\Resources\Api\V1\BoletaResource;
 use App\Http\Traits\ApiResponse;
+use App\Http\Traits\CachesPdf;
+use App\Jobs\SendDocumentToSunat;
 use App\Models\Boleta;
 use App\Services\Pdf\PdfFormatConfig;
 use App\Services\Pdf\PdfGeneratorService;
-use App\Services\Storage\DocumentStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class BoletaController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, CachesPdf;
 
     public function store(StoreBoletaRequest $request, CreateBoletaAction $action): JsonResponse
     {
@@ -60,6 +61,21 @@ class BoletaController extends Controller
             $query->where('client_num_doc', $request->input('client_num_doc'));
         }
 
+        if ($request->has('sucursal_id')) {
+            $sucursal = \App\Models\Sucursal::find($request->input('sucursal_id'));
+            if ($sucursal) {
+                $query->where('cod_local', $sucursal->cod_local);
+            }
+        }
+
+        if ($request->has('payment_status')) {
+            $query->where('payment_status', $request->input('payment_status'));
+        }
+
+        if ($request->has('tipo_moneda')) {
+            $query->where('tipo_moneda', $request->input('tipo_moneda'));
+        }
+
         $boletas = $query->paginate($request->integer('per_page', 15));
 
         return $this->success([
@@ -76,9 +92,120 @@ class BoletaController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $tenant = $request->get('tenant');
-        $boleta = Boleta::with('items')->forTenant($tenant->id)->findOrFail($id);
+        $boleta = Boleta::with(['items', 'payments'])->forTenant($tenant->id)->findOrFail($id);
 
         return $this->success(new BoletaResource($boleta));
+    }
+
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $boleta = Boleta::with(['items', 'payments'])->forTenant($tenant->id)->findOrFail($id);
+
+        if ($boleta->sunat_status === 'aceptado') {
+            return $this->error('No se puede editar una boleta aceptada por SUNAT.', 422);
+        }
+
+        $data = $request->all();
+
+        return \DB::transaction(function () use ($boleta, $tenant, $data) {
+            if (! empty($data['cliente'])) {
+                $client = $data['cliente'];
+                $boleta->fill([
+                    'client_tipo_doc' => $client['tipo_doc'] ?? $boleta->client_tipo_doc,
+                    'client_num_doc' => $client['num_doc'] ?? $boleta->client_num_doc,
+                    'client_razon_social' => $client['razon_social'] ?? $boleta->client_razon_social,
+                    'client_direccion' => $client['direccion'] ?? $boleta->client_direccion,
+                ]);
+
+                $clientResolver = new \App\Services\ClientResolverService();
+                $clientResolver->resolve($tenant, [
+                    'tipo_doc' => $boleta->client_tipo_doc,
+                    'num_doc' => $boleta->client_num_doc,
+                    'razon_social' => $boleta->client_razon_social,
+                    'direccion' => $boleta->client_direccion,
+                ]);
+            }
+
+            $simpleFields = ['fecha_vencimiento', 'tipo_operacion', 'tipo_moneda', 'forma_pago', 'observacion'];
+            foreach ($simpleFields as $field) {
+                if (array_key_exists($field, $data)) {
+                    $boleta->{$field} = $data[$field];
+                }
+            }
+
+            if (! empty($data['items'])) {
+                $calcService = new \App\Services\DocumentCalculationService();
+                $calculatedItems = $calcService->calculateItems($data['items']);
+                $totals = $calcService->calculateTotals($calculatedItems, $data);
+
+                $boleta->fill($totals);
+                $boleta->leyenda = $data['leyenda'] ?? $calcService->generateLeyenda(
+                    $totals['mto_imp_venta'],
+                    $data['tipo_moneda'] ?? $boleta->tipo_moneda ?? 'PEN'
+                );
+
+                $boleta->items()->delete();
+                $boleta->items()->insert(array_map(fn ($item) => [
+                    'boleta_id' => $boleta->id,
+                    'codigo' => $item['codigo'],
+                    'descripcion' => $item['descripcion'],
+                    'unidad' => $item['unidad'],
+                    'cantidad' => $item['cantidad'],
+                    'mto_valor_unitario' => $item['mto_valor_unitario'],
+                    'mto_valor_venta' => $item['mto_valor_venta'],
+                    'mto_base_igv' => $item['mto_base_igv'],
+                    'porcentaje_igv' => $item['porcentaje_igv'],
+                    'igv' => $item['igv'],
+                    'tip_afe_igv' => $item['tip_afe_igv'],
+                    'isc' => $item['isc'],
+                    'icbper' => $item['icbper'],
+                    'total_impuestos' => $item['total_impuestos'],
+                    'mto_precio_unitario' => $item['mto_precio_unitario'],
+                    'descuento' => $item['descuento'] ?? 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ], $calculatedItems));
+            }
+
+            $boleta->fill([
+                'sunat_status' => 'pendiente',
+                'sunat_code' => null,
+                'sunat_description' => null,
+                'sunat_notes' => null,
+            ]);
+            $boleta->save();
+
+            SendDocumentToSunat::dispatch(Boleta::class, $boleta->id);
+
+            return $this->success(
+                new BoletaResource($boleta->load(['items', 'payments'])),
+                'Boleta actualizada y reenviada a SUNAT.'
+            );
+        });
+    }
+
+    public function resend(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $boleta = Boleta::forTenant($tenant->id)->findOrFail($id);
+
+        if ($boleta->sunat_status === 'aceptado') {
+            return $this->error('Esta boleta ya fue aceptada por SUNAT.', 422);
+        }
+
+        $boleta->update([
+            'sunat_status' => 'pendiente',
+            'sunat_code' => null,
+            'sunat_description' => null,
+        ]);
+
+        SendDocumentToSunat::dispatch(Boleta::class, $boleta->id);
+
+        return $this->success(
+            new BoletaResource($boleta->fresh()),
+            'Boleta reenviada a SUNAT.'
+        );
     }
 
     public function xml(Request $request, int $id): \Illuminate\Http\Response|JsonResponse
@@ -129,22 +256,18 @@ class BoletaController extends Controller
             return $this->error('Formato inválido. Opciones: a4, a5, ticket-80, ticket-58', 422);
         }
 
-        if (! $request->has('format') && $boleta->pdf_path) {
-            $storage = new DocumentStorageService();
-            $content = $storage->getPdfContent($boleta);
-            if ($content) {
-                return response($content, 200, [
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => "inline; filename=\"{$boleta->numero_completo}.pdf\"",
-                ]);
-            }
-        }
+        // Try cached PDF first (any format)
+        $content = $this->getCachedPdfContent($boleta, $formatStr);
 
-        $content = app(PdfGeneratorService::class)->generate($boleta, $tenant, $format);
+        if (! $content) {
+            $content = app(PdfGeneratorService::class)->generate($boleta, $tenant, $format);
+            $this->cachePdfContent($boleta, $formatStr, $content);
+        }
 
         return response($content, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => "inline; filename=\"{$boleta->numero_completo}.pdf\"",
+            'Cache-Control' => 'private, max-age=300',
         ]);
     }
 }

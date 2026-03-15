@@ -2,11 +2,21 @@
 
 namespace App\Providers;
 
+use App\Events\DocumentCreated;
+use App\Events\PaymentFailed;
+use App\Events\SubscriptionCreated;
+use App\Events\TrialExpiring;
+use App\Listeners\IncrementDocumentUsage;
+use App\Listeners\SendPaymentFailedEmail;
+use App\Listeners\SendTrialEndingEmail;
+use App\Listeners\SendWelcomeEmail;
+use App\Services\Plan\PlanService;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use App\Services\Pdf\PdfGeneratorService;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PdfGeneratorService::class);
+        $this->app->singleton(PlanService::class);
     }
 
     /**
@@ -29,6 +40,15 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureRateLimiting();
+        $this->configureEventListeners();
+    }
+
+    protected function configureEventListeners(): void
+    {
+        Event::listen(DocumentCreated::class, IncrementDocumentUsage::class);
+        Event::listen(SubscriptionCreated::class, SendWelcomeEmail::class);
+        Event::listen(PaymentFailed::class, SendPaymentFailedEmail::class);
+        Event::listen(TrialExpiring::class, SendTrialEndingEmail::class);
     }
 
     /**

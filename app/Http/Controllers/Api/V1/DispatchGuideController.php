@@ -3,21 +3,22 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Documents\CreateDispatchGuideAction;
+use App\Actions\Documents\UpdateDispatchGuideAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreDispatchGuideRequest;
 use App\Http\Resources\Api\V1\DispatchGuideResource;
 use App\Http\Traits\ApiResponse;
+use App\Http\Traits\CachesPdf;
 use App\Models\DispatchGuide;
 use App\Services\Greenter\GreenterService;
 use App\Services\Pdf\PdfFormatConfig;
 use App\Services\Pdf\PdfGeneratorService;
-use App\Services\Storage\DocumentStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DispatchGuideController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, CachesPdf;
 
     public function store(StoreDispatchGuideRequest $request, CreateDispatchGuideAction $action): JsonResponse
     {
@@ -59,6 +60,24 @@ class DispatchGuideController extends Controller
         return $this->success(new DispatchGuideResource($guide));
     }
 
+    public function update(StoreDispatchGuideRequest $request, int $id, UpdateDispatchGuideAction $action): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $guide = DispatchGuide::forTenant($tenant->id)->findOrFail($id);
+
+        if ($guide->sunat_status !== 'rechazado') {
+            return $this->error('Solo guías rechazadas pueden editarse y reenviarse.', 422);
+        }
+
+        try {
+            $guide = $action->execute($guide, $request->validated());
+
+            return $this->success(new DispatchGuideResource($guide), 'Guía actualizada y reenviada a SUNAT.');
+        } catch (\Throwable $e) {
+            return $this->error('Error al actualizar guía: '.$e->getMessage(), 500);
+        }
+    }
+
     public function pdf(Request $request, int $id): \Illuminate\Http\Response|JsonResponse
     {
         $tenant = $request->get('tenant');
@@ -71,22 +90,17 @@ class DispatchGuideController extends Controller
             return $this->error('Formato inválido. Opciones: a4, a5, ticket-80, ticket-58', 422);
         }
 
-        if (! $request->has('format') && $guide->pdf_path) {
-            $storage = new DocumentStorageService();
-            $content = $storage->getPdfContent($guide);
-            if ($content) {
-                return response($content, 200, [
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => "inline; filename=\"{$guide->numero_completo}.pdf\"",
-                ]);
-            }
-        }
+        $content = $this->getCachedPdfContent($guide, $formatStr);
 
-        $content = app(PdfGeneratorService::class)->generate($guide, $tenant, $format);
+        if (! $content) {
+            $content = app(PdfGeneratorService::class)->generate($guide, $tenant, $format);
+            $this->cachePdfContent($guide, $formatStr, $content);
+        }
 
         return response($content, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => "inline; filename=\"{$guide->numero_completo}.pdf\"",
+            'Cache-Control' => 'private, max-age=300',
         ]);
     }
 

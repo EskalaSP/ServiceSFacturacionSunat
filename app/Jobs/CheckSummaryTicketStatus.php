@@ -9,6 +9,7 @@ use App\Services\Greenter\GreenterService;
 use App\Services\Pdf\PdfGeneratorService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Storage;
 
 class CheckSummaryTicketStatus implements ShouldQueue
 {
@@ -43,12 +44,26 @@ class CheckSummaryTicketStatus implements ShouldQueue
             $accepted = $result['accepted'] ?? false;
             $status = $accepted ? 'aceptado' : 'rechazado';
 
-            $summary->update([
+            $updateData = [
                 'sunat_status' => $status,
                 'sunat_code' => $result['code'] ?? null,
                 'sunat_description' => $result['description'] ?? null,
                 'sunat_notes' => $result['notes'] ?? null,
-            ]);
+            ];
+
+            // Store CDR zip
+            if (! empty($result['cdr_zip'])) {
+                $cdrPath = str_replace('/xml/', '/cdr/', $summary->xml_path ?? '');
+                $cdrPath = $cdrPath ? preg_replace('/\.xml$/', '.zip', $cdrPath) : null;
+
+                if ($cdrPath) {
+                    $cdrPath = str_replace($summary->identifier, 'R-' . $summary->identifier, $cdrPath);
+                    Storage::disk('public')->put($cdrPath, $result['cdr_zip']);
+                    $updateData['cdr_path'] = $cdrPath;
+                }
+            }
+
+            $summary->update($updateData);
 
             // Actualizar todas las boletas asociadas
             $boletaStatus = $accepted

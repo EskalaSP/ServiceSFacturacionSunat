@@ -31,7 +31,11 @@ class DispatchGuideResource extends JsonResource
                 'llegada' => ['ubigeo' => $this->llegada_ubigeo, 'direccion' => $this->llegada_direccion],
                 'partida' => ['ubigeo' => $this->partida_ubigeo, 'direccion' => $this->partida_direccion],
             ],
+            'observacion' => $this->observacion,
             'transportista' => $this->transportista,
+            'vehiculo' => $this->vehiculo,
+            'conductor' => $this->conductor,
+            'num_bultos' => $this->num_bultos,
             'items' => $this->items,
             'sunat' => [
                 'status' => $this->sunat_status,

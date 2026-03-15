@@ -7,16 +7,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreCreditNoteRequest;
 use App\Http\Resources\Api\V1\CreditNoteResource;
 use App\Http\Traits\ApiResponse;
+use App\Http\Traits\CachesPdf;
+use App\Jobs\SendDocumentToSunat;
 use App\Models\CreditNote;
 use App\Services\Pdf\PdfFormatConfig;
 use App\Services\Pdf\PdfGeneratorService;
-use App\Services\Storage\DocumentStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CreditNoteController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, CachesPdf;
 
     public function store(StoreCreditNoteRequest $request, CreateCreditNoteAction $action): JsonResponse
     {
@@ -51,6 +52,21 @@ class CreditNoteController extends Controller
             $query->where('serie', $request->input('serie'));
         }
 
+        if ($request->has('client_num_doc')) {
+            $query->where('client_num_doc', $request->input('client_num_doc'));
+        }
+
+        if ($request->has('sucursal_id')) {
+            $sucursal = \App\Models\Sucursal::find($request->input('sucursal_id'));
+            if ($sucursal) {
+                $query->where('cod_local', $sucursal->cod_local);
+            }
+        }
+
+        if ($request->has('tipo_moneda')) {
+            $query->where('tipo_moneda', $request->input('tipo_moneda'));
+        }
+
         $creditNotes = $query->paginate($request->integer('per_page', 15));
 
         return $this->success([
@@ -70,6 +86,29 @@ class CreditNoteController extends Controller
         $creditNote = CreditNote::with('items')->forTenant($tenant->id)->findOrFail($id);
 
         return $this->success(new CreditNoteResource($creditNote));
+    }
+
+    public function resend(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $creditNote = CreditNote::forTenant($tenant->id)->findOrFail($id);
+
+        if ($creditNote->sunat_status === 'aceptado') {
+            return $this->error('Esta nota de crédito ya fue aceptada por SUNAT.', 422);
+        }
+
+        $creditNote->update([
+            'sunat_status' => 'pendiente',
+            'sunat_code' => null,
+            'sunat_description' => null,
+        ]);
+
+        SendDocumentToSunat::dispatch(CreditNote::class, $creditNote->id);
+
+        return $this->success(
+            new CreditNoteResource($creditNote->fresh()),
+            'Nota de crédito reenviada a SUNAT.'
+        );
     }
 
     public function xml(Request $request, int $id): \Illuminate\Http\Response|JsonResponse
@@ -120,22 +159,17 @@ class CreditNoteController extends Controller
             return $this->error('Formato inválido. Opciones: a4, a5, ticket-80, ticket-58', 422);
         }
 
-        if (! $request->has('format') && $creditNote->pdf_path) {
-            $storage = new DocumentStorageService();
-            $content = $storage->getPdfContent($creditNote);
-            if ($content) {
-                return response($content, 200, [
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => "inline; filename=\"{$creditNote->numero_completo}.pdf\"",
-                ]);
-            }
-        }
+        $content = $this->getCachedPdfContent($creditNote, $formatStr);
 
-        $content = app(PdfGeneratorService::class)->generate($creditNote, $tenant, $format);
+        if (! $content) {
+            $content = app(PdfGeneratorService::class)->generate($creditNote, $tenant, $format);
+            $this->cachePdfContent($creditNote, $formatStr, $content);
+        }
 
         return response($content, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => "inline; filename=\"{$creditNote->numero_completo}.pdf\"",
+            'Cache-Control' => 'private, max-age=300',
         ]);
     }
 }

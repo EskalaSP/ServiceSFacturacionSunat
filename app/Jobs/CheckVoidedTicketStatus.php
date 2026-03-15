@@ -2,6 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Models\Boleta;
+use App\Models\CreditNote;
+use App\Models\DebitNote;
+use App\Models\Invoice;
 use App\Models\Tenant;
 use App\Models\VoidedDocument;
 use App\Services\Greenter\GreenterService;
@@ -46,6 +50,11 @@ class CheckVoidedTicketStatus implements ShouldQueue
                 'sunat_notes' => $result['notes'] ?? null,
             ]);
 
+            // Update original documents status when voided is accepted
+            if ($accepted) {
+                $this->updateOriginalDocuments($voided);
+            }
+
             if ($tenant->webhook_url) {
                 NotifyWebhookJob::dispatch(VoidedDocument::class, $voided->id, 'voided.status_updated');
             }
@@ -68,6 +77,34 @@ class CheckVoidedTicketStatus implements ShouldQueue
             if ($tenant->webhook_url) {
                 NotifyWebhookJob::dispatch(VoidedDocument::class, $voided->id, 'voided.status_updated');
             }
+        }
+    }
+
+    /**
+     * Mark the original documents as 'anulado' based on the voided details.
+     */
+    private function updateOriginalDocuments(VoidedDocument $voided): void
+    {
+        $modelMap = [
+            '01' => Invoice::class,
+            '03' => Boleta::class,
+            '07' => CreditNote::class,
+            '08' => DebitNote::class,
+        ];
+
+        foreach ($voided->detalles ?? [] as $detalle) {
+            $tipo = $detalle['tipo_documento'] ?? null;
+            $model = $modelMap[$tipo] ?? null;
+            if (! $model) continue;
+
+            $serie = $detalle['serie'] ?? null;
+            $correlativo = $detalle['correlativo'] ?? null;
+            if (! $serie || ! $correlativo) continue;
+
+            $model::where('tenant_id', $voided->tenant_id)
+                ->where('serie', $serie)
+                ->where('correlativo', $correlativo)
+                ->update(['sunat_status' => 'anulado']);
         }
     }
 

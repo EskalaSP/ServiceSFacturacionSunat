@@ -67,6 +67,19 @@ class BoletaResource extends JsonResource
             ],
             'leyenda' => $this->leyenda,
             'observacion' => $this->observacion,
+            'payment_status' => $this->payment_status,
+            'monto_pagado' => (float) $this->monto_pagado,
+            'payments' => $this->whenLoaded('payments', fn () => $this->payments->map(fn ($p) => [
+                'id' => $p->id,
+                'metodo' => $p->metodo,
+                'monto' => (float) $p->monto,
+                'referencia' => $p->referencia,
+                'monto_recibido' => $p->monto_recibido ? (float) $p->monto_recibido : null,
+                'vuelto' => $p->metodo === 'efectivo' && $p->monto_recibido
+                    ? round((float) $p->monto_recibido - (float) $p->monto, 2) : null,
+                'notas' => $p->notas,
+                'created_at' => $p->created_at->toIso8601String(),
+            ])),
             'sent_at' => $this->sent_at?->toIso8601String(),
             'created_at' => $this->created_at->toIso8601String(),
         ];

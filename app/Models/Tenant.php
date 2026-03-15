@@ -35,6 +35,9 @@ class Tenant extends Model
         'api_secret',
         'plan',
         'max_documents_month',
+        'documents_this_month',
+        'ai_messages_this_month',
+        'usage_reset_month',
         'is_active',
         'user_id',
     ];
@@ -118,6 +121,23 @@ class Tenant extends Model
     public function apiLogs(): HasMany
     {
         return $this->hasMany(ApiLog::class);
+    }
+
+    public function subscription(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Subscription::class)->latestOfMany();
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function activeSubscription(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Subscription::class)
+            ->whereIn('status', ['active', 'trialing'])
+            ->latestOfMany();
     }
 
     public function documentsThisMonth(): int

@@ -3,6 +3,7 @@
 namespace App\Services\Pdf;
 
 use App\Models\DispatchGuide;
+use App\Models\InternalDocument;
 use App\Models\Tenant;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -12,10 +13,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class DocumentDataMapper
 {
+    /** @var array<int, string|null> */
+    private static array $logoCache = [];
+
+    /** @var array<string, string> */
+    private static array $qrCache = [];
+
     public function map(Model $document, Tenant $tenant): array
     {
         if ($document instanceof DispatchGuide) {
             return $this->mapDispatchGuide($document, $tenant);
+        }
+
+        if ($document instanceof InternalDocument) {
+            return $this->mapInternalDocument($document, $tenant);
         }
 
         return $this->mapStandardDocument($document, $tenant);
@@ -216,21 +227,106 @@ class DocumentDataMapper
         ];
     }
 
+    private function mapInternalDocument(InternalDocument $document, Tenant $tenant): array
+    {
+        $items = $document->items->map(fn ($item) => [
+            'codigo' => $item->codigo ?? '-',
+            'descripcion' => $item->descripcion,
+            'unidad' => $item->unidad ?? 'NIU',
+            'cantidad' => (float) $item->cantidad,
+            'precio_unitario' => (float) ($item->mto_precio_unitario ?? 0),
+            'igv' => (float) ($item->igv ?? 0),
+            'importe' => (float) ($item->mto_valor_venta ?? 0),
+            'total_item' => (float) ($item->mto_precio_unitario ?? 0) * (float) $item->cantidad,
+        ])->toArray();
+
+        $tipoDocumento = $document->getTipoDocumento();
+
+        return [
+            'tipo_documento' => $tipoDocumento,
+            'titulo' => DocumentTypeConfig::titulo($tipoDocumento),
+            'serie' => '',
+            'correlativo' => '',
+            'numero_completo' => $document->numero,
+            'fecha_emision' => $document->fecha_emision?->format('Y-m-d') ?? '',
+            'fecha_vencimiento' => $document->fecha_vencimiento?->format('Y-m-d') ?? null,
+            'tipo_moneda' => $document->tipo_moneda ?? 'PEN',
+            'forma_pago' => $document->forma_pago ?? null,
+            'tipo_operacion' => null,
+
+            'emisor' => [
+                'ruc' => $tenant->ruc,
+                'razon_social' => $tenant->razon_social,
+                'nombre_comercial' => $tenant->nombre_comercial ?? $tenant->razon_social,
+                'direccion' => $tenant->direccion ?? '',
+                'ubigeo' => $tenant->ubigeo ?? '',
+                'cod_local' => '0000',
+            ],
+
+            'receptor' => [
+                'tipo_doc' => $document->client_tipo_doc,
+                'num_doc' => $document->client_num_doc,
+                'razon_social' => $document->client_razon_social,
+                'direccion' => $document->client_direccion ?? '',
+            ],
+
+            'items' => $items,
+
+            'mto_oper_gravadas' => (float) $document->mto_oper_gravadas,
+            'mto_oper_exoneradas' => (float) $document->mto_oper_exoneradas,
+            'mto_oper_inafectas' => (float) $document->mto_oper_inafectas,
+            'mto_oper_gratuitas' => (float) $document->mto_oper_gratuitas,
+            'mto_igv' => (float) $document->mto_igv,
+            'mto_isc' => (float) ($document->mto_isc ?? 0),
+            'mto_icbper' => (float) ($document->mto_icbper ?? 0),
+            'total_impuestos' => (float) $document->total_impuestos,
+            'valor_venta' => (float) $document->valor_venta,
+            'sub_total' => (float) $document->sub_total,
+            'mto_imp_venta' => (float) $document->mto_imp_venta,
+            'total_anticipos' => 0,
+            'total_descuentos' => (float) ($document->total_descuentos ?? 0),
+
+            'leyenda' => '',
+            'observacion' => $document->observacion ?? null,
+            'hash_cpe' => '',
+            'sunat_status' => '',
+            'sunat_description' => '',
+
+            'cuotas' => null,
+            'detraccion' => null,
+            'percepcion' => null,
+            'anticipos' => null,
+            'doc_afectado_tipo' => null,
+            'doc_afectado_serie' => null,
+            'doc_afectado_correlativo' => null,
+            'cod_motivo' => null,
+            'des_motivo' => null,
+
+            'logo_base64' => $this->getLogoBase64($tenant),
+            'qr_base64' => '', // Internal docs don't have QR
+            'moneda_simbolo' => $this->getMonedaSimbolo($document->tipo_moneda ?? 'PEN'),
+        ];
+    }
+
     private function getLogoBase64(Tenant $tenant): ?string
     {
         if (empty($tenant->logo_path)) {
             return null;
         }
 
+        if (isset(self::$logoCache[$tenant->id])) {
+            return self::$logoCache[$tenant->id];
+        }
+
         $fullPath = storage_path('app/public/' . $tenant->logo_path);
         if (! file_exists($fullPath)) {
-            return null;
+            return self::$logoCache[$tenant->id] = null;
         }
 
         $content = file_get_contents($fullPath);
         $mime = mime_content_type($fullPath);
 
-        return 'data:' . $mime . ';base64,' . base64_encode($content);
+        return self::$logoCache[$tenant->id] = 'data:' . $mime . ';base64,' . base64_encode($content);
     }
 
     private function generateQrBase64(Model $document, Tenant $tenant): string
@@ -257,14 +353,19 @@ class DocumentDataMapper
             $document->client_num_doc ?? $document->destinatario_num_doc ?? '',
         ]);
 
+        // Cache by QR data string (deterministic)
+        if (isset(self::$qrCache[$qrData])) {
+            return self::$qrCache[$qrData];
+        }
+
         $renderer = new ImageRenderer(
-            new RendererStyle(200),
+            new RendererStyle(150),
             new SvgImageBackEnd()
         );
         $writer = new Writer($renderer);
         $svg = $writer->writeString($qrData);
 
-        return 'data:image/svg+xml;base64,' . base64_encode($svg);
+        return self::$qrCache[$qrData] = 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 
     private function getMonedaSimbolo(string $tipoMoneda): string

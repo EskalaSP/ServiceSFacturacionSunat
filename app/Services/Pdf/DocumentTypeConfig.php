@@ -45,6 +45,20 @@ class DocumentTypeConfig
                 'qr-code', 'footer',
             ],
         ],
+        'COT' => [
+            'titulo' => 'COTIZACIÓN',
+            'sections' => [
+                'header', 'document-badge', 'emitter', 'receiver',
+                'items', 'totals', 'footer',
+            ],
+        ],
+        'NV' => [
+            'titulo' => 'NOTA DE VENTA',
+            'sections' => [
+                'header', 'document-badge', 'emitter', 'receiver',
+                'items', 'totals', 'payment-info', 'footer',
+            ],
+        ],
     ];
 
     public static function get(string $tipoDocumento): array

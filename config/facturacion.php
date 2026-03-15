@@ -37,10 +37,12 @@ return [
         ],
     ],
 
-    'plans' => [
-        'free' => ['max_documents' => 20],
-        'pro' => ['max_documents' => 500],
-        'business' => ['max_documents' => 99999],
+    'lookup' => [
+        'token' => env('LOOKUP_API_TOKEN', ''),
+        'base_url' => 'https://api.json.pe/api',
     ],
+
+    // Plan limits are now managed via PlanService + plans DB table.
+    // See PlanSeeder for current plan definitions.
 
 ];

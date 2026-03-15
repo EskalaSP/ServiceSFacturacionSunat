@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreVoidedRequest;
 use App\Http\Traits\ApiResponse;
 use App\Jobs\SendVoidedToSunat;
+use App\Models\Boleta;
+use App\Models\CreditNote;
+use App\Models\DebitNote;
+use App\Models\Invoice;
 use App\Models\VoidedDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,6 +47,9 @@ class VoidedController extends Controller
                 'sunat_status' => 'pendiente',
             ]);
 
+            // Mark original documents as "in annulment process" immediately
+            $this->markDocumentsAsProcessing($tenant->id, $validated['detalles']);
+
             SendVoidedToSunat::dispatch($voided->id);
             $voided->update(['sunat_status' => 'enviado']);
 
@@ -61,6 +68,26 @@ class VoidedController extends Controller
             ], 201);
         } catch (\Throwable $e) {
             return $this->error('Error: ' . $e->getMessage(), 500);
+        }
+    }
+
+    private function markDocumentsAsProcessing(int $tenantId, array $detalles): void
+    {
+        $modelMap = [
+            '01' => Invoice::class,
+            '03' => Boleta::class,
+            '07' => CreditNote::class,
+            '08' => DebitNote::class,
+        ];
+
+        foreach ($detalles as $detalle) {
+            $model = $modelMap[$detalle['tipo_documento']] ?? null;
+            if (! $model) continue;
+
+            $model::where('tenant_id', $tenantId)
+                ->where('serie', $detalle['serie'])
+                ->where('correlativo', $detalle['correlativo'])
+                ->update(['sunat_status' => 'anulacion_en_proceso']);
         }
     }
 

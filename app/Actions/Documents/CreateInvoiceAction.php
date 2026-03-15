@@ -2,6 +2,7 @@
 
 namespace App\Actions\Documents;
 
+use App\Actions\Payments\RegisterPaymentAction;
 use App\Events\DocumentCreated;
 use App\Jobs\SendDocumentToSunat;
 use App\Models\Invoice;
@@ -9,6 +10,7 @@ use App\Models\Serie;
 use App\Models\Tenant;
 use App\Services\ClientResolverService;
 use App\Services\DocumentCalculationService;
+use App\Services\Plan\PlanService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -17,6 +19,7 @@ class CreateInvoiceAction
     public function __construct(
         private DocumentCalculationService $calculator,
         private ClientResolverService $clientResolver,
+        private RegisterPaymentAction $paymentAction,
     ) {}
 
     public function execute(Tenant $tenant, array $data): Invoice
@@ -96,11 +99,17 @@ class CreateInvoiceAction
 
             event(new DocumentCreated($invoice));
             Cache::forget("tenant:{$tenant->id}:doc_count:" . now()->format('Y-m'));
+            Cache::forget("tenant:{$tenant->id}:sunat_count:" . now()->format('Y-m'));
+            app(PlanService::class)->incrementUsage($tenant, 'documents');
 
             SendDocumentToSunat::dispatch(Invoice::class, $invoice->id);
             $invoice->update(['sunat_status' => 'enviado']);
 
-            return $invoice->fresh(['items']);
+            if (! empty($data['pagos'])) {
+                $this->paymentAction->execute($invoice, $data['pagos']);
+            }
+
+            return $invoice->fresh(['items', 'payments']);
         });
     }
 }
