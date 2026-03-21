@@ -12,6 +12,7 @@ use App\Jobs\SendDocumentToSunat;
 use App\Models\DebitNote;
 use App\Services\Pdf\PdfFormatConfig;
 use App\Services\Pdf\PdfGeneratorService;
+use App\Services\Storage\DocumentStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -36,8 +37,7 @@ class DebitNoteController extends Controller
     {
         $tenant = $request->get('tenant');
 
-        $query = DebitNote::with('items')
-            ->forTenant($tenant->id)
+        $query = DebitNote::forTenant($tenant->id)
             ->orderByDesc('created_at');
 
         if ($request->has('sunat_status')) {
@@ -57,10 +57,7 @@ class DebitNoteController extends Controller
         }
 
         if ($request->has('sucursal_id')) {
-            $sucursal = \App\Models\Sucursal::find($request->input('sucursal_id'));
-            if ($sucursal) {
-                $query->where('cod_local', $sucursal->cod_local);
-            }
+            $query->where('sucursal_id', $request->input('sucursal_id'));
         }
 
         if ($request->has('tipo_moneda')) {
@@ -86,6 +83,100 @@ class DebitNoteController extends Controller
         $debitNote = DebitNote::with('items')->forTenant($tenant->id)->findOrFail($id);
 
         return $this->success(new DebitNoteResource($debitNote));
+    }
+
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $debitNote = DebitNote::with('items')->forTenant($tenant->id)->findOrFail($id);
+
+        if ($debitNote->sunat_status === 'aceptado') {
+            return $this->error('No se puede editar una nota de débito aceptada por SUNAT.', 422);
+        }
+
+        $data = $request->all();
+
+        return \DB::transaction(function () use ($debitNote, $tenant, $data) {
+            // Update client data if provided
+            if (! empty($data['cliente'])) {
+                $client = $data['cliente'];
+                $debitNote->fill([
+                    'client_tipo_doc' => $client['tipo_doc'] ?? $debitNote->client_tipo_doc,
+                    'client_num_doc' => $client['num_doc'] ?? $debitNote->client_num_doc,
+                    'client_razon_social' => $client['razon_social'] ?? $debitNote->client_razon_social,
+                    'client_direccion' => $client['direccion'] ?? $debitNote->client_direccion,
+                ]);
+
+                $clientResolver = new \App\Services\ClientResolverService();
+                $clientResolver->resolve($tenant, [
+                    'tipo_doc' => $debitNote->client_tipo_doc,
+                    'num_doc' => $debitNote->client_num_doc,
+                    'razon_social' => $debitNote->client_razon_social,
+                    'direccion' => $debitNote->client_direccion,
+                ]);
+            }
+
+            // Update simple fields if provided
+            $simpleFields = ['tipo_moneda', 'observacion', 'doc_afectado_tipo', 'doc_afectado_serie', 'doc_afectado_correlativo', 'cod_motivo', 'des_motivo'];
+            foreach ($simpleFields as $field) {
+                if (array_key_exists($field, $data)) {
+                    $debitNote->{$field} = $data[$field];
+                }
+            }
+
+            // Recalculate items if provided
+            if (! empty($data['items'])) {
+                $calcService = new \App\Services\DocumentCalculationService();
+                $calculatedItems = $calcService->calculateItems($data['items']);
+                $totals = $calcService->calculateTotals($calculatedItems, $data);
+
+                $debitNote->fill($totals);
+                $debitNote->leyenda = $data['leyenda'] ?? $calcService->generateLeyenda(
+                    $totals['mto_imp_venta'],
+                    $data['tipo_moneda'] ?? $debitNote->tipo_moneda ?? 'PEN'
+                );
+
+                // Replace items
+                $debitNote->items()->delete();
+                $debitNote->items()->insert(array_map(fn ($item) => [
+                    'debit_note_id' => $debitNote->id,
+                    'codigo' => $item['codigo'],
+                    'descripcion' => $item['descripcion'],
+                    'unidad' => $item['unidad'],
+                    'cantidad' => $item['cantidad'],
+                    'mto_valor_unitario' => $item['mto_valor_unitario'],
+                    'mto_valor_venta' => $item['mto_valor_venta'],
+                    'mto_base_igv' => $item['mto_base_igv'],
+                    'porcentaje_igv' => $item['porcentaje_igv'],
+                    'igv' => $item['igv'],
+                    'tip_afe_igv' => $item['tip_afe_igv'],
+                    'isc' => $item['isc'],
+                    'icbper' => $item['icbper'],
+                    'total_impuestos' => $item['total_impuestos'],
+                    'mto_precio_unitario' => $item['mto_precio_unitario'],
+                    'descuento' => $item['descuento'] ?? 0,
+                    'descuentos' => isset($item['descuentos']) ? json_encode($item['descuentos']) : null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ], $calculatedItems));
+            }
+
+            // Reset SUNAT status and resend
+            $debitNote->fill([
+                'sunat_status' => 'pendiente',
+                'sunat_code' => null,
+                'sunat_description' => null,
+                'sunat_notes' => null,
+            ]);
+            $debitNote->save();
+
+            SendDocumentToSunat::dispatch(DebitNote::class, $debitNote->id);
+
+            return $this->success(
+                new DebitNoteResource($debitNote->load('items')),
+                'Nota de débito actualizada y reenviada a SUNAT.'
+            );
+        });
     }
 
     public function resend(Request $request, int $id): JsonResponse

@@ -33,7 +33,10 @@ class ReportPdfService
             return null;
         }
 
-        $path = storage_path('app/' . $tenant->logo_path);
+        $path = storage_path('app/public/' . $tenant->logo_path);
+        if (! file_exists($path)) {
+            $path = storage_path('app/' . $tenant->logo_path);
+        }
         if (! file_exists($path)) {
             return null;
         }

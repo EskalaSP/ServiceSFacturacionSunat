@@ -16,14 +16,16 @@ class DebitNoteResource extends JsonResource
             'correlativo' => $this->correlativo,
             'numero_completo' => $this->numero_completo,
             'cod_local' => $this->cod_local,
-            'fecha_emision' => $this->fecha_emision->format('Y-m-d'),
+            'fecha_emision' => $this->fecha_emision->format('Y-m-d H:i:s'),
             'tipo_moneda' => $this->tipo_moneda,
-            'cliente' => [
+            'cliente' => array_filter([
                 'tipo_doc' => $this->client_tipo_doc,
                 'num_doc' => $this->client_num_doc,
                 'razon_social' => $this->client_razon_social,
                 'direccion' => $this->client_direccion,
-            ],
+                'email' => $this->client?->email,
+                'telefono' => $this->client?->telefono,
+            ], fn ($v) => $v !== null),
             'doc_afectado' => [
                 'tipo' => $this->doc_afectado_tipo,
                 'serie' => $this->doc_afectado_serie,

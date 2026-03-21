@@ -2,6 +2,7 @@
     body {
         font-family: Helvetica, Arial, sans-serif;
         color: #000;
+        font-weight: bold;
         line-height: 1.4;
         margin: 0;
         padding: 0;
@@ -21,11 +22,11 @@
     .mt-4 { margin-top: 8px; }
     .mt-6 { margin-top: 12px; }
     .separator {
-        border-top: 1px solid #000;
+        border-top: 0.5px solid #000;
         margin: 8px 0;
     }
     .separator-dashed {
-        border-top: 1px dashed #000;
+        border-top: 0.5px dashed #000;
         margin: 6px 0;
     }
     table {

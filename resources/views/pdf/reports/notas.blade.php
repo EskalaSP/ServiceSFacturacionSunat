@@ -93,7 +93,13 @@
                 <td class="text-right">{{ number_format($nc['mto_igv'], 2) }}</td>
                 <td class="text-right">{{ number_format($nc['mto_imp_venta'], 2) }}</td>
                 <td class="text-center">
-                    <span class="badge">{{ strtoupper(substr($nc['sunat_status'], 0, 4)) }}</span>
+                    @if($nc['sunat_status'] === 'aceptado')
+                        <span class="badge badge-success">Acept.</span>
+                    @elseif($nc['sunat_status'] === 'rechazado')
+                        <span class="badge badge-danger">Rech.</span>
+                    @else
+                        <span class="badge badge-warning">{{ ucfirst(substr($nc['sunat_status'], 0, 5)) }}</span>
+                    @endif
                 </td>
             </tr>
             @endforeach
@@ -134,7 +140,13 @@
                 <td class="text-right">{{ number_format($nd['mto_igv'], 2) }}</td>
                 <td class="text-right">{{ number_format($nd['mto_imp_venta'], 2) }}</td>
                 <td class="text-center">
-                    <span class="badge">{{ strtoupper(substr($nd['sunat_status'], 0, 4)) }}</span>
+                    @if($nd['sunat_status'] === 'aceptado')
+                        <span class="badge badge-success">Acept.</span>
+                    @elseif($nd['sunat_status'] === 'rechazado')
+                        <span class="badge badge-danger">Rech.</span>
+                    @else
+                        <span class="badge badge-warning">{{ ucfirst(substr($nd['sunat_status'], 0, 5)) }}</span>
+                    @endif
                 </td>
             </tr>
             @endforeach

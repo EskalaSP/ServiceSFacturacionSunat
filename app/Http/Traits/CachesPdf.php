@@ -40,7 +40,8 @@ trait CachesPdf
     private function buildPdfCachePath(Model $document, string $format): string
     {
         $tenantId = $document->tenant_id ?? 0;
+        $table = $document->getTable();
 
-        return storage_path("app/pdf-cache/{$tenantId}/{$document->id}_{$format}.pdf");
+        return storage_path("app/pdf-cache/{$tenantId}/{$table}_{$document->id}_{$format}.pdf");
     }
 }

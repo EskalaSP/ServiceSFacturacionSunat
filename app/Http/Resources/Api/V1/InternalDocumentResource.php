@@ -17,16 +17,18 @@ class InternalDocumentResource extends JsonResource
             'type' => $this->type,
             'tipo_documento' => $tipoDoc,
             'numero' => $this->numero,
-            'fecha_emision' => $this->fecha_emision->format('Y-m-d'),
+            'fecha_emision' => $this->fecha_emision->format('Y-m-d H:i:s'),
             'fecha_vencimiento' => $this->fecha_vencimiento?->format('Y-m-d'),
             'tipo_moneda' => $this->tipo_moneda,
             'forma_pago' => $this->when($this->forma_pago, $this->forma_pago),
-            'cliente' => [
+            'cliente' => array_filter([
                 'tipo_doc' => $this->client_tipo_doc,
                 'num_doc' => $this->client_num_doc,
                 'razon_social' => $this->client_razon_social,
                 'direccion' => $this->client_direccion,
-            ],
+                'email' => $this->client?->email,
+                'telefono' => $this->client?->telefono,
+            ], fn ($v) => $v !== null),
             'totales' => array_filter([
                 'gravadas' => (float) $this->mto_oper_gravadas,
                 'exoneradas' => (float) $this->mto_oper_exoneradas,

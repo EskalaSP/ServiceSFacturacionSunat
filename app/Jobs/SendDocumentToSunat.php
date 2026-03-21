@@ -57,7 +57,10 @@ class SendDocumentToSunat implements ShouldQueue
 
         if ($result['success']) {
             $document->update([
-                'sunat_status' => ($result['accepted'] ?? true) ? 'aceptado' : 'rechazado',
+                // SUNAT: 0/4xxx = aceptado, 3xxx = observación (aceptado con advertencias), 2xxx = rechazado
+                'sunat_status' => ($result['accepted'] ?? true) || str_starts_with((string) ($result['code'] ?? ''), '3')
+                    ? 'aceptado'
+                    : 'rechazado',
                 'sunat_code' => $result['code'] ?? null,
                 'sunat_description' => $result['description'] ?? null,
                 'sunat_notes' => $result['notes'] ?? null,
@@ -90,6 +93,35 @@ class SendDocumentToSunat implements ShouldQueue
             // Errores temporales de SUNAT → reintentar
             if ($this->isRetryableError($errorCode)) {
                 $this->handleRetryableError($document, $result['error_message'] ?? 'Error temporal SUNAT');
+                return;
+            }
+
+            // 3xxx = observación (documento aceptado con advertencias, NO es rechazo)
+            if (str_starts_with((string) $errorCode, '3')) {
+                $document->update([
+                    'sunat_status' => 'aceptado',
+                    'sunat_code' => substr($errorCode, 0, 20),
+                    'sunat_description' => $result['error_message'] ? substr($result['error_message'], 0, 500) : null,
+                    'sent_at' => now(),
+                ]);
+
+                if (! empty($result['xml'])) {
+                    $storage->storeXml($document, $tenant, $result['xml']);
+                }
+
+                if (config('pdf.auto_generate', true)) {
+                    try {
+                        app(PdfGeneratorService::class)->generateAndStore($document, $tenant);
+                    } catch (\Throwable) {
+                    }
+                }
+
+                event(new DocumentSent($document, $result));
+
+                if ($tenant->webhook_url) {
+                    NotifyWebhookJob::dispatch($this->modelClass, $document->id, 'document.sent');
+                }
+
                 return;
             }
 
@@ -151,8 +183,8 @@ class SendDocumentToSunat implements ShouldQueue
     {
         $data = $document->toArray();
         $data['tipo_documento'] = $tipoDocumento;
-        // Fechas como string plano (Y-m-d) para evitar desfase por timezone UTC→Lima
-        $data['fecha_emision'] = $document->fecha_emision->format('Y-m-d');
+        // Fecha con hora para generar IssueTime en XML
+        $data['fecha_emision'] = $document->fecha_emision->format('Y-m-d H:i:s');
         if ($document->fecha_vencimiento) {
             $data['fecha_vencimiento'] = $document->fecha_vencimiento->format('Y-m-d');
         }
@@ -162,20 +194,31 @@ class SendDocumentToSunat implements ShouldQueue
             'razon_social' => $document->client_razon_social,
             'direccion' => $document->client_direccion,
         ];
-        $data['items'] = $document->items->map(fn ($item) => [
-            'codigo' => $item->codigo,
-            'descripcion' => $item->descripcion,
-            'unidad' => $item->unidad,
-            'cantidad' => $item->cantidad,
-            'precio_unitario' => $item->mto_precio_unitario,
-            'mto_valor_unitario' => $item->mto_valor_unitario,
-            'mto_valor_venta' => $item->mto_valor_venta,
-            'mto_base_igv' => $item->mto_base_igv,
-            'porcentaje_igv' => $item->porcentaje_igv,
-            'igv' => $item->igv,
-            'tip_afe_igv' => $item->tip_afe_igv,
-            'total_impuestos' => $item->total_impuestos,
-        ])->toArray();
+        $data['items'] = $document->items->map(function ($item) {
+            $mapped = [
+                'codigo' => $item->codigo,
+                'descripcion' => $item->descripcion,
+                'unidad' => $item->unidad,
+                'cantidad' => $item->cantidad,
+                'precio_unitario' => $item->mto_precio_unitario,
+                'mto_valor_unitario' => $item->mto_valor_unitario,
+                'mto_valor_venta' => $item->mto_valor_venta,
+                'mto_base_igv' => $item->mto_base_igv,
+                'porcentaje_igv' => $item->porcentaje_igv,
+                'igv' => $item->igv,
+                'tip_afe_igv' => $item->tip_afe_igv,
+                'total_impuestos' => $item->total_impuestos,
+                'isc' => $item->isc ?? 0,
+                'tip_sis_isc' => $item->tip_sis_isc ?? '01',
+                'icbper' => $item->icbper ?? 0,
+                'factor_icbper' => $item->factor_icbper ?? 0,
+            ];
+            if (! empty($item->descuentos)) {
+                $mapped['descuentos'] = $item->descuentos;
+            }
+
+            return $mapped;
+        })->toArray();
 
         return $data;
     }

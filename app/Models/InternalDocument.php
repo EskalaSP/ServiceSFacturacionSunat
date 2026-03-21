@@ -43,7 +43,7 @@ class InternalDocument extends Model implements Documentable
     protected function casts(): array
     {
         return [
-            'fecha_emision' => 'date',
+            'fecha_emision' => 'datetime',
             'fecha_vencimiento' => 'date',
             'mto_oper_gravadas' => 'decimal:2',
             'mto_oper_exoneradas' => 'decimal:2',

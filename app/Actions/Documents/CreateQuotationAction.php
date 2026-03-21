@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class CreateQuotationAction
 {
+    use Concerns\ResolvesEmisionDateTime;
+
     public function __construct(
         private DocumentCalculationService $calculator,
         private ClientResolverService $clientResolver,
@@ -32,7 +34,7 @@ class CreateQuotationAction
                 'tenant_id' => $tenant->id,
                 'client_id' => $client->id,
                 'numero' => $numero,
-                'fecha_emision' => $data['fecha_emision'],
+                'fecha_emision' => $this->resolveEmisionDateTime($data['fecha_emision']),
                 'fecha_vencimiento' => $data['fecha_vencimiento'] ?? null,
                 'tipo_moneda' => $data['tipo_moneda'] ?? 'PEN',
                 'client_tipo_doc' => $data['cliente']['tipo_doc'],
@@ -62,7 +64,7 @@ class CreateQuotationAction
             Cache::forget("tenant:{$tenant->id}:internal_count:" . now()->format('Y-m'));
             app(PlanService::class)->incrementUsage($tenant, 'documents');
 
-            return $quotation->fresh(['items']);
+            return $quotation->fresh(['items', 'client']);
         });
     }
 }

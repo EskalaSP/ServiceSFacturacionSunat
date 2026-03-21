@@ -61,6 +61,7 @@ class CreateSubscriptionAction
                 $subscription->current_period_end = $billingCycle === 'yearly'
                     ? now()->addYear()
                     : now()->addMonth();
+                $subscription->payment_gateway = 'culqi';
                 $subscription->gateway_customer_id = $chargeResult['customer_id'] ?? null;
                 $subscription->gateway_card_id = $chargeResult['card_id'] ?? null;
                 $subscription->card_last_four = $chargeResult['card_last_four'] ?? null;
@@ -109,14 +110,32 @@ class CreateSubscriptionAction
             ? (int) ($plan->price_yearly * 100)
             : (int) ($plan->price_monthly * 100);
 
+        $email = $tenant->user?->email ?? "{$tenant->ruc}@facturacion.pe";
+
         try {
             $culqi = new \Culqi\Culqi(['api_key' => config('services.culqi.secret_key')]);
 
+            // Step 1: Create or reuse Culqi Customer
+            $customerId = $this->getOrCreateCulqiCustomer($culqi, $tenant, $email);
+
+            // Step 2: Create Culqi Card (saves token for recurring charges)
+            $card = $culqi->Cards->create([
+                'customer_id' => $customerId,
+                'token_id' => $token,
+            ]);
+
+            if (is_string($card)) {
+                throw new \RuntimeException("Error al registrar tarjeta: {$card}");
+            }
+
+            $cardId = $card->id;
+
+            // Step 3: Charge using the saved card (not the one-time token)
             $charge = $culqi->Charges->create([
                 'amount' => $amount,
                 'currency_code' => 'PEN',
-                'email' => $tenant->user?->email ?? "{$tenant->ruc}@facturacion.pe",
-                'source_id' => $token,
+                'email' => $email,
+                'source_id' => $cardId,
                 'description' => "Suscripción {$plan->name} - {$tenant->razon_social}",
                 'metadata' => [
                     'tenant_id' => (string) $tenant->id,
@@ -125,15 +144,21 @@ class CreateSubscriptionAction
                 ],
             ]);
 
+            if (is_string($charge)) {
+                throw new \RuntimeException("Error en el cobro: {$charge}");
+            }
+
             return [
                 'charge_id' => $charge->id ?? null,
-                'customer_id' => $charge->source->iin->issuer->name ?? null,
-                'card_id' => null,
-                'card_last_four' => $charge->source->last_four ?? null,
-                'card_brand' => $charge->source->iin->card_brand ?? null,
+                'customer_id' => $customerId,
+                'card_id' => $cardId,
+                'card_last_four' => $card->source->last_four ?? ($charge->source->last_four ?? null),
+                'card_brand' => $card->source->iin->card_brand ?? ($charge->source->iin->card_brand ?? null),
                 'amount' => $amount / 100,
                 'response' => (array) $charge,
             ];
+        } catch (\RuntimeException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Culqi charge failed', [
                 'tenant_id' => $tenant->id,
@@ -143,5 +168,39 @@ class CreateSubscriptionAction
 
             throw new \RuntimeException('Error al procesar el pago: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Find existing Culqi customer by email or create a new one.
+     */
+    private function getOrCreateCulqiCustomer(\Culqi\Culqi $culqi, Tenant $tenant, string $email): string
+    {
+        // Check if tenant already has a Culqi customer from a previous subscription
+        $existingCustomerId = $tenant->subscriptions()
+            ->whereNotNull('gateway_customer_id')
+            ->latest()
+            ->value('gateway_customer_id');
+
+        if ($existingCustomerId) {
+            return $existingCustomerId;
+        }
+
+        // Create new Culqi customer
+        $names = explode(' ', $tenant->razon_social ?? 'Cliente', 2);
+        $customer = $culqi->Customers->create([
+            'first_name' => $names[0] ?? 'Cliente',
+            'last_name' => $names[1] ?? $tenant->ruc,
+            'email' => $email,
+            'address' => $tenant->direccion ?? 'Lima',
+            'address_city' => 'Lima',
+            'country_code' => 'PE',
+            'phone_number' => $tenant->telefonos[0] ?? '999999999',
+        ]);
+
+        if (is_string($customer)) {
+            throw new \RuntimeException("Error al crear cliente Culqi: {$customer}");
+        }
+
+        return $customer->id;
     }
 }

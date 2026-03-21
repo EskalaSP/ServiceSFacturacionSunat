@@ -21,6 +21,12 @@ class TenantResource extends JsonResource
             'documents_this_month' => $this->documentsThisMonth(),
             'is_active' => $this->is_active,
             'has_certificate' => ! empty($this->certificate_path),
+            'telefonos' => $this->telefonos ?? [],
+            'emails' => $this->emails ?? [],
+            'cuentas_bancarias' => $this->cuentas_bancarias ?? [],
+            'billeteras_digitales' => $this->billeteras_digitales ?? [],
+            'mensaje_agradecimiento' => $this->mensaje_agradecimiento,
+            'mensaje_promocional' => $this->mensaje_promocional,
             'has_webhook' => ! empty($this->webhook_url),
             'created_at' => $this->created_at->toIso8601String(),
         ];

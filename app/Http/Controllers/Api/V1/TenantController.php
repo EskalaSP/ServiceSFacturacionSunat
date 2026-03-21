@@ -39,6 +39,23 @@ class TenantController extends Controller
             'environment' => 'nullable|string|in:beta,production',
             'webhook_url' => 'nullable|url|max:500',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'telefonos' => 'nullable|array|max:5',
+            'telefonos.*' => 'string|max:20',
+            'emails' => 'nullable|array|max:5',
+            'emails.*' => 'email|max:100',
+            'cuentas_bancarias' => 'nullable|array|max:5',
+            'cuentas_bancarias.*.banco' => 'required|string|max:50',
+            'cuentas_bancarias.*.tipo_cuenta' => 'required|string|max:30',
+            'cuentas_bancarias.*.moneda' => 'required|string|in:PEN,USD',
+            'cuentas_bancarias.*.numero' => 'required|string|max:30',
+            'cuentas_bancarias.*.cci' => 'nullable|string|max:25',
+            'cuentas_bancarias.*.titular' => 'nullable|string|max:100',
+            'billeteras_digitales' => 'nullable|array|max:5',
+            'billeteras_digitales.*.tipo' => 'required|string|in:yape,plin,tunki,otro',
+            'billeteras_digitales.*.numero' => 'required|string|max:20',
+            'billeteras_digitales.*.titular' => 'nullable|string|max:100',
+            'mensaje_agradecimiento' => 'nullable|string|max:500',
+            'mensaje_promocional' => 'nullable|string|max:500',
         ]);
 
         $tenant = $request->get('tenant');
@@ -57,6 +74,12 @@ class TenantController extends Controller
             'client_secret',
             'environment',
             'webhook_url',
+            'telefonos',
+            'emails',
+            'cuentas_bancarias',
+            'billeteras_digitales',
+            'mensaje_agradecimiento',
+            'mensaje_promocional',
         ]);
 
         if ($request->hasFile('logo')) {
@@ -77,7 +100,7 @@ class TenantController extends Controller
     public function uploadLogo(Request $request): JsonResponse
     {
         $request->validate([
-            'logo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'logo' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $tenant = $request->get('tenant');

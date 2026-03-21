@@ -9,17 +9,26 @@ class ClientResolverService
 {
     public function resolve(Tenant $tenant, array $clientData): Client
     {
+        $updateData = [
+            'razon_social' => $clientData['razon_social'],
+            'direccion' => $clientData['direccion'] ?? null,
+        ];
+
+        // Only update email/telefono if provided (don't overwrite existing with null)
+        if (! empty($clientData['email'])) {
+            $updateData['email'] = $clientData['email'];
+        }
+        if (! empty($clientData['telefono'])) {
+            $updateData['telefono'] = $clientData['telefono'];
+        }
+
         return Client::updateOrCreate(
             [
                 'tenant_id' => $tenant->id,
                 'tipo_documento' => $clientData['tipo_doc'],
                 'numero_documento' => $clientData['num_doc'],
             ],
-            [
-                'razon_social' => $clientData['razon_social'],
-                'direccion' => $clientData['direccion'] ?? null,
-                'email' => $clientData['email'] ?? null,
-            ]
+            $updateData
         );
     }
 }

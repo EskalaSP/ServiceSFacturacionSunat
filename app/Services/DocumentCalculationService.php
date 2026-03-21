@@ -12,41 +12,74 @@ class DocumentCalculationService
         $calculated = [];
 
         foreach ($items as $item) {
-            $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? 18);
             $tipAfeIgv = $item['tip_afe_igv'] ?? '10';
+            $defaultIgvRate = ($tipAfeIgv === '17') ? 4 : 18;
+            $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? $defaultIgvRate);
             $cantidad = (float) $item['cantidad'];
             $precioUnitario = (float) $item['precio_unitario'];
             $isGratuito = in_array($tipAfeIgv, $gratuitoCodes);
             $isGratuitoGravado = in_array($tipAfeIgv, $gratuitoGravadoCodes);
 
+            // Usar más precisión para valorUnitario (SUNAT permite hasta 10 decimales)
+            if ($tipAfeIgv === '10') {
+                $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 10);
+            } elseif ($tipAfeIgv === '17') {
+                $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 10);
+            } elseif (in_array($tipAfeIgv, ['20', '30', '40'])) {
+                $valorUnitario = $precioUnitario;
+            } elseif ($isGratuitoGravado) {
+                $valorUnitario = 0;
+            } elseif ($isGratuito) {
+                $valorUnitario = 0;
+            } else {
+                $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            }
+
+            // Calcular descuentos por línea sobre la base sin IGV
             $descuentoBase = 0;
+            $descuentoConIgv = 0;
+            $recalculatedDescuentos = null;
             if (! empty($item['descuentos'])) {
+                $valorBruto = ($isGratuito ? ((float) ($item['mto_valor_unitario'] ?? $precioUnitario)) : $valorUnitario) * $cantidad;
+                $totalConIgvBruto = round($precioUnitario * $cantidad, 2);
+                $recalculatedDescuentos = [];
                 foreach ($item['descuentos'] as $desc) {
                     $codTipo = $desc['cod_tipo'] ?? '00';
                     if ($codTipo === '00') {
-                        $descuentoBase += (float) $desc['monto'];
+                        $factor = (float) ($desc['factor'] ?? 0);
+                        $montoBase = $valorBruto;
+                        $monto = round($montoBase * $factor, 2);
+                        $descuentoBase += $monto;
+                        $descuentoConIgv += round($totalConIgvBruto * $factor, 2);
+                        $recalculatedDescuentos[] = [
+                            'cod_tipo' => $codTipo,
+                            'monto_base' => $montoBase,
+                            'factor' => $factor,
+                            'monto' => $monto,
+                        ];
+                    } else {
+                        $recalculatedDescuentos[] = $desc;
                     }
                 }
             }
 
             if ($tipAfeIgv === '10') {
-                $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 4);
                 $valorVenta = round($valorUnitario * $cantidad - $descuentoBase, 2);
-                $igv = round($valorVenta * $porcentajeIgv / 100, 2);
+                // IGV = totalConIgv - valorVenta (evita centavo de redondeo)
+                $totalConIgv = round($precioUnitario * $cantidad, 2) - $descuentoConIgv;
+                $igv = round($totalConIgv - $valorVenta, 2);
             } elseif ($tipAfeIgv === '20') {
-                $valorUnitario = $precioUnitario;
                 $valorVenta = round($valorUnitario * $cantidad - $descuentoBase, 2);
                 $igv = 0;
                 $porcentajeIgv = 0;
             } elseif ($tipAfeIgv === '30' || $tipAfeIgv === '40') {
-                $valorUnitario = $precioUnitario;
                 $valorVenta = round($valorUnitario * $cantidad - $descuentoBase, 2);
                 $igv = 0;
                 $porcentajeIgv = 0;
             } elseif ($tipAfeIgv === '17') {
-                $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 4);
                 $valorVenta = round($valorUnitario * $cantidad - $descuentoBase, 2);
-                $igv = round($valorVenta * $porcentajeIgv / 100, 2);
+                $totalConIgv = round($precioUnitario * $cantidad, 2) - $descuentoConIgv;
+                $igv = round($totalConIgv - $valorVenta, 2);
             } elseif ($isGratuitoGravado) {
                 $valorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
                 $valorUnitario = 0;
@@ -68,10 +101,18 @@ class DocumentCalculationService
                 $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $valorUnitario);
             }
             $valorVenta = (float) ($item['mto_valor_venta'] ?? $valorVenta);
-            $igv = (float) ($item['igv'] ?? $igv);
-            $baseIgv = (float) ($item['mto_base_igv'] ?? $valorVenta);
             $isc = (float) ($item['isc'] ?? 0);
             $icbper = (float) ($item['icbper'] ?? 0);
+
+            // When ISC present, IGV base = valor_venta + ISC and IGV must be recalculated
+            if ($isc > 0 && ! isset($item['mto_base_igv']) && ! isset($item['igv'])) {
+                $baseIgv = round($valorVenta + $isc, 2);
+                $igv = round($baseIgv * $porcentajeIgv / 100, 2);
+            } else {
+                $igv = (float) ($item['igv'] ?? $igv);
+                $baseIgv = (float) ($item['mto_base_igv'] ?? $valorVenta);
+            }
+
             $totalImpuestos = (float) ($item['total_impuestos'] ?? ($igv + $isc + $icbper));
 
             $calculated[] = [
@@ -90,7 +131,7 @@ class DocumentCalculationService
                 'total_impuestos' => $totalImpuestos,
                 'mto_precio_unitario' => $precioUnitario,
                 'descuento' => (float) ($item['descuento'] ?? $descuentoBase),
-                'descuentos' => $item['descuentos'] ?? null,
+                'descuentos' => $recalculatedDescuentos ?? $item['descuentos'] ?? null,
             ];
         }
 
@@ -147,12 +188,27 @@ class DocumentCalculationService
             }
         }
 
+        $descuentoGlobalGravadas = 0;
         if (! empty($data['descuentos_globales'])) {
             foreach ($data['descuentos_globales'] as $desc) {
-                if (($desc['cod_tipo'] ?? '02') === '03') {
-                    $sumDescuentosNoBase += (float) $desc['monto'];
+                $codTipo = $desc['cod_tipo'] ?? '02';
+                $monto = (float) ($desc['monto'] ?? 0);
+
+                if ($codTipo === '02') {
+                    // Descuento global que afecta la base imponible (gravadas)
+                    $descuentoGlobalGravadas += $monto;
+                } elseif ($codTipo === '03') {
+                    // Cargo/descuento que no afecta base imponible
+                    $sumDescuentosNoBase += $monto;
                 }
+                // Tipo 62 (retención) no modifica totales en XML, solo se muestra como descuento
             }
+        }
+
+        // Apply global discount to gravadas and recalculate IGV
+        if ($descuentoGlobalGravadas > 0) {
+            $gravadas -= $descuentoGlobalGravadas;
+            $totalIgv = round($gravadas * 0.18, 2);
         }
 
         $gravadas = round($gravadas, 2);
@@ -190,6 +246,7 @@ class DocumentCalculationService
             'sub_total' => (float) ($data['sub_total'] ?? $subTotal),
             'mto_imp_venta' => (float) ($data['mto_imp_venta'] ?? $mtoImpVenta),
             'sum_otros_descuentos' => (float) ($data['sum_otros_descuentos'] ?? $sumDescuentosNoBase),
+            'total_descuentos' => (float) ($data['total_descuentos'] ?? ($descuentoGlobalGravadas + $sumDescuentosNoBase)),
         ];
     }
 

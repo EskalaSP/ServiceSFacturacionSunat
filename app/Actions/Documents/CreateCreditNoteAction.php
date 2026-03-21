@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 class CreateCreditNoteAction
 {
+    use Concerns\ResolvesEmisionDateTime;
+
     public function __construct(
         private DocumentCalculationService $calculator,
         private ClientResolverService $clientResolver,
@@ -54,7 +56,7 @@ class CreateCreditNoteAction
                 'client_id' => $client->id,
                 'serie' => $data['serie'],
                 'correlativo' => $correlativo,
-                'fecha_emision' => $data['fecha_emision'],
+                'fecha_emision' => $this->resolveEmisionDateTime($data['fecha_emision']),
                 'tipo_moneda' => $data['tipo_moneda'] ?? 'PEN',
                 'client_tipo_doc' => $data['cliente']['tipo_doc'],
                 'client_num_doc' => $data['cliente']['num_doc'],
@@ -96,7 +98,7 @@ class CreateCreditNoteAction
             SendDocumentToSunat::dispatch(CreditNote::class, $creditNote->id);
             $creditNote->update(['sunat_status' => 'enviado']);
 
-            return $creditNote->fresh(['items']);
+            return $creditNote->fresh(['items', 'client']);
         });
     }
 }

@@ -38,6 +38,9 @@
             @case('payment-info')
                 @include('pdf.sections.payment_info')
                 @break
+            @case('bank-accounts')
+                @include('pdf.sections.bank_accounts')
+                @break
             @case('qr-code')
                 @include('pdf.sections.qr_code')
                 @break

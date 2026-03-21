@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 
 class CreateInvoiceAction
 {
+    use Concerns\ResolvesEmisionDateTime;
+
     public function __construct(
         private DocumentCalculationService $calculator,
         private ClientResolverService $clientResolver,
@@ -46,7 +48,10 @@ class CreateInvoiceAction
             $data = array_merge($data, $totals);
 
             if (empty($data['leyenda'])) {
-                $data['leyenda'] = $this->calculator->generateLeyenda($totals['mto_imp_venta'], $data['tipo_moneda'] ?? 'PEN');
+                $leyendaTotal = !empty($data['percepcion']['mto_total'])
+                    ? (float) $data['percepcion']['mto_total']
+                    : $totals['mto_imp_venta'];
+                $data['leyenda'] = $this->calculator->generateLeyenda($leyendaTotal, $data['tipo_moneda'] ?? 'PEN');
             }
 
             $invoice = Invoice::create([
@@ -56,7 +61,7 @@ class CreateInvoiceAction
                 'client_id' => $client->id,
                 'serie' => $data['serie'],
                 'correlativo' => $correlativo,
-                'fecha_emision' => $data['fecha_emision'],
+                'fecha_emision' => $this->resolveEmisionDateTime($data['fecha_emision']),
                 'fecha_vencimiento' => $data['fecha_vencimiento'] ?? null,
                 'tipo_operacion' => $data['tipo_operacion'] ?? '0101',
                 'tipo_moneda' => $data['tipo_moneda'] ?? 'PEN',
@@ -109,7 +114,8 @@ class CreateInvoiceAction
                 $this->paymentAction->execute($invoice, $data['pagos']);
             }
 
-            return $invoice->fresh(['items', 'payments']);
+            return $invoice->fresh(['items', 'payments', 'client']);
         });
     }
+
 }

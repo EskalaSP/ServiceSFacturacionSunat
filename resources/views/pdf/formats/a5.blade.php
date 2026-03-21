@@ -5,13 +5,22 @@
     @include('pdf.styles.base')
     @include('pdf.styles.a4')
     <style>
-        @page { margin: 10mm; }
+        @page { margin: 8mm; }
         body { font-size: 8.5pt; }
+        .page-border {
+            border: 0.5px solid #000;
+            border-radius: 6px;
+            padding: 12px 14px;
+        }
+        .document-badge {
+            border: 0.5px solid #000;
+            border-radius: 6px;
+            padding: 7px 6px;
+        }
         .emitter-name { font-size: 10pt; }
         .badge-title { font-size: 8.5pt; }
         .badge-number { font-size: 9.5pt; }
         .badge-cell { width: 170px; }
-        .document-badge { padding: 7px 6px; }
         .items-table th { font-size: 7pt; padding: 3px; }
         .items-table td { font-size: 7.5pt; padding: 3px; }
         .totals-table { width: 240px; }
@@ -24,6 +33,7 @@
     </style>
 </head>
 <body>
+    <div class="page-border">
     {{-- HEADER --}}
     <table class="header-table">
         <tr>
@@ -38,6 +48,12 @@
                 <div class="emitter-address">{{ $emisor['direccion'] }}</div>
                 @if($emisor['cod_local'] !== '0000')
                 <div class="emitter-address">Cod. Local: {{ $emisor['cod_local'] }}</div>
+                @endif
+                @if(!empty($telefonos))
+                <div class="emitter-address">Tel: {{ implode(' | ', $telefonos) }}</div>
+                @endif
+                @if(!empty($emails))
+                <div class="emitter-address">{{ implode(' | ', $emails) }}</div>
                 @endif
             </td>
             <td class="badge-cell">
@@ -77,6 +93,9 @@
             @case('payment-info')
                 @include('pdf.sections.payment_info')
                 @break
+            @case('bank-accounts')
+                @include('pdf.sections.bank_accounts')
+                @break
             @case('qr-code')
                 @include('pdf.sections.qr_code')
                 @break
@@ -85,5 +104,6 @@
                 @break
         @endswitch
     @endforeach
+    </div>
 </body>
 </html>

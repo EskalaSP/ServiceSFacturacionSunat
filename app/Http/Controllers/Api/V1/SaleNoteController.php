@@ -30,6 +30,8 @@ class SaleNoteController extends Controller
             'cliente.num_doc' => 'required|string|max:15',
             'cliente.razon_social' => 'required|string|max:255',
             'cliente.direccion' => 'nullable|string|max:500',
+            'cliente.email' => 'nullable|email',
+            'cliente.telefono' => 'nullable|string|max:20',
             'items' => 'required|array|min:1',
             'items.*.descripcion' => 'required|string|max:500',
             'items.*.cantidad' => 'required|numeric|min:0.0001',
@@ -88,6 +90,100 @@ class SaleNoteController extends Controller
         $saleNote = SaleNote::with(['items', 'payments'])->forTenant($tenant->id)->findOrFail($id);
 
         return $this->success(new InternalDocumentResource($saleNote));
+    }
+
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $saleNote = SaleNote::with(['items', 'payments'])->forTenant($tenant->id)->findOrFail($id);
+
+        if ($saleNote->status === 'anulada') {
+            return $this->error('No se puede editar una nota de venta anulada.', 422);
+        }
+
+        $data = $request->all();
+
+        return \DB::transaction(function () use ($saleNote, $tenant, $data) {
+            // Update client data if provided
+            if (! empty($data['cliente'])) {
+                $client = $data['cliente'];
+                $saleNote->fill([
+                    'client_tipo_doc' => $client['tipo_doc'] ?? $saleNote->client_tipo_doc,
+                    'client_num_doc' => $client['num_doc'] ?? $saleNote->client_num_doc,
+                    'client_razon_social' => $client['razon_social'] ?? $saleNote->client_razon_social,
+                    'client_direccion' => $client['direccion'] ?? $saleNote->client_direccion,
+                ]);
+
+                $clientResolver = new \App\Services\ClientResolverService();
+                $clientResolver->resolve($tenant, [
+                    'tipo_doc' => $saleNote->client_tipo_doc,
+                    'num_doc' => $saleNote->client_num_doc,
+                    'razon_social' => $saleNote->client_razon_social,
+                    'direccion' => $saleNote->client_direccion,
+                ]);
+            }
+
+            // Update simple fields if provided
+            $simpleFields = ['fecha_emision', 'fecha_vencimiento', 'tipo_moneda', 'forma_pago', 'observacion'];
+            foreach ($simpleFields as $field) {
+                if (array_key_exists($field, $data)) {
+                    $saleNote->{$field} = $data[$field];
+                }
+            }
+
+            // Recalculate items if provided
+            if (! empty($data['items'])) {
+                $calcService = new \App\Services\DocumentCalculationService();
+                $calculatedItems = $calcService->calculateItems($data['items']);
+                $totals = $calcService->calculateTotals($calculatedItems, $data);
+
+                $saleNote->fill($totals);
+
+                // Replace items
+                $saleNote->items()->delete();
+                $saleNote->items()->insert(array_map(fn ($item) => [
+                    'internal_document_id' => $saleNote->id,
+                    'codigo' => $item['codigo'],
+                    'descripcion' => $item['descripcion'],
+                    'unidad' => $item['unidad'],
+                    'cantidad' => $item['cantidad'],
+                    'mto_valor_unitario' => $item['mto_valor_unitario'],
+                    'mto_valor_venta' => $item['mto_valor_venta'],
+                    'mto_base_igv' => $item['mto_base_igv'],
+                    'porcentaje_igv' => $item['porcentaje_igv'],
+                    'igv' => $item['igv'],
+                    'tip_afe_igv' => $item['tip_afe_igv'],
+                    'isc' => $item['isc'],
+                    'icbper' => $item['icbper'],
+                    'total_impuestos' => $item['total_impuestos'],
+                    'mto_precio_unitario' => $item['mto_precio_unitario'],
+                    'descuento' => $item['descuento'] ?? 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ], $calculatedItems));
+
+                // Recalculate payment status if total changed
+                $totalPagado = $saleNote->payments->sum('monto');
+                $nuevoTotal = $totals['mto_imp_venta'];
+                $saleNote->monto_pagado = $totalPagado;
+                if ($totalPagado <= 0) {
+                    $saleNote->payment_status = 'pendiente';
+                } elseif ($totalPagado >= $nuevoTotal) {
+                    $saleNote->payment_status = 'pagado';
+                } else {
+                    $saleNote->payment_status = 'parcial';
+                }
+            }
+
+            // Clear cached PDF
+            $saleNote->pdf_path = null;
+            $saleNote->save();
+
+            return $this->success(
+                new InternalDocumentResource($saleNote->load(['items', 'payments'])),
+                'Nota de venta actualizada.'
+            );
+        });
     }
 
     public function pdf(Request $request, int $id): \Illuminate\Http\Response|JsonResponse

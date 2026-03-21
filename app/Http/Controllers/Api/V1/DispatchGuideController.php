@@ -13,6 +13,7 @@ use App\Models\DispatchGuide;
 use App\Services\Greenter\GreenterService;
 use App\Services\Pdf\PdfFormatConfig;
 use App\Services\Pdf\PdfGeneratorService;
+use App\Services\Storage\DocumentStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -65,8 +66,8 @@ class DispatchGuideController extends Controller
         $tenant = $request->get('tenant');
         $guide = DispatchGuide::forTenant($tenant->id)->findOrFail($id);
 
-        if ($guide->sunat_status !== 'rechazado') {
-            return $this->error('Solo guías rechazadas pueden editarse y reenviarse.', 422);
+        if (! in_array($guide->sunat_status, ['pendiente', 'rechazado'])) {
+            return $this->error('Solo guías pendientes o rechazadas pueden editarse.', 422);
         }
 
         try {

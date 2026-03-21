@@ -12,6 +12,7 @@ use App\Jobs\SendDocumentToSunat;
 use App\Models\Boleta;
 use App\Services\Pdf\PdfFormatConfig;
 use App\Services\Pdf\PdfGeneratorService;
+use App\Services\Storage\DocumentStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -41,8 +42,7 @@ class BoletaController extends Controller
     {
         $tenant = $request->get('tenant');
 
-        $query = Boleta::with('items')
-            ->forTenant($tenant->id)
+        $query = Boleta::forTenant($tenant->id)
             ->orderByDesc('created_at');
 
         if ($request->has('sunat_status')) {
@@ -62,10 +62,7 @@ class BoletaController extends Controller
         }
 
         if ($request->has('sucursal_id')) {
-            $sucursal = \App\Models\Sucursal::find($request->input('sucursal_id'));
-            if ($sucursal) {
-                $query->where('cod_local', $sucursal->cod_local);
-            }
+            $query->where('sucursal_id', $request->input('sucursal_id'));
         }
 
         if ($request->has('payment_status')) {
@@ -140,8 +137,11 @@ class BoletaController extends Controller
                 $totals = $calcService->calculateTotals($calculatedItems, $data);
 
                 $boleta->fill($totals);
+                $leyendaTotal = !empty($data['percepcion']['mto_total'])
+                    ? (float) $data['percepcion']['mto_total']
+                    : $totals['mto_imp_venta'];
                 $boleta->leyenda = $data['leyenda'] ?? $calcService->generateLeyenda(
-                    $totals['mto_imp_venta'],
+                    $leyendaTotal,
                     $data['tipo_moneda'] ?? $boleta->tipo_moneda ?? 'PEN'
                 );
 
@@ -247,7 +247,7 @@ class BoletaController extends Controller
     public function pdf(Request $request, int $id): \Illuminate\Http\Response|JsonResponse
     {
         $tenant = $request->get('tenant');
-        $boleta = Boleta::with('items')->forTenant($tenant->id)->findOrFail($id);
+        $boleta = Boleta::with(['items', 'payments'])->forTenant($tenant->id)->findOrFail($id);
         $formatStr = $request->input('format', config('pdf.default_format', 'a4'));
 
         try {

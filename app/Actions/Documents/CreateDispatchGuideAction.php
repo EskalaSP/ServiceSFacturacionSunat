@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class CreateDispatchGuideAction
 {
+    use Concerns\ResolvesEmisionDateTime;
+
     public function execute(Tenant $tenant, array $data): DispatchGuide
     {
         return DB::transaction(function () use ($tenant, $data) {
@@ -32,7 +34,7 @@ class CreateDispatchGuideAction
                 'cod_local' => $sucursal?->cod_local ?? $data['cod_local'] ?? '0000',
                 'serie' => $data['serie'],
                 'correlativo' => $correlativo,
-                'fecha_emision' => $data['fecha_emision'],
+                'fecha_emision' => $this->resolveEmisionDateTime($data['fecha_emision']),
                 'destinatario_tipo_doc' => $data['destinatario']['tipo_doc'],
                 'destinatario_num_doc' => $data['destinatario']['num_doc'],
                 'destinatario_razon_social' => $data['destinatario']['razon_social'],

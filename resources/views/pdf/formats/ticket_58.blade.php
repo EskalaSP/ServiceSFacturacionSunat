@@ -6,7 +6,7 @@
     @include('pdf.styles.ticket')
     <style>
         @page { margin: 3mm; }
-        body { font-size: 8pt; color: #000; }
+        body { font-size: 8pt; color: #222; }
 
         /* Header */
         .header-section { padding-bottom: 4px; }
@@ -81,6 +81,9 @@
                 @break
             @case('payment-info')
                 @include('pdf.sections.payment_info')
+                @break
+            @case('bank-accounts')
+                @include('pdf.sections.bank_accounts')
                 @break
             @case('qr-code')
                 @include('pdf.sections.qr_code')

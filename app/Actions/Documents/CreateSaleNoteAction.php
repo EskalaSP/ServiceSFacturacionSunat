@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class CreateSaleNoteAction
 {
+    use Concerns\ResolvesEmisionDateTime;
+
     public function __construct(
         private DocumentCalculationService $calculator,
         private ClientResolverService $clientResolver,
@@ -34,7 +36,7 @@ class CreateSaleNoteAction
                 'tenant_id' => $tenant->id,
                 'client_id' => $client->id,
                 'numero' => $numero,
-                'fecha_emision' => $data['fecha_emision'],
+                'fecha_emision' => $this->resolveEmisionDateTime($data['fecha_emision']),
                 'fecha_vencimiento' => $data['fecha_vencimiento'] ?? null,
                 'tipo_moneda' => $data['tipo_moneda'] ?? 'PEN',
                 'forma_pago' => $data['forma_pago'] ?? 'Contado',
@@ -69,7 +71,7 @@ class CreateSaleNoteAction
                 $this->paymentAction->execute($saleNote, $data['pagos']);
             }
 
-            return $saleNote->fresh(['items', 'payments']);
+            return $saleNote->fresh(['items', 'payments', 'client']);
         });
     }
 }

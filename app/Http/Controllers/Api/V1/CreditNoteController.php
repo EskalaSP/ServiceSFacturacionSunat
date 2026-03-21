@@ -12,6 +12,7 @@ use App\Jobs\SendDocumentToSunat;
 use App\Models\CreditNote;
 use App\Services\Pdf\PdfFormatConfig;
 use App\Services\Pdf\PdfGeneratorService;
+use App\Services\Storage\DocumentStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -36,8 +37,7 @@ class CreditNoteController extends Controller
     {
         $tenant = $request->get('tenant');
 
-        $query = CreditNote::with('items')
-            ->forTenant($tenant->id)
+        $query = CreditNote::forTenant($tenant->id)
             ->orderByDesc('created_at');
 
         if ($request->has('sunat_status')) {
@@ -57,10 +57,7 @@ class CreditNoteController extends Controller
         }
 
         if ($request->has('sucursal_id')) {
-            $sucursal = \App\Models\Sucursal::find($request->input('sucursal_id'));
-            if ($sucursal) {
-                $query->where('cod_local', $sucursal->cod_local);
-            }
+            $query->where('sucursal_id', $request->input('sucursal_id'));
         }
 
         if ($request->has('tipo_moneda')) {
@@ -86,6 +83,100 @@ class CreditNoteController extends Controller
         $creditNote = CreditNote::with('items')->forTenant($tenant->id)->findOrFail($id);
 
         return $this->success(new CreditNoteResource($creditNote));
+    }
+
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $creditNote = CreditNote::with('items')->forTenant($tenant->id)->findOrFail($id);
+
+        if ($creditNote->sunat_status === 'aceptado') {
+            return $this->error('No se puede editar una nota de crédito aceptada por SUNAT.', 422);
+        }
+
+        $data = $request->all();
+
+        return \DB::transaction(function () use ($creditNote, $tenant, $data) {
+            // Update client data if provided
+            if (! empty($data['cliente'])) {
+                $client = $data['cliente'];
+                $creditNote->fill([
+                    'client_tipo_doc' => $client['tipo_doc'] ?? $creditNote->client_tipo_doc,
+                    'client_num_doc' => $client['num_doc'] ?? $creditNote->client_num_doc,
+                    'client_razon_social' => $client['razon_social'] ?? $creditNote->client_razon_social,
+                    'client_direccion' => $client['direccion'] ?? $creditNote->client_direccion,
+                ]);
+
+                $clientResolver = new \App\Services\ClientResolverService();
+                $clientResolver->resolve($tenant, [
+                    'tipo_doc' => $creditNote->client_tipo_doc,
+                    'num_doc' => $creditNote->client_num_doc,
+                    'razon_social' => $creditNote->client_razon_social,
+                    'direccion' => $creditNote->client_direccion,
+                ]);
+            }
+
+            // Update simple fields if provided
+            $simpleFields = ['tipo_moneda', 'observacion', 'doc_afectado_tipo', 'doc_afectado_serie', 'doc_afectado_correlativo', 'cod_motivo', 'des_motivo'];
+            foreach ($simpleFields as $field) {
+                if (array_key_exists($field, $data)) {
+                    $creditNote->{$field} = $data[$field];
+                }
+            }
+
+            // Recalculate items if provided
+            if (! empty($data['items'])) {
+                $calcService = new \App\Services\DocumentCalculationService();
+                $calculatedItems = $calcService->calculateItems($data['items']);
+                $totals = $calcService->calculateTotals($calculatedItems, $data);
+
+                $creditNote->fill($totals);
+                $creditNote->leyenda = $data['leyenda'] ?? $calcService->generateLeyenda(
+                    $totals['mto_imp_venta'],
+                    $data['tipo_moneda'] ?? $creditNote->tipo_moneda ?? 'PEN'
+                );
+
+                // Replace items
+                $creditNote->items()->delete();
+                $creditNote->items()->insert(array_map(fn ($item) => [
+                    'credit_note_id' => $creditNote->id,
+                    'codigo' => $item['codigo'],
+                    'descripcion' => $item['descripcion'],
+                    'unidad' => $item['unidad'],
+                    'cantidad' => $item['cantidad'],
+                    'mto_valor_unitario' => $item['mto_valor_unitario'],
+                    'mto_valor_venta' => $item['mto_valor_venta'],
+                    'mto_base_igv' => $item['mto_base_igv'],
+                    'porcentaje_igv' => $item['porcentaje_igv'],
+                    'igv' => $item['igv'],
+                    'tip_afe_igv' => $item['tip_afe_igv'],
+                    'isc' => $item['isc'],
+                    'icbper' => $item['icbper'],
+                    'total_impuestos' => $item['total_impuestos'],
+                    'mto_precio_unitario' => $item['mto_precio_unitario'],
+                    'descuento' => $item['descuento'] ?? 0,
+                    'descuentos' => isset($item['descuentos']) ? json_encode($item['descuentos']) : null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ], $calculatedItems));
+            }
+
+            // Reset SUNAT status and resend
+            $creditNote->fill([
+                'sunat_status' => 'pendiente',
+                'sunat_code' => null,
+                'sunat_description' => null,
+                'sunat_notes' => null,
+            ]);
+            $creditNote->save();
+
+            SendDocumentToSunat::dispatch(CreditNote::class, $creditNote->id);
+
+            return $this->success(
+                new CreditNoteResource($creditNote->load('items')),
+                'Nota de crédito actualizada y reenviada a SUNAT.'
+            );
+        });
     }
 
     public function resend(Request $request, int $id): JsonResponse

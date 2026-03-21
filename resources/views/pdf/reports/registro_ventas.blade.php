@@ -65,11 +65,11 @@
                     <td class="text-center">{{ $doc['tipo_moneda'] }}</td>
                     <td class="text-center">
                         @if($doc['sunat_status'] === 'aceptado')
-                            <span class="badge badge-success">OK</span>
+                            <span class="badge badge-success">Acept.</span>
                         @elseif($doc['sunat_status'] === 'rechazado')
-                            <span class="badge badge-danger">RECH</span>
+                            <span class="badge badge-danger">Rech.</span>
                         @else
-                            <span class="badge badge-warning">{{ strtoupper(substr($doc['sunat_status'], 0, 4)) }}</span>
+                            <span class="badge badge-warning">{{ ucfirst(substr($doc['sunat_status'], 0, 5)) }}</span>
                         @endif
                     </td>
                 </tr>

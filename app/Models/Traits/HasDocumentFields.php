@@ -15,7 +15,7 @@ trait HasDocumentFields
 
     public function getNumeroCompletoAttribute(): string
     {
-        return $this->serie . '-' . $this->correlativo;
+        return $this->serie . '-' . str_pad($this->correlativo, 6, '0', STR_PAD_LEFT);
     }
 
     public function client(): BelongsTo
@@ -41,7 +41,7 @@ trait HasDocumentFields
     protected function sharedCasts(): array
     {
         return [
-            'fecha_emision' => 'date',
+            'fecha_emision' => 'datetime',
             'fecha_vencimiento' => 'date',
             'correlativo' => 'integer',
             'mto_oper_gravadas' => 'decimal:2',

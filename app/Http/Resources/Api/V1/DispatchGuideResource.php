@@ -14,7 +14,7 @@ class DispatchGuideResource extends JsonResource
             'serie' => $this->serie,
             'correlativo' => $this->correlativo,
             'numero_completo' => $this->numero_completo,
-            'fecha_emision' => $this->fecha_emision->format('Y-m-d'),
+            'fecha_emision' => $this->fecha_emision->format('Y-m-d H:i:s'),
             'destinatario' => [
                 'tipo_doc' => $this->destinatario_tipo_doc,
                 'num_doc' => $this->destinatario_num_doc,

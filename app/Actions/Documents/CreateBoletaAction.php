@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 
 class CreateBoletaAction
 {
+    use Concerns\ResolvesEmisionDateTime;
+
     public function __construct(
         private DocumentCalculationService $calculator,
         private ClientResolverService $clientResolver,
@@ -46,7 +48,10 @@ class CreateBoletaAction
             $data = array_merge($data, $totals);
 
             if (empty($data['leyenda'])) {
-                $data['leyenda'] = $this->calculator->generateLeyenda($totals['mto_imp_venta'], $data['tipo_moneda'] ?? 'PEN');
+                $leyendaTotal = !empty($data['percepcion']['mto_total'])
+                    ? (float) $data['percepcion']['mto_total']
+                    : $totals['mto_imp_venta'];
+                $data['leyenda'] = $this->calculator->generateLeyenda($leyendaTotal, $data['tipo_moneda'] ?? 'PEN');
             }
 
             $boleta = Boleta::create([
@@ -56,7 +61,7 @@ class CreateBoletaAction
                 'client_id' => $client->id,
                 'serie' => $data['serie'],
                 'correlativo' => $correlativo,
-                'fecha_emision' => $data['fecha_emision'],
+                'fecha_emision' => $this->resolveEmisionDateTime($data['fecha_emision']),
                 'fecha_vencimiento' => $data['fecha_vencimiento'] ?? null,
                 'tipo_operacion' => $data['tipo_operacion'] ?? '0101',
                 'tipo_moneda' => $data['tipo_moneda'] ?? 'PEN',
@@ -68,8 +73,11 @@ class CreateBoletaAction
                 'mto_oper_gravadas' => $totals['mto_oper_gravadas'],
                 'mto_oper_exoneradas' => $totals['mto_oper_exoneradas'],
                 'mto_oper_inafectas' => $totals['mto_oper_inafectas'],
+                'mto_oper_exportacion' => $totals['mto_oper_exportacion'],
                 'mto_oper_gratuitas' => $totals['mto_oper_gratuitas'],
                 'mto_igv' => $totals['mto_igv'],
+                'mto_base_ivap' => $totals['mto_base_ivap'],
+                'mto_ivap' => $totals['mto_ivap'],
                 'mto_isc' => $totals['mto_isc'],
                 'mto_icbper' => $totals['mto_icbper'],
                 'total_impuestos' => $totals['total_impuestos'],
@@ -81,7 +89,12 @@ class CreateBoletaAction
                 'leyenda' => $data['leyenda'] ?? null,
                 'observacion' => $data['observacion'] ?? null,
                 'cuotas' => $data['cuotas'] ?? null,
+                'detraccion' => $data['detraccion'] ?? null,
+                'percepcion' => $data['percepcion'] ?? null,
+                'anticipos' => $data['anticipos'] ?? null,
+                'descuentos_globales' => $data['descuentos_globales'] ?? null,
                 'guias' => $data['guias'] ?? null,
+                'extras' => $data['extras'] ?? null,
                 'sunat_status' => 'pendiente',
             ]);
 
@@ -105,7 +118,7 @@ class CreateBoletaAction
                 $this->paymentAction->execute($boleta, $data['pagos']);
             }
 
-            return $boleta->fresh(['items', 'payments']);
+            return $boleta->fresh(['items', 'payments', 'client']);
         });
     }
 }

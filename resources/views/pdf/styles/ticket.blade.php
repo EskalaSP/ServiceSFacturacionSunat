@@ -1,14 +1,12 @@
 <style>
     @page { margin: 5mm 4mm; }
-    body { font-size: 9pt; line-height: 1.3; color: #000; }
+    body { font-size: 9pt; line-height: 1.3; color: #000; font-weight: bold; }
 
-    /* ══════════════════════════════════════
-       HEADER — Empresa
-       ══════════════════════════════════════ */
+    /* ── HEADER — Empresa ── */
     .header-section {
         text-align: center;
         padding-bottom: 6px;
-        border-bottom: 2px solid #000;
+        border-bottom: 0.5px dashed #000;
         margin-bottom: 6px;
     }
     .header-section img {
@@ -33,17 +31,17 @@
     .emitter-address {
         font-size: 8pt;
         color: #000;
+        font-weight: bold;
         line-height: 1.3;
     }
 
-    /* ══════════════════════════════════════
-       BADGE — Tipo de Comprobante
-       ══════════════════════════════════════ */
+    /* ── BADGE — Tipo de Comprobante ── */
     .document-badge {
         text-align: center;
-        border: 2px solid #000;
-        padding: 6px 8px;
-        margin: 8px 0;
+        padding: 5px 6px;
+        margin: 6px 0;
+        border-top: 0.5px dashed #000;
+        border-bottom: 0.5px dashed #000;
     }
     .badge-title {
         font-size: 10pt;
@@ -61,20 +59,20 @@
     }
     .badge-date {
         font-size: 8.5pt;
+        font-weight: bold;
         color: #000;
     }
 
-    /* ══════════════════════════════════════
-       INFO — Datos del cliente / receptor
-       ══════════════════════════════════════ */
+    /* ── INFO — Datos del cliente ── */
     .info-block {
         margin: 6px 0;
         padding: 5px 0;
-        border-top: 1px solid #000;
-        border-bottom: 1px solid #000;
+        border-top: 0.5px dashed #000;
+        border-bottom: 0.5px dashed #000;
     }
     .info-line {
         font-size: 8.5pt;
+        font-weight: bold;
         margin-bottom: 2px;
         line-height: 1.4;
         color: #000;
@@ -84,9 +82,7 @@
         color: #000;
     }
 
-    /* ══════════════════════════════════════
-       SECTION TITLE
-       ══════════════════════════════════════ */
+    /* ── SECTION TITLE ── */
     .section-title-bar {
         font-size: 8.5pt;
         font-weight: bold;
@@ -94,15 +90,13 @@
         text-transform: uppercase;
         letter-spacing: 0.3px;
         padding: 3px 0;
-        border-top: 1px solid #000;
-        border-bottom: 1px solid #000;
+        border-top: 0.5px dashed #000;
+        border-bottom: 0.5px dashed #000;
         margin: 6px 0 4px;
         color: #000;
     }
 
-    /* ══════════════════════════════════════
-       ITEMS — Tabla de productos
-       ══════════════════════════════════════ */
+    /* ── ITEMS — Tabla de productos ── */
     .items-table-ticket {
         width: 100%;
         border-collapse: collapse;
@@ -114,8 +108,7 @@
         font-weight: bold;
         text-transform: uppercase;
         padding: 3px 2px;
-        border-top: 1px solid #000;
-        border-bottom: 1px solid #000;
+        border-bottom: 0.5px solid #000;
         color: #000;
         text-align: left;
     }
@@ -124,8 +117,9 @@
     }
     .items-table-ticket tbody td {
         font-size: 8.5pt;
+        font-weight: bold;
         padding: 3px 2px;
-        border-bottom: 1px dotted #000;
+        border-bottom: 0.5px dotted #000;
         color: #000;
         vertical-align: top;
     }
@@ -135,16 +129,15 @@
     }
     .items-table-ticket .item-qty-detail {
         font-size: 7.5pt;
+        font-weight: bold;
         color: #000;
     }
 
-    /* ══════════════════════════════════════
-       TOTALS — Tabla de montos
-       ══════════════════════════════════════ */
+    /* ── TOTALS — Tabla de montos ── */
     .totals-section {
         margin-top: 6px;
         padding-top: 4px;
-        border-top: 2px solid #000;
+        border-top: 0.5px dashed #000;
     }
     .totals-table-ticket {
         width: 100%;
@@ -153,6 +146,7 @@
     }
     .totals-table-ticket td {
         font-size: 8.5pt;
+        font-weight: bold;
         padding: 2px 0;
         color: #000;
     }
@@ -165,39 +159,38 @@
         color: #000;
     }
     .totals-table-ticket .total-separator td {
-        border-top: 1px solid #000;
+        border-top: 0.5px dotted #000;
         padding-top: 3px;
     }
     .totals-table-ticket .total-final td {
         font-size: 11pt;
         font-weight: bold;
-        border-top: 2px solid #000;
+        border-top: 0.5px solid #000;
         padding-top: 4px;
         color: #000;
     }
 
-    /* ══════════════════════════════════════
-       LEYENDA — Monto en letras
-       ══════════════════════════════════════ */
+    /* ── LEYENDA — Monto en letras ── */
     .leyenda {
         font-size: 7.5pt;
+        font-weight: bold;
         color: #000;
         margin: 6px 0;
         padding: 4px;
-        border: 1px solid #000;
         text-align: center;
         font-style: italic;
         line-height: 1.3;
+        border-top: 0.5px dotted #000;
+        border-bottom: 0.5px dotted #000;
     }
 
-    /* ══════════════════════════════════════
-       PAYMENT — Forma de pago / Cuotas
-       ══════════════════════════════════════ */
+    /* ── PAYMENT — Forma de pago ── */
     .payment-section {
         font-size: 8pt;
+        font-weight: bold;
         margin: 6px 0;
         padding: 4px 0;
-        border-top: 1px solid #000;
+        border-top: 0.5px dashed #000;
         color: #000;
     }
     .payment-title {
@@ -213,20 +206,21 @@
     }
     .payment-table-ticket td {
         font-size: 8pt;
+        font-weight: bold;
         padding: 1px 0;
         color: #000;
     }
     .payment-table-ticket .pay-label { text-align: left; }
     .payment-table-ticket .pay-value { text-align: right; }
 
-    /* ══════════════════════════════════════
-       NOTE REFERENCE — Doc afectado (NC/ND)
-       ══════════════════════════════════════ */
+    /* ── NOTE REFERENCE — Doc afectado (NC/ND) ── */
     .note-reference {
         font-size: 8pt;
+        font-weight: bold;
         margin: 6px 0;
         padding: 5px;
-        border: 1.5px solid #000;
+        border-top: 0.5px dashed #000;
+        border-bottom: 0.5px dashed #000;
         color: #000;
     }
     .note-reference .ref-title {
@@ -236,11 +230,10 @@
         color: #000;
     }
 
-    /* ══════════════════════════════════════
-       DISPATCH — Datos de transporte
-       ══════════════════════════════════════ */
+    /* ── DISPATCH — Datos de transporte ── */
     .dispatch-section {
         font-size: 8pt;
+        font-weight: bold;
         margin: 4px 0;
         color: #000;
     }
@@ -249,41 +242,40 @@
         font-size: 8.5pt;
         text-align: center;
         padding: 2px 0;
-        border-top: 1px solid #000;
-        border-bottom: 1px solid #000;
+        border-top: 0.5px dashed #000;
+        border-bottom: 0.5px dashed #000;
         margin: 4px 0 3px;
         color: #000;
     }
 
-    /* ══════════════════════════════════════
-       QR CODE
-       ══════════════════════════════════════ */
+    /* ── QR CODE ── */
     .qr-section {
         text-align: center;
         margin: 8px 0 4px;
     }
     .qr-section img { width: 90px; height: 90px; }
 
-    /* ══════════════════════════════════════
-       FOOTER
-       ══════════════════════════════════════ */
+    /* ── FOOTER ── */
     .footer-section {
         font-size: 7pt;
+        font-weight: bold;
         color: #000;
         text-align: center;
         margin-top: 4px;
         padding-top: 4px;
-        border-top: 2px solid #000;
+        border-top: 0.5px dashed #000;
         line-height: 1.4;
     }
     .footer-hash {
         font-size: 7pt;
+        font-weight: bold;
         margin-bottom: 3px;
         word-break: break-all;
         color: #000;
     }
     .footer-legal {
         font-size: 7pt;
+        font-weight: bold;
         font-style: italic;
         color: #000;
     }

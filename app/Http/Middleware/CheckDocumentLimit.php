@@ -28,6 +28,11 @@ class CheckDocumentLimit
             return $next($request);
         }
 
+        // Beta mode: skip document limits for testing
+        if ($tenant->environment === 'beta') {
+            return $next($request);
+        }
+
         $plan = $this->planService->getActivePlan($tenant);
 
         $monthStart = now()->startOfMonth()->toDateString();
@@ -43,14 +48,22 @@ class CheckDocumentLimit
 
             $sunatKey = "tenant:{$tenant->id}:sunat_count:" . now()->format('Y-m');
             $sunatCount = Cache::remember($sunatKey, 300, function () use ($tenant, $monthStart, $monthEnd) {
-                $where = fn ($q) => $q->where('tenant_id', $tenant->id)
-                    ->whereBetween('created_at', [$monthStart . ' 00:00:00', $monthEnd . ' 23:59:59']);
+                $bind = [$tenant->id, $monthStart . ' 00:00:00', $monthEnd . ' 23:59:59'];
+                $bindings = array_merge($bind, $bind, $bind, $bind, $bind);
 
-                return Invoice::where($where)->count()
-                    + Boleta::where($where)->count()
-                    + CreditNote::where($where)->count()
-                    + DebitNote::where($where)->count()
-                    + DispatchGuide::where($where)->count();
+                return (int) \DB::selectOne("
+                    SELECT COALESCE(SUM(cnt), 0) AS total FROM (
+                        SELECT COUNT(*) AS cnt FROM invoices WHERE tenant_id = ? AND created_at BETWEEN ? AND ?
+                        UNION ALL
+                        SELECT COUNT(*) FROM boletas WHERE tenant_id = ? AND created_at BETWEEN ? AND ?
+                        UNION ALL
+                        SELECT COUNT(*) FROM credit_notes WHERE tenant_id = ? AND created_at BETWEEN ? AND ?
+                        UNION ALL
+                        SELECT COUNT(*) FROM debit_notes WHERE tenant_id = ? AND created_at BETWEEN ? AND ?
+                        UNION ALL
+                        SELECT COUNT(*) FROM dispatch_guides WHERE tenant_id = ? AND created_at BETWEEN ? AND ?
+                    ) AS counts
+                ", $bindings)->total;
             });
 
             if ($sunatCount >= $maxSunat) {
@@ -86,11 +99,11 @@ class CheckDocumentLimit
         $message = "Has alcanzado el limite de {$label} ({$count}/{$limit} por mes).";
 
         if ($plan->slug === 'free') {
-            $message .= ' Actualiza a Pro por S/29/mes para más documentos.';
-            $nextPlan = ['slug' => 'pro', 'price' => 29, 'currency' => 'PEN', 'trial_days' => 14];
+            $message .= ' Actualiza a Pro por S/49/mes para más documentos.';
+            $nextPlan = ['slug' => 'pro', 'price' => 49, 'currency' => 'PEN', 'trial_days' => 14];
         } elseif ($plan->slug === 'pro') {
-            $message .= ' Actualiza a Business por S/79/mes para documentos ilimitados.';
-            $nextPlan = ['slug' => 'business', 'price' => 79, 'currency' => 'PEN', 'trial_days' => 14];
+            $message .= ' Actualiza a Business por S/99/mes para documentos ilimitados.';
+            $nextPlan = ['slug' => 'business', 'price' => 99, 'currency' => 'PEN', 'trial_days' => 14];
         }
 
         return response()->json([

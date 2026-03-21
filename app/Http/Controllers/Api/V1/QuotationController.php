@@ -29,6 +29,8 @@ class QuotationController extends Controller
             'cliente.num_doc' => 'required|string|max:15',
             'cliente.razon_social' => 'required|string|max:255',
             'cliente.direccion' => 'nullable|string|max:500',
+            'cliente.email' => 'nullable|email',
+            'cliente.telefono' => 'nullable|string|max:20',
             'items' => 'required|array|min:1',
             'items.*.descripcion' => 'required|string|max:500',
             'items.*.cantidad' => 'required|numeric|min:0.0001',
@@ -86,6 +88,84 @@ class QuotationController extends Controller
         $quotation = Quotation::with('items')->forTenant($tenant->id)->findOrFail($id);
 
         return $this->success(new InternalDocumentResource($quotation));
+    }
+
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $quotation = Quotation::with('items')->forTenant($tenant->id)->findOrFail($id);
+
+        $data = $request->all();
+
+        return \DB::transaction(function () use ($quotation, $tenant, $data) {
+            // Update client data if provided
+            if (! empty($data['cliente'])) {
+                $client = $data['cliente'];
+                $quotation->fill([
+                    'client_tipo_doc' => $client['tipo_doc'] ?? $quotation->client_tipo_doc,
+                    'client_num_doc' => $client['num_doc'] ?? $quotation->client_num_doc,
+                    'client_razon_social' => $client['razon_social'] ?? $quotation->client_razon_social,
+                    'client_direccion' => $client['direccion'] ?? $quotation->client_direccion,
+                ]);
+
+                $clientResolver = new \App\Services\ClientResolverService();
+                $clientResolver->resolve($tenant, [
+                    'tipo_doc' => $quotation->client_tipo_doc,
+                    'num_doc' => $quotation->client_num_doc,
+                    'razon_social' => $quotation->client_razon_social,
+                    'direccion' => $quotation->client_direccion,
+                ]);
+            }
+
+            // Update simple fields if provided
+            $simpleFields = ['fecha_emision', 'fecha_vencimiento', 'tipo_moneda', 'observacion'];
+            foreach ($simpleFields as $field) {
+                if (array_key_exists($field, $data)) {
+                    $quotation->{$field} = $data[$field];
+                }
+            }
+
+            // Recalculate items if provided
+            if (! empty($data['items'])) {
+                $calcService = new \App\Services\DocumentCalculationService();
+                $calculatedItems = $calcService->calculateItems($data['items']);
+                $totals = $calcService->calculateTotals($calculatedItems, $data);
+
+                $quotation->fill($totals);
+
+                // Replace items
+                $quotation->items()->delete();
+                $quotation->items()->insert(array_map(fn ($item) => [
+                    'internal_document_id' => $quotation->id,
+                    'codigo' => $item['codigo'],
+                    'descripcion' => $item['descripcion'],
+                    'unidad' => $item['unidad'],
+                    'cantidad' => $item['cantidad'],
+                    'mto_valor_unitario' => $item['mto_valor_unitario'],
+                    'mto_valor_venta' => $item['mto_valor_venta'],
+                    'mto_base_igv' => $item['mto_base_igv'],
+                    'porcentaje_igv' => $item['porcentaje_igv'],
+                    'igv' => $item['igv'],
+                    'tip_afe_igv' => $item['tip_afe_igv'],
+                    'isc' => $item['isc'],
+                    'icbper' => $item['icbper'],
+                    'total_impuestos' => $item['total_impuestos'],
+                    'mto_precio_unitario' => $item['mto_precio_unitario'],
+                    'descuento' => $item['descuento'] ?? 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ], $calculatedItems));
+            }
+
+            // Clear cached PDF
+            $quotation->pdf_path = null;
+            $quotation->save();
+
+            return $this->success(
+                new InternalDocumentResource($quotation->load('items')),
+                'Cotización actualizada.'
+            );
+        });
     }
 
     public function updateStatus(Request $request, int $id): JsonResponse

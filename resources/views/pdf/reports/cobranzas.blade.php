@@ -139,11 +139,11 @@
                 <td class="text-right">{{ $d['dias_atraso'] > 0 ? $d['dias_atraso'] : '-' }}</td>
                 <td class="text-center">
                     @if($d['payment_status'] === 'pagado')
-                        <span class="badge badge-success">PAGADO</span>
+                        <span class="badge badge-success">Pagado</span>
                     @elseif($d['payment_status'] === 'parcial')
-                        <span class="badge badge-warning">PARCIAL</span>
+                        <span class="badge badge-warning">Parcial</span>
                     @else
-                        <span class="badge badge-danger">PEND.</span>
+                        <span class="badge badge-danger">Pendiente</span>
                     @endif
                 </td>
             </tr>

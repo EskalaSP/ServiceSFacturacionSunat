@@ -26,6 +26,7 @@ class StoreCreditNoteRequest extends FormRequest
             'cliente.razon_social' => 'required|string|max:255',
             'cliente.direccion' => 'nullable|string|max:500',
             'cliente.email' => 'nullable|email',
+            'cliente.telefono' => 'nullable|string|max:20',
 
             'doc_afectado_tipo' => 'required|string|in:01,03',
             'doc_afectado_serie' => 'required|string|size:4',

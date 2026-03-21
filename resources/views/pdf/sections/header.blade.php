@@ -12,6 +12,12 @@
                 <br>Cod. Establecimiento: {{ $emisor['cod_local'] }}
             @endif
         </div>
+        @if(!empty($telefonos))
+        <div class="emitter-address">Tel: {{ implode(' | ', $telefonos) }}</div>
+        @endif
+        @if(!empty($emails))
+        <div class="emitter-address">{{ implode(' | ', $emails) }}</div>
+        @endif
     </div>
 @else
     {{-- Renderizado como parte de header-table en layouts A4/A5 --}}

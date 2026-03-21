@@ -4,8 +4,22 @@
     <meta charset="UTF-8">
     @include('pdf.styles.base')
     @include('pdf.styles.a4')
+    <style>
+        @page { margin: 12mm; }
+        .page-border {
+            border: 0.5px solid #000;
+            border-radius: 8px;
+            padding: 18px 20px;
+        }
+        .document-badge {
+            border: 0.5px solid #000;
+            border-radius: 8px;
+            padding: 10px 8px;
+        }
+    </style>
 </head>
 <body>
+    <div class="page-border">
     {{-- HEADER: Logo + Emisor + Badge --}}
     <table class="header-table">
         <tr>
@@ -20,6 +34,12 @@
                 <div class="emitter-address">{{ $emisor['direccion'] }}</div>
                 @if($emisor['cod_local'] !== '0000')
                 <div class="emitter-address">Cod. Local: {{ $emisor['cod_local'] }}</div>
+                @endif
+                @if(!empty($telefonos))
+                <div class="emitter-address">Tel: {{ implode(' | ', $telefonos) }}</div>
+                @endif
+                @if(!empty($emails))
+                <div class="emitter-address">{{ implode(' | ', $emails) }}</div>
                 @endif
             </td>
             <td class="badge-cell">
@@ -61,6 +81,9 @@
             @case('payment-info')
                 @include('pdf.sections.payment_info')
                 @break
+            @case('bank-accounts')
+                @include('pdf.sections.bank_accounts')
+                @break
             @case('qr-code')
                 @include('pdf.sections.qr_code')
                 @break
@@ -69,5 +92,6 @@
                 @break
         @endswitch
     @endforeach
+    </div>
 </body>
 </html>

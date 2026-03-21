@@ -64,6 +64,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('credit-notes/{id}/xml', [CreditNoteController::class, 'xml']);
     Route::get('credit-notes/{id}/cdr', [CreditNoteController::class, 'cdr']);
     Route::get('credit-notes/{id}/pdf', [CreditNoteController::class, 'pdf']);
+    Route::put('credit-notes/{id}', [CreditNoteController::class, 'update']);
     Route::post('credit-notes/{id}/resend', [CreditNoteController::class, 'resend']);
 
     // Notas de Débito (08)
@@ -73,6 +74,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('debit-notes/{id}/xml', [DebitNoteController::class, 'xml']);
     Route::get('debit-notes/{id}/cdr', [DebitNoteController::class, 'cdr']);
     Route::get('debit-notes/{id}/pdf', [DebitNoteController::class, 'pdf']);
+    Route::put('debit-notes/{id}', [DebitNoteController::class, 'update']);
     Route::post('debit-notes/{id}/resend', [DebitNoteController::class, 'resend']);
 
     // Guías de remisión
@@ -121,6 +123,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::post('quotations', [QuotationController::class, 'store'])->middleware('check.limit:internal');
     Route::get('quotations', [QuotationController::class, 'index']);
     Route::get('quotations/{id}', [QuotationController::class, 'show']);
+    Route::put('quotations/{id}', [QuotationController::class, 'update']);
     Route::put('quotations/{id}/status', [QuotationController::class, 'updateStatus']);
     Route::get('quotations/{id}/pdf', [QuotationController::class, 'pdf']);
 
@@ -128,10 +131,14 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::post('sale-notes', [SaleNoteController::class, 'store'])->middleware('check.limit:internal');
     Route::get('sale-notes', [SaleNoteController::class, 'index']);
     Route::get('sale-notes/{id}', [SaleNoteController::class, 'show']);
+    Route::put('sale-notes/{id}', [SaleNoteController::class, 'update']);
     Route::get('sale-notes/{id}/pdf', [SaleNoteController::class, 'pdf']);
     Route::post('sale-notes/{id}/payments', [PaymentController::class, 'store'])->defaults('docType', 'sale-notes');
     Route::get('sale-notes/{id}/payments', [PaymentController::class, 'index'])->defaults('docType', 'sale-notes');
     Route::delete('sale-notes/{id}/payments/{paymentId}', [PaymentController::class, 'destroy'])->defaults('docType', 'sale-notes');
+
+    // === Dashboard (aggregated) ===
+    Route::get('dashboard', [\App\Http\Controllers\Api\V1\DashboardController::class, 'index']);
 
     // === Reportes ===
     Route::get('reports/registro-ventas', [ReportController::class, 'registroVentas']);

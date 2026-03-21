@@ -10,7 +10,7 @@ class DocumentTypeConfig
             'sections' => [
                 'header', 'document-badge', 'emitter', 'receiver',
                 'items', 'totals', 'leyenda', 'payment-info',
-                'qr-code', 'footer',
+                'bank-accounts', 'qr-code', 'footer',
             ],
         ],
         '03' => [
@@ -18,7 +18,7 @@ class DocumentTypeConfig
             'sections' => [
                 'header', 'document-badge', 'emitter', 'receiver',
                 'items', 'totals', 'leyenda', 'payment-info',
-                'qr-code', 'footer',
+                'bank-accounts', 'qr-code', 'footer',
             ],
         ],
         '07' => [
@@ -26,7 +26,7 @@ class DocumentTypeConfig
             'sections' => [
                 'header', 'document-badge', 'emitter', 'receiver',
                 'note-reference', 'items', 'totals', 'leyenda',
-                'qr-code', 'footer',
+                'bank-accounts', 'qr-code', 'footer',
             ],
         ],
         '08' => [
@@ -34,7 +34,7 @@ class DocumentTypeConfig
             'sections' => [
                 'header', 'document-badge', 'emitter', 'receiver',
                 'note-reference', 'items', 'totals', 'leyenda',
-                'qr-code', 'footer',
+                'bank-accounts', 'qr-code', 'footer',
             ],
         ],
         '09' => [
@@ -42,21 +42,21 @@ class DocumentTypeConfig
             'sections' => [
                 'header', 'document-badge', 'emitter', 'receiver',
                 'dispatch-info', 'items',
-                'qr-code', 'footer',
+                'bank-accounts', 'qr-code', 'footer',
             ],
         ],
         'COT' => [
             'titulo' => 'COTIZACIÓN',
             'sections' => [
                 'header', 'document-badge', 'emitter', 'receiver',
-                'items', 'totals', 'footer',
+                'items', 'totals', 'bank-accounts', 'footer',
             ],
         ],
         'NV' => [
             'titulo' => 'NOTA DE VENTA',
             'sections' => [
                 'header', 'document-badge', 'emitter', 'receiver',
-                'items', 'totals', 'payment-info', 'footer',
+                'items', 'totals', 'payment-info', 'bank-accounts', 'footer',
             ],
         ],
     ];

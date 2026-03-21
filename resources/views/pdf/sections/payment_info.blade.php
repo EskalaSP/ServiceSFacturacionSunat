@@ -1,10 +1,13 @@
-{{-- Información de pago: forma de pago, cuotas, detracción --}}
+{{-- Información de pago: forma de pago, cuotas, adelanto, detracción --}}
 @if($tipo_documento === '01' || $tipo_documento === '03')
     @if($is_ticket)
-        @if(!empty($forma_pago) || !empty($cuotas) || !empty($detraccion))
+        @if(!empty($forma_pago) || !empty($cuotas) || !empty($detraccion) || !empty($pagos))
         <div class="payment-section">
             @if(!empty($forma_pago))
             <div class="payment-title">Forma de Pago: {{ $forma_pago }}</div>
+            @endif
+            @if(!empty($pagos) && ($forma_pago ?? '') === 'Credito')
+            <div class="info-line"><span class="info-label">Adelanto:</span> {{ $moneda_simbolo }} {{ number_format(collect($pagos)->sum('monto'), 2) }}</div>
             @endif
             @if(!empty($cuotas))
             <table class="payment-table-ticket">
@@ -34,13 +37,19 @@
         </div>
         @endif
     @else
-        @if(!empty($forma_pago) || !empty($cuotas) || !empty($detraccion))
+        @if(!empty($forma_pago) || !empty($cuotas) || !empty($detraccion) || !empty($pagos))
         <div class="payment-section">
             <table>
                 @if(!empty($forma_pago))
                 <tr>
                     <td style="width: 140px;"><strong>Forma de Pago:</strong></td>
                     <td>{{ $forma_pago }}</td>
+                </tr>
+                @endif
+                @if(!empty($pagos) && ($forma_pago ?? '') === 'Credito')
+                <tr>
+                    <td><strong>Adelanto:</strong></td>
+                    <td>{{ $moneda_simbolo }} {{ number_format(collect($pagos)->sum('monto'), 2) }}</td>
                 </tr>
                 @endif
                 @if(!empty($cuotas))

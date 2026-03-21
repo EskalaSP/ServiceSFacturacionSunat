@@ -11,7 +11,7 @@ class CreditNoteItem extends Model
         'credit_note_id', 'codigo', 'descripcion', 'unidad', 'cantidad',
         'mto_valor_unitario', 'mto_valor_venta', 'mto_base_igv',
         'porcentaje_igv', 'igv', 'tip_afe_igv', 'isc', 'icbper',
-        'total_impuestos', 'mto_precio_unitario', 'descuento',
+        'total_impuestos', 'mto_precio_unitario', 'descuento', 'descuentos',
     ];
 
     protected function casts(): array
@@ -28,6 +28,7 @@ class CreditNoteItem extends Model
             'total_impuestos' => 'decimal:2',
             'mto_precio_unitario' => 'decimal:4',
             'descuento' => 'decimal:2',
+            'descuentos' => 'array',
         ];
     }
 

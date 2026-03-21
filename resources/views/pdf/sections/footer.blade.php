@@ -1,6 +1,12 @@
 {{-- Footer: hash, estado SUNAT, observación --}}
 @if($is_ticket)
     <div class="footer-section">
+        @if(!empty($mensaje_agradecimiento))
+        <div style="margin-bottom: 3px; font-style: italic;">{{ $mensaje_agradecimiento }}</div>
+        @endif
+        @if(!empty($mensaje_promocional))
+        <div style="margin-bottom: 3px;">{{ $mensaje_promocional }}</div>
+        @endif
         @if(!empty($hash_cpe))
         <div class="footer-hash">Hash: {{ $hash_cpe }}</div>
         @endif
@@ -11,6 +17,12 @@
     </div>
 @else
     <div class="footer-section">
+        @if(!empty($mensaje_agradecimiento))
+        <div style="margin-bottom: 4px; font-style: italic;">{{ $mensaje_agradecimiento }}</div>
+        @endif
+        @if(!empty($mensaje_promocional))
+        <div style="margin-bottom: 4px;">{{ $mensaje_promocional }}</div>
+        @endif
         <table>
             <tr>
                 <td style="width: 50%; vertical-align: top;">

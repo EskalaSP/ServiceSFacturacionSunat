@@ -50,12 +50,15 @@ class InvoiceBuilder
 
         // Forma de pago
         if (($data['forma_pago'] ?? 'Contado') === 'Credito') {
-            $totalCredito = $data['mto_imp_venta'] ?? 0;
+            $cuotasData = $data['cuotas'] ?? [];
+            // SUNAT: FormaPagoCredito = monto pendiente = suma de cuotas
+            $sumCuotas = array_sum(array_column($cuotasData, 'monto'));
+            $totalCredito = $sumCuotas > 0 ? $sumCuotas : ($data['mto_imp_venta'] ?? 0);
             $invoice->setFormaPago(new FormaPagoCredito($totalCredito));
 
-            if (! empty($data['cuotas'])) {
+            if (! empty($cuotasData)) {
                 $cuotas = [];
-                foreach ($data['cuotas'] as $i => $cuota) {
+                foreach ($cuotasData as $i => $cuota) {
                     $cuotas[] = (new Cuota())
                         ->setMonto($cuota['monto'])
                         ->setFechaPago(new DateTime($cuota['fecha_pago'], new DateTimeZone('America/Lima')));
@@ -104,6 +107,8 @@ class InvoiceBuilder
         }
         if (! empty($data['mto_isc'])) {
             $invoice->setMtoISC((float) $data['mto_isc']);
+            // SUNAT 3296: document-level ISC base must match sum of line ISC bases
+            $invoice->setMtoBaseIsc((float) ($data['mto_base_isc'] ?? $data['mto_oper_gravadas'] ?? 0));
         }
         if (! empty($data['mto_icbper'])) {
             $invoice->setIcbper((float) $data['mto_icbper']);
@@ -166,10 +171,15 @@ class InvoiceBuilder
         if (! empty($data['percepcion'])) {
             $per = $data['percepcion'];
             $invoice->setTipoOperacion($per['tipo_operacion'] ?? '2001');
+            // SUNAT expects MultiplierFactorNumeric as decimal factor (0.02 for 2%), not percentage
+            $porcentaje = (float) $per['porcentaje'];
+            if ($porcentaje > 1) {
+                $porcentaje = $porcentaje / 100;
+            }
             $invoice->setPerception(
                 (new SalePerception())
                     ->setCodReg($per['cod_reg'] ?? '51')
-                    ->setPorcentaje((float) $per['porcentaje'])
+                    ->setPorcentaje($porcentaje)
                     ->setMtoBase((float) $per['mto_base'])
                     ->setMto((float) $per['mto'])
                     ->setMtoTotal((float) $per['mto_total'])
@@ -177,6 +187,7 @@ class InvoiceBuilder
         }
 
         // Anticipos
+        $totalAnticipos = 0;
         if (! empty($data['anticipos'])) {
             $anticipos = [];
             foreach ($data['anticipos'] as $ant) {
@@ -186,12 +197,13 @@ class InvoiceBuilder
                     ->setTotal((float) $ant['total']);
             }
             $invoice->setAnticipos($anticipos);
-            $invoice->setTotalAnticipos((float) ($data['total_anticipos'] ?? 0));
+            $totalAnticipos = (float) ($data['total_anticipos'] ?? array_sum(array_column($data['anticipos'], 'total')));
+            $invoice->setTotalAnticipos($totalAnticipos);
         }
 
         // Descuentos globales
+        $descuentos = [];
         if (! empty($data['descuentos_globales'])) {
-            $descuentos = [];
             foreach ($data['descuentos_globales'] as $desc) {
                 $descuentos[] = (new Charge())
                     ->setCodTipo($desc['cod_tipo'] ?? '02')
@@ -199,6 +211,25 @@ class InvoiceBuilder
                     ->setFactor((float) ($desc['factor'] ?? 1))
                     ->setMonto((float) $desc['monto']);
             }
+        }
+        // SUNAT 3287: anticipos require descuento global tipo 04
+        if ($totalAnticipos > 0) {
+            $hasTipo04 = false;
+            foreach ($descuentos as $desc) {
+                if ($desc->getCodTipo() === '04') {
+                    $hasTipo04 = true;
+                    break;
+                }
+            }
+            if (! $hasTipo04) {
+                $descuentos[] = (new Charge())
+                    ->setCodTipo('04')
+                    ->setMontoBase($totalAnticipos)
+                    ->setFactor(1)
+                    ->setMonto($totalAnticipos);
+            }
+        }
+        if (! empty($descuentos)) {
             $invoice->setDescuentos($descuentos);
         }
 
@@ -213,37 +244,62 @@ class InvoiceBuilder
 
         $detail = new SaleDetail();
 
-        $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? 18);
         $tipAfeIgv = $item['tip_afe_igv'] ?? '10';
+        // IVAP (17) uses 4% rate, not standard 18% IGV
+        $defaultIgvRate = ($tipAfeIgv === '17') ? 4 : 18;
+        $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? $defaultIgvRate);
         $cantidad = (float) $item['cantidad'];
         $precioUnitario = (float) $item['precio_unitario'];
         $isGratuito = in_array($tipAfeIgv, $gratuitoCodes);
         $isGratuitoGravado = in_array($tipAfeIgv, $gratuitoGravadoCodes);
 
-        // Calcular descuentos por línea que afectan la base (cod_tipo '00')
+        // Calcular valor unitario según tipo de afectación (mayor precisión para SUNAT)
+        if ($tipAfeIgv === '10') {
+            $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 10);
+        } elseif ($tipAfeIgv === '17') {
+            $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 10);
+        } elseif (in_array($tipAfeIgv, ['20', '30', '40'])) {
+            $valorUnitario = $precioUnitario;
+        }
+
+        // Calcular descuentos por línea sobre la base sin IGV (cod_tipo '00')
         $descuentoBase = 0;
+        $descuentoConIgv = 0;
+        $recalculatedDescuentos = null;
         if (! empty($item['descuentos'])) {
+            $valorBrutoForDiscount = isset($valorUnitario) ? $valorUnitario : ($isGratuito ? ((float) ($item['mto_valor_unitario'] ?? $precioUnitario)) : $precioUnitario);
+            $valorBruto = $valorBrutoForDiscount * $cantidad;
+            $totalConIgvBruto = round($precioUnitario * $cantidad, 2);
+            $recalculatedDescuentos = [];
             foreach ($item['descuentos'] as $desc) {
                 if (($desc['cod_tipo'] ?? '00') === '00') {
-                    $descuentoBase += (float) $desc['monto'];
+                    $factor = (float) ($desc['factor'] ?? 0);
+                    $montoBase = round($valorBruto, 2);
+                    $monto = round($montoBase * $factor, 2);
+                    $descuentoBase += $monto;
+                    $descuentoConIgv += round($totalConIgvBruto * $factor, 2);
+                    $recalculatedDescuentos[] = [
+                        'cod_tipo' => $desc['cod_tipo'] ?? '00',
+                        'monto_base' => $montoBase,
+                        'factor' => $factor,
+                        'monto' => $monto,
+                    ];
+                } else {
+                    $recalculatedDescuentos[] = $desc;
                 }
             }
         }
 
-        // Calcular valores según tipo de afectación
+        // Calcular valorVenta e IGV según tipo de afectación
         if ($tipAfeIgv === '10') {
-            // Gravado: precio_unitario incluye IGV
-            $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 4);
             $valorVenta = round($valorUnitario * $cantidad - $descuentoBase, 2);
-            $igv = round($valorVenta * $porcentajeIgv / 100, 2);
+            $totalConIgv = round($precioUnitario * $cantidad, 2) - $descuentoConIgv;
+            $igv = round($totalConIgv - $valorVenta, 2);
         } elseif ($tipAfeIgv === '17') {
-            // IVAP: como gravado pero con tasa especial (4%)
-            $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 4);
             $valorVenta = round($valorUnitario * $cantidad - $descuentoBase, 2);
-            $igv = round($valorVenta * $porcentajeIgv / 100, 2);
+            $totalConIgv = round($precioUnitario * $cantidad, 2) - $descuentoConIgv;
+            $igv = round($totalConIgv - $valorVenta, 2);
         } elseif (in_array($tipAfeIgv, ['20', '30', '40'])) {
-            // Exonerado/Inafecto/Exportación: precio = valor (sin IGV)
-            $valorUnitario = $precioUnitario;
             $valorVenta = round($valorUnitario * $cantidad - $descuentoBase, 2);
             $igv = 0;
             $porcentajeIgv = 0;
@@ -251,13 +307,15 @@ class InvoiceBuilder
             // Gratuita gravada (11-17): lleva IGV
             $valorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
             $valorUnitario = 0;
-            $valorVenta = round($valorGratuito * $cantidad, 2);
-            $igv = (float) ($item['igv'] ?? round($valorVenta * $porcentajeIgv / 100, 2));
+            // LineExtensionAmount = 0 for free items (SUNAT 3271)
+            $valorVenta = 0;
+            $igvBase = round($valorGratuito * $cantidad, 2);
+            $igv = (float) ($item['igv'] ?? round($igvBase * $porcentajeIgv / 100, 2));
         } elseif ($isGratuito) {
             // Gratuita inafecta/exonerada (21, 31-36): NO lleva IGV
             $valorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
             $valorUnitario = 0;
-            $valorVenta = round($valorGratuito * $cantidad, 2);
+            $valorVenta = 0;
             $igv = 0;
             $porcentajeIgv = 0;
         } else {
@@ -271,10 +329,36 @@ class InvoiceBuilder
         if (! $isGratuito) {
             $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $valorUnitario);
         }
-        $valorVenta = (float) ($item['mto_valor_venta'] ?? $valorVenta);
-        $igv = (float) ($item['igv'] ?? $igv);
-        $baseIgv = (float) ($item['mto_base_igv'] ?? $valorVenta);
-        $totalImpuestos = (float) ($item['total_impuestos'] ?? $igv);
+        // For gratuitas, LineExtensionAmount must be 0 regardless of DB value
+        if ($isGratuito || $isGratuitoGravado) {
+            $valorVenta = 0;
+        } else {
+            $valorVenta = (float) ($item['mto_valor_venta'] ?? $valorVenta);
+        }
+
+        // ISC e ICBPER
+        $isc = (float) ($item['isc'] ?? 0);
+        $icbper = (float) ($item['icbper'] ?? 0);
+
+        // Determine default baseIgv
+        if ($isGratuitoGravado) {
+            // For gratuita gravada: base IGV = reference amount (not valorVenta which is 0)
+            $defaultBaseIgv = isset($igvBase) ? $igvBase : round(((float) ($item['mto_valor_unitario'] ?? $precioUnitario)) * $cantidad, 2);
+        } else {
+            $defaultBaseIgv = $valorVenta;
+        }
+
+        // When ISC is present, IGV base = valor_venta + ISC (SUNAT rule)
+        if ($isc > 0 && ! isset($item['mto_base_igv']) && ! isset($item['igv'])) {
+            $baseIgv = round($defaultBaseIgv + $isc, 2);
+            $igv = round($baseIgv * $porcentajeIgv / 100, 2);
+        } else {
+            $igv = (float) ($item['igv'] ?? $igv);
+            $baseIgv = (float) ($item['mto_base_igv'] ?? $defaultBaseIgv);
+        }
+
+        // totalImpuestos = IGV + ISC + ICBPER (SUNAT 3292 requires all taxes summed)
+        $totalImpuestos = (float) ($item['total_impuestos'] ?? ($igv + $isc + $icbper));
 
         $detail
             ->setCodProducto($item['codigo'] ?? '')
@@ -287,37 +371,56 @@ class InvoiceBuilder
             ->setPorcentajeIgv($porcentajeIgv)
             ->setIgv($igv)
             ->setTipAfeIgv($tipAfeIgv)
-            ->setTotalImpuestos($totalImpuestos)
-            ->setMtoPrecioUnitario($precioUnitario);
+            ->setTotalImpuestos($totalImpuestos);
 
-        // Gratuito: setMtoValorGratuito con el valor referencial por unidad
-        if ($isGratuito) {
+        if ($isGratuito || $isGratuitoGravado) {
+            // Gratuito: precio de venta = 0 (PriceTypeCode=01), valor referencial (PriceTypeCode=02)
             $mtoValorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            $detail->setMtoPrecioUnitario(0);
             $detail->setMtoValorGratuito($mtoValorGratuito);
+        } else {
+            // SUNAT 3270: PriceAmount must reflect effective price after line discount
+            if ($descuentoConIgv > 0 && $cantidad > 0) {
+                $effectiveTotal = round($precioUnitario * $cantidad, 2) - $descuentoConIgv;
+                $detail->setMtoPrecioUnitario(round($effectiveTotal / $cantidad, 2));
+            } else {
+                $detail->setMtoPrecioUnitario($precioUnitario);
+            }
         }
 
-        // Descuentos por línea
-        if (! empty($item['descuentos'])) {
+        // Descuentos por línea (usar los recalculados con base sin IGV)
+        $descuentosToUse = $recalculatedDescuentos ?? ($item['descuentos'] ?? null);
+        if (! empty($descuentosToUse)) {
             $descuentos = [];
-            foreach ($item['descuentos'] as $desc) {
+            foreach ($descuentosToUse as $desc) {
                 $descuentos[] = (new Charge())
                     ->setCodTipo($desc['cod_tipo'] ?? '00')
-                    ->setMontoBase((float) ($desc['monto_base'] ?? 0))
+                    ->setMontoBase(round((float) ($desc['monto_base'] ?? 0), 2))
                     ->setFactor((float) ($desc['factor'] ?? 1))
-                    ->setMonto((float) $desc['monto']);
+                    ->setMonto(round((float) $desc['monto'], 2));
             }
             $detail->setDescuentos($descuentos);
         }
 
-        if (! empty($item['isc'])) {
-            $detail->setIsc((float) $item['isc']);
+        if ($isc > 0) {
+            $mtoBaseIsc = (float) ($item['mto_base_isc'] ?? $valorVenta);
+            $pctIsc = (float) ($item['porcentaje_isc'] ?? 0);
+            if ($pctIsc <= 0 && $mtoBaseIsc > 0) {
+                $pctIsc = round($isc / $mtoBaseIsc * 100, 2);
+            }
+            $detail->setIsc($isc);
+            $detail->setMtoBaseIsc($mtoBaseIsc);
+            $detail->setPorcentajeIsc($pctIsc);
+            $detail->setTipSisIsc($item['tip_sis_isc'] ?? '01');
         }
 
-        if (! empty($item['icbper'])) {
-            $detail->setIcbper((float) $item['icbper']);
-            if (! empty($item['factor_icbper'])) {
-                $detail->setFactorIcbper((float) $item['factor_icbper']);
+        if ($icbper > 0) {
+            $detail->setIcbper($icbper);
+            $factorIcbper = (float) ($item['factor_icbper'] ?? 0);
+            if ($factorIcbper <= 0 && $cantidad > 0) {
+                $factorIcbper = round($icbper / $cantidad, 2);
             }
+            $detail->setFactorIcbper($factorIcbper);
         }
 
         return $detail;

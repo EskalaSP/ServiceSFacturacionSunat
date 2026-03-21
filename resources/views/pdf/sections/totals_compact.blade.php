@@ -44,7 +44,7 @@
         @endif
         @if($total_descuentos > 0)
         <tr>
-            <td class="total-label">Descuentos</td>
+            <td class="total-label">Desc. Global</td>
             <td class="total-value">-{{ number_format($total_descuentos, 2) }}</td>
         </tr>
         @endif
@@ -54,10 +54,25 @@
             <td class="total-value">-{{ number_format($total_anticipos, 2) }}</td>
         </tr>
         @endif
+        @if(!empty($percepcion))
+        <tr>
+            <td class="total-label">Subtotal</td>
+            <td class="total-value">{{ $moneda_simbolo }} {{ number_format($mto_imp_venta, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="total-label">Percepción ({{ $percepcion['porcentaje'] }}%)</td>
+            <td class="total-value">{{ number_format($percepcion['monto'], 2) }}</td>
+        </tr>
+        <tr class="total-final">
+            <td class="total-label">TOTAL</td>
+            <td class="total-value">{{ $moneda_simbolo }} {{ number_format($percepcion['mto_total'], 2) }}</td>
+        </tr>
+        @else
         <tr class="total-final">
             <td class="total-label">TOTAL</td>
             <td class="total-value">{{ $moneda_simbolo }} {{ number_format($mto_imp_venta, 2) }}</td>
         </tr>
+        @endif
     </table>
 </div>
 @endif

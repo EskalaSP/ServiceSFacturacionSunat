@@ -92,8 +92,9 @@ class NoteBuilder
 
         $detail = new SaleDetail();
 
-        $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? 18);
         $tipAfeIgv = $item['tip_afe_igv'] ?? '10';
+        $defaultIgvRate = ($tipAfeIgv === '17') ? 4 : 18;
+        $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? $defaultIgvRate);
         $cantidad = (float) $item['cantidad'];
         $precioUnitario = (float) $item['precio_unitario'];
         $isGratuito = in_array($tipAfeIgv, $gratuitoCodes);
@@ -142,12 +143,14 @@ class NoteBuilder
             ->setPorcentajeIgv($porcentajeIgv)
             ->setIgv($igv)
             ->setTipAfeIgv($tipAfeIgv)
-            ->setTotalImpuestos((float) ($item['total_impuestos'] ?? $igv))
-            ->setMtoPrecioUnitario($precioUnitario);
+            ->setTotalImpuestos((float) ($item['total_impuestos'] ?? $igv));
 
-        if ($isGratuito) {
+        if ($isGratuito || $isGratuitoGravado) {
             $mtoValorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            $detail->setMtoPrecioUnitario(0);
             $detail->setMtoValorGratuito($mtoValorGratuito);
+        } else {
+            $detail->setMtoPrecioUnitario($precioUnitario);
         }
 
         return $detail;

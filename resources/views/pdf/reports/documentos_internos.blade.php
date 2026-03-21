@@ -42,9 +42,17 @@
             </tr>
         </thead>
         <tbody>
+            @php
+                $statusBadge = [
+                    'vigente' => 'badge-info',
+                    'aceptada' => 'badge-success',
+                    'rechazada' => 'badge-danger',
+                    'vencida' => 'badge-warning',
+                ];
+            @endphp
             @foreach(['vigente', 'aceptada', 'rechazada', 'vencida'] as $st)
             <tr>
-                <td><span class="badge">{{ strtoupper($st) }}</span></td>
+                <td><span class="badge {{ $statusBadge[$st] ?? '' }}">{{ ucfirst($st) }}</span></td>
                 <td class="text-right">{{ $cotizaciones['por_status'][$st] ?? 0 }}</td>
                 <td class="text-right">{{ number_format($cotizaciones['monto_por_status'][$st] ?? 0, 2) }}</td>
             </tr>
@@ -77,7 +85,10 @@
                 <td>{{ $d['client_num_doc'] }}</td>
                 <td class="text-right">{{ number_format($d['mto_imp_venta'], 2) }}</td>
                 <td class="text-center">{{ $d['tipo_moneda'] }}</td>
-                <td class="text-center"><span class="badge">{{ strtoupper(substr($d['status'], 0, 5)) }}</span></td>
+                <td class="text-center">
+                    @php $cotBadge = match($d['status'] ?? '') { 'vigente' => 'badge-info', 'aceptada' => 'badge-success', 'rechazada' => 'badge-danger', 'vencida' => 'badge-warning', default => 'badge-info' }; @endphp
+                    <span class="badge {{ $cotBadge }}">{{ ucfirst(substr($d['status'], 0, 7)) }}</span>
+                </td>
             </tr>
             @endforeach
         </tbody>
@@ -140,8 +151,18 @@
                 <td class="text-right">{{ number_format($d['mto_imp_venta'], 2) }}</td>
                 <td class="text-right">{{ number_format($d['monto_pagado'], 2) }}</td>
                 <td class="text-center">{{ $d['tipo_moneda'] }}</td>
-                <td class="text-center"><span class="badge">{{ strtoupper(substr($d['status'], 0, 5)) }}</span></td>
-                <td class="text-center"><span class="badge">{{ strtoupper(substr($d['payment_status'], 0, 4)) }}</span></td>
+                <td class="text-center">
+                    <span class="badge {{ ($d['status'] ?? '') === 'emitida' ? 'badge-success' : 'badge-danger' }}">{{ ucfirst(substr($d['status'], 0, 7)) }}</span>
+                </td>
+                <td class="text-center">
+                    @if(($d['payment_status'] ?? '') === 'pagado')
+                        <span class="badge badge-success">Pagado</span>
+                    @elseif(($d['payment_status'] ?? '') === 'parcial')
+                        <span class="badge badge-warning">Parcial</span>
+                    @else
+                        <span class="badge badge-danger">Pend.</span>
+                    @endif
+                </td>
             </tr>
             @endforeach
         </tbody>

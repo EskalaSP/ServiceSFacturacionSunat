@@ -51,7 +51,7 @@ class DispatchGuide extends Model
     protected function casts(): array
     {
         return [
-            'fecha_emision' => 'date',
+            'fecha_emision' => 'datetime',
             'fecha_traslado' => 'date',
             'correlativo' => 'integer',
             'peso_total' => 'decimal:3',
@@ -66,6 +66,6 @@ class DispatchGuide extends Model
 
     public function getNumeroCompletoAttribute(): string
     {
-        return $this->serie . '-' . $this->correlativo;
+        return $this->serie . '-' . str_pad($this->correlativo, 6, '0', STR_PAD_LEFT);
     }
 }

@@ -71,12 +71,18 @@ class SubscriptionController extends Controller
             'plan_slug' => 'required|string|exists:plans,slug',
             'billing_cycle' => 'sometimes|string|in:monthly,yearly',
             'token' => 'sometimes|string', // Culqi token
+            'trial' => 'sometimes|boolean',
         ]);
 
         try {
-            $subscription = $action->execute($tenant, $request->only([
-                'plan_slug', 'billing_cycle', 'token',
-            ]));
+            $data = $request->only(['plan_slug', 'billing_cycle', 'token']);
+
+            // If trial requested, set trial_days (default 14)
+            if ($request->boolean('trial')) {
+                $data['trial_days'] = 14;
+            }
+
+            $subscription = $action->execute($tenant, $data);
 
             return $this->created([
                 'subscription_id' => $subscription->id,

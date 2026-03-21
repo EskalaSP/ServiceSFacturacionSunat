@@ -8,6 +8,7 @@ use App\Http\Traits\ApiResponse;
 use App\Services\Reports\ReportPdfService;
 use App\Services\Reports\ReportService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class ReportController extends Controller
 {
@@ -20,119 +21,70 @@ class ReportController extends Controller
 
     public function registroVentas(ReportRequest $request): JsonResponse|\Illuminate\Http\Response
     {
-        $tenant = $request->get('tenant');
-        $filters = $request->validated();
-        $data = $this->reportService->registroVentas($tenant, $filters);
-
-        if (($filters['formato'] ?? 'json') === 'pdf') {
-            return $this->pdfResponse(
-                $this->pdfService->generate('registro_ventas', $data, $tenant, 'landscape'),
-                'registro-ventas'
-            );
-        }
-
-        return $this->success($data, 'Registro de ventas generado.');
+        return $this->cachedReport($request, 'registro-ventas', 'registro_ventas', 'registroVentas', 'Registro de ventas generado.', 'landscape');
     }
 
     public function ventasConsolidado(ReportRequest $request): JsonResponse|\Illuminate\Http\Response
     {
-        $tenant = $request->get('tenant');
-        $filters = $request->validated();
-        $data = $this->reportService->ventasConsolidado($tenant, $filters);
-
-        if (($filters['formato'] ?? 'json') === 'pdf') {
-            return $this->pdfResponse(
-                $this->pdfService->generate('ventas_consolidado', $data, $tenant),
-                'ventas-consolidado'
-            );
-        }
-
-        return $this->success($data, 'Ventas consolidado generado.');
+        return $this->cachedReport($request, 'ventas-consolidado', 'ventas_consolidado', 'ventasConsolidado', 'Ventas consolidado generado.');
     }
 
     public function notas(ReportRequest $request): JsonResponse|\Illuminate\Http\Response
     {
-        $tenant = $request->get('tenant');
-        $filters = $request->validated();
-        $data = $this->reportService->notas($tenant, $filters);
-
-        if (($filters['formato'] ?? 'json') === 'pdf') {
-            return $this->pdfResponse(
-                $this->pdfService->generate('notas', $data, $tenant),
-                'notas-credito-debito'
-            );
-        }
-
-        return $this->success($data, 'Reporte de notas generado.');
+        return $this->cachedReport($request, 'notas-credito-debito', 'notas', 'notas', 'Reporte de notas generado.');
     }
 
     public function cobranzas(ReportRequest $request): JsonResponse|\Illuminate\Http\Response
     {
-        $tenant = $request->get('tenant');
-        $filters = $request->validated();
-        $data = $this->reportService->cobranzas($tenant, $filters);
-
-        if (($filters['formato'] ?? 'json') === 'pdf') {
-            return $this->pdfResponse(
-                $this->pdfService->generate('cobranzas', $data, $tenant),
-                'cobranzas'
-            );
-        }
-
-        return $this->success($data, 'Reporte de cobranzas generado.');
+        return $this->cachedReport($request, 'cobranzas', 'cobranzas', 'cobranzas', 'Reporte de cobranzas generado.');
     }
 
     public function documentosInternos(ReportRequest $request): JsonResponse|\Illuminate\Http\Response
     {
-        $tenant = $request->get('tenant');
-        $filters = $request->validated();
-        $data = $this->reportService->documentosInternos($tenant, $filters);
-
-        if (($filters['formato'] ?? 'json') === 'pdf') {
-            return $this->pdfResponse(
-                $this->pdfService->generate('documentos_internos', $data, $tenant),
-                'documentos-internos'
-            );
-        }
-
-        return $this->success($data, 'Reporte de documentos internos generado.');
+        return $this->cachedReport($request, 'documentos-internos', 'documentos_internos', 'documentosInternos', 'Reporte de documentos internos generado.');
     }
 
     public function porCliente(ReportRequest $request): JsonResponse|\Illuminate\Http\Response
     {
-        $tenant = $request->get('tenant');
         $filters = $request->validated();
 
         if (empty($filters['client_num_doc'])) {
             return $this->error('El filtro client_num_doc es requerido para este reporte.', 422);
         }
 
-        $data = $this->reportService->porCliente($tenant, $filters);
-
-        if (($filters['formato'] ?? 'json') === 'pdf') {
-            return $this->pdfResponse(
-                $this->pdfService->generate('por_cliente', $data, $tenant),
-                'estado-cuenta-' . $filters['client_num_doc']
-            );
-        }
-
-        return $this->success($data, 'Estado de cuenta generado.');
+        return $this->cachedReport($request, 'estado-cuenta-' . $filters['client_num_doc'], 'por_cliente', 'porCliente', 'Estado de cuenta generado.');
     }
 
     public function porSucursal(ReportRequest $request): JsonResponse|\Illuminate\Http\Response
     {
+        return $this->cachedReport($request, 'comparativo-sucursales', 'por_sucursal', 'porSucursal', 'Comparativo por sucursal generado.', 'landscape');
+    }
+
+    private function cachedReport(
+        ReportRequest $request,
+        string $pdfFilename,
+        string $pdfView,
+        string $serviceMethod,
+        string $successMsg,
+        string $orientation = 'portrait',
+    ): JsonResponse|\Illuminate\Http\Response {
         $tenant = $request->get('tenant');
         $filters = $request->validated();
-        $data = $this->reportService->porSucursal($tenant, $filters);
 
+        // PDFs are not cached
         if (($filters['formato'] ?? 'json') === 'pdf') {
+            $data = $this->reportService->{$serviceMethod}($tenant, $filters);
             return $this->pdfResponse(
-                $this->pdfService->generate('por_sucursal', $data, $tenant, 'landscape'),
-                'comparativo-sucursales'
+                $this->pdfService->generate($pdfView, $data, $tenant, $orientation),
+                $pdfFilename
             );
         }
 
-        return $this->success($data, 'Comparativo por sucursal generado.');
+        // Cache JSON report data for 5 minutes
+        $cacheKey = "report:{$tenant->id}:{$serviceMethod}:" . md5(json_encode($filters));
+        $data = Cache::remember($cacheKey, 300, fn () => $this->reportService->{$serviceMethod}($tenant, $filters));
+
+        return $this->success($data, $successMsg);
     }
 
     private function pdfResponse(string $content, string $filename): \Illuminate\Http\Response

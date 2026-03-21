@@ -34,16 +34,30 @@ class DocumentDataMapper
 
     private function mapStandardDocument(Model $document, Tenant $tenant): array
     {
-        $items = $document->items->map(fn ($item) => [
-            'codigo' => $item->codigo ?? $item->cod_producto ?? '-',
-            'descripcion' => $item->descripcion,
-            'unidad' => $item->unidad ?? $item->und_medida ?? 'NIU',
-            'cantidad' => (float) $item->cantidad,
-            'precio_unitario' => (float) ($item->mto_precio_unitario ?? $item->precio_unitario ?? 0),
-            'igv' => (float) ($item->igv ?? 0),
-            'importe' => (float) ($item->mto_valor_venta ?? $item->total ?? 0),
-            'total_item' => (float) ($item->mto_precio_unitario ?? $item->precio_unitario ?? 0) * (float) $item->cantidad,
-        ])->toArray();
+        $items = $document->items->map(function ($item) {
+            $precioUnitario = (float) ($item->mto_precio_unitario ?? $item->precio_unitario ?? 0);
+            $cantidad = (float) $item->cantidad;
+            $valorVenta = (float) ($item->mto_valor_venta ?? 0);
+            $igv = (float) ($item->igv ?? 0);
+            $descuentoBase = (float) ($item->descuento ?? 0);
+
+            // Descuento con IGV para mostrar al usuario (monto original que ingresó)
+            $descuentoConIgv = $descuentoBase > 0
+                ? round($precioUnitario * $cantidad - ($valorVenta + $igv), 2)
+                : 0;
+
+            return [
+                'codigo' => $item->codigo ?? $item->cod_producto ?? '-',
+                'descripcion' => $item->descripcion,
+                'unidad' => $item->unidad ?? $item->und_medida ?? 'NIU',
+                'cantidad' => $cantidad,
+                'precio_unitario' => $precioUnitario,
+                'igv' => $igv,
+                'importe' => $valorVenta,
+                'descuento' => $descuentoConIgv,
+                'total_item' => $valorVenta,
+            ];
+        })->toArray();
 
         $tipoDocumento = $document->getTipoDocumento();
 
@@ -53,7 +67,7 @@ class DocumentDataMapper
             'serie' => $document->serie,
             'correlativo' => $document->correlativo,
             'numero_completo' => $document->numero_completo,
-            'fecha_emision' => $document->fecha_emision?->format('Y-m-d') ?? '',
+            'fecha_emision' => $document->fecha_emision?->format('Y-m-d h:i A') ?? '',
             'fecha_vencimiento' => $document->fecha_vencimiento?->format('Y-m-d') ?? null,
             'tipo_moneda' => $document->tipo_moneda ?? 'PEN',
             'forma_pago' => $document->forma_pago ?? null,
@@ -100,10 +114,19 @@ class DocumentDataMapper
             'sunat_status' => $document->sunat_status ?? '',
             'sunat_description' => $document->sunat_description ?? '',
 
+            // Pagos/adelanto
+            'pagos' => $document->relationLoaded('payments') && $document->payments->count() > 0
+                ? $document->payments->map(fn ($p) => [
+                    'metodo' => $p->metodo_pago ?? '',
+                    'monto' => (float) $p->monto,
+                    'fecha' => $p->fecha?->format('Y-m-d') ?? $p->created_at?->format('Y-m-d') ?? '',
+                ])->toArray()
+                : null,
+
             // Campos especiales
             'cuotas' => $document->cuotas ?? null,
-            'detraccion' => $document->detraccion ?? null,
-            'percepcion' => $document->percepcion ?? null,
+            'detraccion' => $this->normalizeDetraccion($document->detraccion ?? null),
+            'percepcion' => $this->normalizePercepcion($document->percepcion ?? null),
             'anticipos' => $document->anticipos ?? null,
 
             // Nota de crédito/débito
@@ -116,6 +139,7 @@ class DocumentDataMapper
             'logo_base64' => $this->getLogoBase64($tenant),
             'qr_base64' => $this->generateQrBase64($document, $tenant),
             'moneda_simbolo' => $this->getMonedaSimbolo($document->tipo_moneda ?? 'PEN'),
+            ...$this->getBusinessConfig($tenant),
         ];
 
         return $data;
@@ -144,7 +168,7 @@ class DocumentDataMapper
             'serie' => $guide->serie,
             'correlativo' => $guide->correlativo,
             'numero_completo' => $guide->numero_completo,
-            'fecha_emision' => $guide->fecha_emision?->format('Y-m-d') ?? '',
+            'fecha_emision' => $guide->fecha_emision?->format('Y-m-d h:i A') ?? '',
             'tipo_moneda' => 'PEN',
 
             'emisor' => [
@@ -224,6 +248,7 @@ class DocumentDataMapper
             'logo_base64' => $this->getLogoBase64($tenant),
             'qr_base64' => $this->generateQrBase64($guide, $tenant),
             'moneda_simbolo' => 'S/',
+            ...$this->getBusinessConfig($tenant),
         ];
     }
 
@@ -248,7 +273,7 @@ class DocumentDataMapper
             'serie' => '',
             'correlativo' => '',
             'numero_completo' => $document->numero,
-            'fecha_emision' => $document->fecha_emision?->format('Y-m-d') ?? '',
+            'fecha_emision' => $document->fecha_emision?->format('Y-m-d h:i A') ?? '',
             'fecha_vencimiento' => $document->fecha_vencimiento?->format('Y-m-d') ?? null,
             'tipo_moneda' => $document->tipo_moneda ?? 'PEN',
             'forma_pago' => $document->forma_pago ?? null,
@@ -305,6 +330,19 @@ class DocumentDataMapper
             'logo_base64' => $this->getLogoBase64($tenant),
             'qr_base64' => '', // Internal docs don't have QR
             'moneda_simbolo' => $this->getMonedaSimbolo($document->tipo_moneda ?? 'PEN'),
+            ...$this->getBusinessConfig($tenant),
+        ];
+    }
+
+    private function getBusinessConfig(Tenant $tenant): array
+    {
+        return [
+            'telefonos' => $tenant->telefonos ?? [],
+            'emails' => $tenant->emails ?? [],
+            'cuentas_bancarias' => $tenant->cuentas_bancarias ?? [],
+            'billeteras_digitales' => $tenant->billeteras_digitales ?? [],
+            'mensaje_agradecimiento' => $tenant->mensaje_agradecimiento,
+            'mensaje_promocional' => $tenant->mensaje_promocional,
         ];
     }
 
@@ -366,6 +404,43 @@ class DocumentDataMapper
         $svg = $writer->writeString($qrData);
 
         return self::$qrCache[$qrData] = 'data:image/svg+xml;base64,' . base64_encode($svg);
+    }
+
+    private function normalizeDetraccion(?array $detraccion): ?array
+    {
+        if (empty($detraccion)) {
+            return null;
+        }
+
+        return [
+            'codigo' => $detraccion['cod_bien'] ?? $detraccion['codigo'] ?? '',
+            'medio_pago' => $detraccion['cod_medio_pago'] ?? $detraccion['medio_pago'] ?? '001',
+            'cuenta' => $detraccion['cta_banco'] ?? $detraccion['cuenta'] ?? '',
+            'porcentaje' => (float) ($detraccion['porcentaje'] ?? 0),
+            'monto' => (float) ($detraccion['monto'] ?? 0),
+        ];
+    }
+
+    private function normalizePercepcion(?array $percepcion): ?array
+    {
+        if (empty($percepcion)) {
+            return null;
+        }
+
+        // Map API keys (cod_reg, mto, mto_base, mto_total) to display keys
+        $porcentaje = (float) ($percepcion['porcentaje'] ?? 0);
+        // If stored as decimal (0.01), convert to percentage for display
+        if ($porcentaje > 0 && $porcentaje < 1) {
+            $porcentaje = $porcentaje * 100;
+        }
+
+        return [
+            'codigo' => $percepcion['cod_reg'] ?? $percepcion['codigo'] ?? '',
+            'porcentaje' => $porcentaje,
+            'monto' => (float) ($percepcion['mto'] ?? $percepcion['monto'] ?? 0),
+            'mto_base' => (float) ($percepcion['mto_base'] ?? 0),
+            'mto_total' => (float) ($percepcion['mto_total'] ?? 0),
+        ];
     }
 
     private function getMonedaSimbolo(string $tipoMoneda): string

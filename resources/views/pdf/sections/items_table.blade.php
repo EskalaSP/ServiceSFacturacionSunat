@@ -17,7 +17,12 @@
         @foreach($items as $item)
         <tr>
             <td class="text-center">{{ $item['codigo'] }}</td>
-            <td>{{ $item['descripcion'] }}</td>
+            <td>
+                {{ $item['descripcion'] }}
+                @if(!empty($item['descuento']) && $item['descuento'] > 0)
+                <br><small style="color: #999;">Dscto: -{{ number_format($item['descuento'], 2) }}</small>
+                @endif
+            </td>
             <td class="text-center">{{ $item['unidad'] }}</td>
             <td class="text-center">{{ number_format($item['cantidad'], 2) }}</td>
             <td class="text-right">{{ number_format($item['precio_unitario'], 2) }}</td>

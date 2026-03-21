@@ -79,15 +79,23 @@
                 <td class="text-right">{{ number_format($d['mto_imp_venta'], 2) }}</td>
                 <td class="text-center">{{ $d['tipo_moneda'] }}</td>
                 <td class="text-center">
-                    @if($d['sunat_status'])
-                        <span class="badge">{{ strtoupper(substr($d['sunat_status'], 0, 4)) }}</span>
+                    @if($d['sunat_status'] === 'aceptado')
+                        <span class="badge badge-success">Acept.</span>
+                    @elseif($d['sunat_status'] === 'rechazado')
+                        <span class="badge badge-danger">Rech.</span>
+                    @elseif($d['sunat_status'])
+                        <span class="badge badge-warning">{{ ucfirst(substr($d['sunat_status'], 0, 5)) }}</span>
                     @else
                         -
                     @endif
                 </td>
                 <td class="text-center">
-                    @if($d['payment_status'])
-                        <span class="badge">{{ strtoupper(substr($d['payment_status'], 0, 4)) }}</span>
+                    @if(($d['payment_status'] ?? '') === 'pagado')
+                        <span class="badge badge-success">Pagado</span>
+                    @elseif(($d['payment_status'] ?? '') === 'parcial')
+                        <span class="badge badge-warning">Parcial</span>
+                    @elseif($d['payment_status'])
+                        <span class="badge badge-danger">Pend.</span>
                     @else
                         -
                     @endif
