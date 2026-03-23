@@ -44,8 +44,12 @@ class DashboardController extends Controller
                 UNION ALL
                 SELECT 'debit_notes', mto_imp_venta FROM debit_notes
                 WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL
+                UNION ALL
+                SELECT 'sale_notes', mto_imp_venta FROM internal_documents
+                WHERE tenant_id = ? AND type = 'sale_note' AND fecha_emision BETWEEN ? AND ? AND status != 'anulada'
             ) AS docs GROUP BY tipo
         ", array_merge(
+            [$tid, $startDate, $endDate],
             [$tid, $startDate, $endDate],
             [$tid, $startDate, $endDate],
             [$tid, $startDate, $endDate],
@@ -56,7 +60,7 @@ class DashboardController extends Controller
         foreach ($summary as $row) {
             $summaryMap[$row->tipo] = ['count' => (int) $row->cnt, 'total' => round((float) $row->total, 2)];
         }
-        foreach (['invoices', 'boletas', 'credit_notes', 'debit_notes'] as $type) {
+        foreach (['invoices', 'boletas', 'credit_notes', 'debit_notes', 'sale_notes'] as $type) {
             $summaryMap[$type] ??= ['count' => 0, 'total' => 0];
         }
 
@@ -78,8 +82,8 @@ class DashboardController extends Controller
             $prevDocs += (int) $row->cnt;
         }
 
-        $currentTotal = ($summaryMap['invoices']['total'] ?? 0) + ($summaryMap['boletas']['total'] ?? 0);
-        $currentDocs = ($summaryMap['invoices']['count'] ?? 0) + ($summaryMap['boletas']['count'] ?? 0);
+        $currentTotal = ($summaryMap['invoices']['total'] ?? 0) + ($summaryMap['boletas']['total'] ?? 0) + ($summaryMap['sale_notes']['total'] ?? 0);
+        $currentDocs = ($summaryMap['invoices']['count'] ?? 0) + ($summaryMap['boletas']['count'] ?? 0) + ($summaryMap['sale_notes']['count'] ?? 0);
 
         // 3. Daily chart (ventas por día)
         $dailyChart = DB::select("
@@ -89,8 +93,11 @@ class DashboardController extends Controller
                 UNION ALL
                 SELECT DATE(fecha_emision), mto_imp_venta FROM boletas
                 WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL
+                UNION ALL
+                SELECT DATE(fecha_emision), mto_imp_venta FROM internal_documents
+                WHERE tenant_id = ? AND type = 'sale_note' AND fecha_emision BETWEEN ? AND ? AND status != 'anulada'
             ) AS sales GROUP BY day ORDER BY day
-        ", [$tid, $startDate, $endDate, $tid, $startDate, $endDate]);
+        ", [$tid, $startDate, $endDate, $tid, $startDate, $endDate, $tid, $startDate, $endDate]);
 
         // 4. Top 10 products
         $topProducts = DB::select("
@@ -124,6 +131,7 @@ class DashboardController extends Controller
             'boletas' => $summaryMap['boletas'],
             'credit_notes' => $summaryMap['credit_notes'],
             'debit_notes' => $summaryMap['debit_notes'],
+            'sale_notes' => $summaryMap['sale_notes'],
             'chart' => array_map(fn ($r) => [
                 'date' => $r->day,
                 'ventas' => round((float) $r->ventas, 2),
