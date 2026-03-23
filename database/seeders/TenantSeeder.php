@@ -11,6 +11,11 @@ class TenantSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('production')) {
+            $this->command->error('TenantSeeder no debe ejecutarse en producción.');
+            return;
+        }
+
         $storage = new DocumentStorageService();
 
         // Copiar certificado de prueba a storage privado

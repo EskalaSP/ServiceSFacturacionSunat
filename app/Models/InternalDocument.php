@@ -110,7 +110,10 @@ class InternalDocument extends Model implements Documentable
 
     public function scopeFechas(Builder $query, string $desde, string $hasta): Builder
     {
-        return $query->whereBetween('fecha_emision', [$desde, $hasta]);
+        return $query->whereBetween('fecha_emision', [
+            $desde . ' 00:00:00',
+            $hasta . ' 23:59:59',
+        ]);
     }
 
     /**

@@ -22,8 +22,8 @@ class DashboardController extends Controller
         $tenant = $request->get('tenant');
         $month = $request->query('month', now()->format('Y-m'));
 
-        $startDate = $month . '-01';
-        $endDate = \Carbon\Carbon::parse($startDate)->endOfMonth()->toDateString();
+        $startDate = $month . '-01 00:00:00';
+        $endDate = \Carbon\Carbon::parse($month . '-01')->endOfMonth()->format('Y-m-d') . ' 23:59:59';
 
         $prevStart = \Carbon\Carbon::parse($startDate)->subMonth()->startOfMonth()->toDateString();
         $prevEnd = \Carbon\Carbon::parse($startDate)->subMonth()->endOfMonth()->toDateString();
