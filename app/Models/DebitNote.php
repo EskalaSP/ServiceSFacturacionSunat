@@ -13,7 +13,7 @@ class DebitNote extends Model implements Documentable
     use HasDocumentFields, HasSunatIntegration;
 
     protected $fillable = [
-        'tenant_id', 'client_id', 'serie', 'correlativo', 'cod_local',
+        'tenant_id', 'client_id', 'sucursal_id', 'serie', 'correlativo', 'cod_local',
         'fecha_emision', 'tipo_moneda', 'client_tipo_doc', 'client_num_doc',
         'client_razon_social', 'client_direccion',
         'doc_afectado_tipo', 'doc_afectado_serie', 'doc_afectado_correlativo',
