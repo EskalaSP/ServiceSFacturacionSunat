@@ -1,0 +1,14 @@
+vendor
+node_modules
+.git
+.env
+.env.*
+*.md
+.vscode
+.idea
+tests
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+greenter-documentacion
