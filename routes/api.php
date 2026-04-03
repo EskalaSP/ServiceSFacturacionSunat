@@ -10,13 +10,13 @@ use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\QuotationController;
 use App\Http\Controllers\Api\V1\RegisterController;
+use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SaleNoteController;
 use App\Http\Controllers\Api\V1\SerieController;
+use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SucursalController;
 use App\Http\Controllers\Api\V1\SummaryController;
 use App\Http\Controllers\Api\V1\TenantController;
-use App\Http\Controllers\Api\V1\ReportController;
-use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\VoidedController;
 use Illuminate\Support\Facades\Route;
 
@@ -83,6 +83,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('dispatch-guides/{id}', [DispatchGuideController::class, 'show']);
     Route::put('dispatch-guides/{id}', [DispatchGuideController::class, 'update']);
     Route::get('dispatch-guides/{id}/pdf', [DispatchGuideController::class, 'pdf']);
+    Route::get('dispatch-guides/{id}/xml', [DispatchGuideController::class, 'xml']);
     Route::get('dispatch-guides/{id}/status', [DispatchGuideController::class, 'checkStatus']);
 
     // Resúmenes diarios

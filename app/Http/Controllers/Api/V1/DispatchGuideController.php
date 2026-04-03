@@ -105,6 +105,24 @@ class DispatchGuideController extends Controller
         ]);
     }
 
+    public function xml(Request $request, int $id): \Illuminate\Http\Response|JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $guide = DispatchGuide::forTenant($tenant->id)->findOrFail($id);
+
+        $storage = new DocumentStorageService;
+        $content = $storage->getXmlContent($guide);
+
+        if (! $content) {
+            return $this->error('XML no disponible', 404);
+        }
+
+        return response($content, 200, [
+            'Content-Type' => 'application/xml',
+            'Content-Disposition' => "attachment; filename=\"{$guide->numero_completo}.xml\"",
+        ]);
+    }
+
     public function checkStatus(Request $request, int $id): JsonResponse
     {
         $tenant = $request->get('tenant');
@@ -120,7 +138,7 @@ class DispatchGuideController extends Controller
 
         try {
             $service = new GreenterService($tenant);
-            $storage = new DocumentStorageService();
+            $storage = new DocumentStorageService;
             $api = $service->createApi();
             $result = $api->getStatus($guide->ticket);
 
