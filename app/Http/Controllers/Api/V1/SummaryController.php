@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Traits\ApiResponse;
 use App\Jobs\SendSummaryToSunat;
 use App\Models\Boleta;
+use App\Models\CreditNote;
 use App\Models\Summary;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -94,11 +95,55 @@ class SummaryController extends Controller
 
                 $boletas = Boleta::where('tenant_id', $tenant->id)
                     ->whereIn('id', $documentIds)
-                    ->whereIn('sunat_status', ['aceptado', 'enviado'])
+                    ->where('sunat_status', 'aceptado')
                     ->get();
 
                 if ($boletas->isEmpty()) {
-                    return $this->error('No se encontraron boletas válidas para anular. Deben estar aceptadas o enviadas.', 422);
+                    return $this->error('No se encontraron boletas aceptadas por SUNAT para anular.', 422);
+                }
+
+                // Validaciones adicionales: plazo 7 días por boleta, NC asociada, duplicado en proceso.
+                $anulErrors = [];
+                foreach ($boletas as $b) {
+                    $ref = $b->serie.'-'.$b->correlativo;
+
+                    $fechaEmision = $b->fecha_emision instanceof Carbon
+                        ? $b->fecha_emision
+                        : Carbon::parse((string) $b->fecha_emision);
+
+                    if ($fechaEmision->lt($limiteAnterior->copy()->startOfDay())) {
+                        $anulErrors[] = "Boleta {$ref} ya pasó el plazo de 7 días para anulación (emitida el {$fechaEmision->format('Y-m-d')}).";
+                        continue;
+                    }
+
+                    $hasNC = CreditNote::where('tenant_id', $tenant->id)
+                        ->where('doc_afectado_tipo', '03')
+                        ->where('doc_afectado_serie', $b->serie)
+                        ->where('doc_afectado_correlativo', $b->correlativo)
+                        ->exists();
+
+                    if ($hasNC) {
+                        $anulErrors[] = "La boleta {$ref} tiene una nota de crédito asociada. Usa la NC en vez de anularla.";
+                        continue;
+                    }
+
+                    $duplicate = Summary::where('tenant_id', $tenant->id)
+                        ->where('tipo', 'anulacion')
+                        ->whereIn('sunat_status', ['pendiente', 'enviado', 'aceptado'])
+                        ->whereJsonContains('document_ids', $b->id)
+                        ->first();
+
+                    if ($duplicate) {
+                        $anulErrors[] = "Ya existe un resumen de anulación para la boleta {$ref} ({$duplicate->identifier}).";
+                    }
+                }
+
+                if (! empty($anulErrors)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se puede anular: '.implode(' ', $anulErrors),
+                        'errors' => $anulErrors,
+                    ], 422);
                 }
             } else {
                 $boletas = Boleta::where('tenant_id', $tenant->id)

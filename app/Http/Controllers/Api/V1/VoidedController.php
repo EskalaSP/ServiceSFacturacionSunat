@@ -13,6 +13,7 @@ use App\Models\Invoice;
 use App\Models\VoidedDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class VoidedController extends Controller
 {
@@ -27,6 +28,16 @@ class VoidedController extends Controller
 
             $fechaCom = $validated['fecha_comunicacion'] ?? now()->format('Y-m-d');
             $validated['fecha_comunicacion'] = $fechaCom;
+
+            // Pre-validate against SUNAT rules before hitting them.
+            $errors = $this->validateDetalles($tenant->id, $validated['detalles']);
+            if (! empty($errors)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se puede anular: '.implode(' ', $errors),
+                    'errors' => $errors,
+                ], 422);
+            }
 
             $fechaId = str_replace('-', '', $fechaCom);
             $lastCorrelativo = VoidedDocument::where('tenant_id', $tenant->id)
@@ -69,6 +80,106 @@ class VoidedController extends Controller
         } catch (\Throwable $e) {
             return $this->error('Error: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Valida cada detalle antes de enviar a SUNAT:
+     * - Documento original existe y pertenece al tenant
+     * - Estado es aceptado por SUNAT
+     * - Plazo 7 días calendario respecto a fecha_emision
+     * - No tiene nota de crédito asociada (solo facturas)
+     * - No hay otra comunicación de baja en proceso para el mismo documento
+     *
+     * @return array<int, string>  Lista de mensajes de error. Vacío = todo ok.
+     */
+    private function validateDetalles(int $tenantId, array $detalles): array
+    {
+        $errors = [];
+        $hoy = Carbon::today('America/Lima');
+        $limite = $hoy->copy()->subDays(7)->startOfDay();
+
+        $modelMap = [
+            '01' => Invoice::class,
+            '03' => Boleta::class,
+            '07' => CreditNote::class,
+            '08' => DebitNote::class,
+        ];
+
+        foreach ($detalles as $detalle) {
+            $tipo = $detalle['tipo_documento'] ?? null;
+            $serie = $detalle['serie'] ?? null;
+            $correlativo = $detalle['correlativo'] ?? null;
+
+            if (! $tipo || ! $serie || ! $correlativo) {
+                $errors[] = 'Cada detalle requiere tipo_documento, serie y correlativo.';
+                continue;
+            }
+
+            $model = $modelMap[$tipo] ?? null;
+            if (! $model) {
+                $errors[] = "Tipo de documento {$tipo} no soportado para anulación.";
+                continue;
+            }
+
+            $document = $model::where('tenant_id', $tenantId)
+                ->where('serie', $serie)
+                ->where('correlativo', $correlativo)
+                ->first();
+
+            $ref = "{$serie}-{$correlativo}";
+
+            if (! $document) {
+                $errors[] = "Documento {$ref} no existe.";
+                continue;
+            }
+
+            $status = strtolower((string) $document->sunat_status);
+            if ($status !== 'aceptado') {
+                $errors[] = "Documento {$ref} no está aceptado por SUNAT (estado actual: {$status}).";
+                continue;
+            }
+
+            // Plazo 7 días calendario respecto a la fecha de emisión real
+            $fechaEmision = $document->fecha_emision instanceof Carbon
+                ? $document->fecha_emision
+                : Carbon::parse((string) $document->fecha_emision);
+
+            if ($fechaEmision->lt($limite)) {
+                $errors[] = "Documento {$ref} ya pasó el plazo de 7 días para anulación (emitido el {$fechaEmision->format('Y-m-d')}).";
+                continue;
+            }
+
+            // Facturas: no deben tener NC asociada
+            if ($tipo === '01') {
+                $hasNC = CreditNote::where('tenant_id', $tenantId)
+                    ->where('doc_afectado_tipo', '01')
+                    ->where('doc_afectado_serie', $serie)
+                    ->where('doc_afectado_correlativo', $correlativo)
+                    ->exists();
+
+                if ($hasNC) {
+                    $errors[] = "La factura {$ref} tiene una nota de crédito asociada. Usa la NC en vez de anular la factura.";
+                    continue;
+                }
+            }
+
+            // No debe haber otra comunicación de baja en proceso para el mismo par
+            $duplicate = VoidedDocument::where('tenant_id', $tenantId)
+                ->whereIn('sunat_status', ['pendiente', 'enviado', 'aceptado'])
+                ->whereJsonContains('detalles', [
+                    'tipo_documento' => $tipo,
+                    'serie' => $serie,
+                    'correlativo' => $correlativo,
+                ])
+                ->first();
+
+            if ($duplicate) {
+                $errors[] = "Ya existe una comunicación de baja para {$ref} ({$duplicate->identifier}).";
+                continue;
+            }
+        }
+
+        return $errors;
     }
 
     private function markDocumentsAsProcessing(int $tenantId, array $detalles): void
