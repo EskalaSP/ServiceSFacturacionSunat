@@ -40,4 +40,6 @@ return [
         'secret_key' => env('CULQI_SECRET_KEY'),
     ],
 
+    'internal_token' => env('INTERNAL_TOKEN'),
+
 ];

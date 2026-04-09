@@ -57,6 +57,12 @@ class AppServiceProvider extends ServiceProvider
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('api', function (Request $request) {
+            // Bypass rate limit for internal server-to-server requests
+            $internalToken = config('services.internal_token');
+            if ($internalToken && $request->header('X-Internal-Token') === $internalToken) {
+                return Limit::none();
+            }
+
             $tenant = $request->get('tenant');
             $limit = match ($tenant?->plan ?? 'free') {
                 'free' => 30,
