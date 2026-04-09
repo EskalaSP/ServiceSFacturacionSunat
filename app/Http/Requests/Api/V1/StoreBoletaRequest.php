@@ -46,7 +46,7 @@ class StoreBoletaRequest extends FormRequest
             'items' => 'required|array|min:1',
             'items.*.codigo' => 'nullable|string|max:50',
             'items.*.descripcion' => 'required|string|max:500',
-            'items.*.unidad' => 'required|string|in:NIU,ZZ,KGM,TNE,LTR,GLL,MTR,KWH,HUR,DAY,MON,BX,PK,DZN,SET,MTK,MTQ,GRM,MGM,MLT,CMT,ONZ,FOT,INH,LBR,OZA,BLL,BAG,CEN,SA',
+            'items.*.unidad' => 'required|string|in:4A,BJ,BLL,BG,BO,BX,CT,CMK,CMQ,CMT,CEN,CY,CJ,DZN,DZP,BE,GLI,GRM,GRO,HLT,LEF,SET,KGM,KTM,KWH,KT,CA,LBR,LTR,MWH,MTR,MTK,MTQ,MGM,MLT,MMT,MMK,MMQ,MLL,UM,ONZ,PF,PK,PR,FOT,FTK,FTQ,C62,PG,ST,INH,RM,DR,STN,LTN,TNE,TU,NIU,ZZ,GLL,YRD,YDK,U2,HUR,QD,HD,JG,JR,CH,AV,SA,BT,HT,RD,RL,SEC,DAY,MON',
             'items.*.cantidad' => 'required|numeric|gt:0',
             'items.*.precio_unitario' => 'required|numeric|min:0',
             'items.*.porcentaje_igv' => 'nullable|numeric',
