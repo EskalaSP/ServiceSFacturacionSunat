@@ -52,6 +52,11 @@ class InvoiceController extends Controller
             $query->where('serie', $request->input('serie'));
         }
 
+        if ($request->has('correlativo')) {
+            $query->where('correlativo', $request->input('correlativo'));
+            $query->with('items');
+        }
+
         if ($request->has('client_num_doc')) {
             $query->where('client_num_doc', $request->input('client_num_doc'));
         }
