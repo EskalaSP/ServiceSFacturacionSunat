@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Contracts\Documentable;
@@ -57,8 +59,8 @@ class SendDocumentToSunat implements ShouldQueue
 
         if ($result['success']) {
             $document->update([
-                // SUNAT: 0/4xxx = aceptado, 3xxx = observación (aceptado con advertencias), 2xxx = rechazado
-                'sunat_status' => ($result['accepted'] ?? true) || str_starts_with((string) ($result['code'] ?? ''), '3')
+                // SUNAT Formato 1.3.4: 0=aceptado, 4000+=observaciones (aceptado con advertencias)
+                'sunat_status' => ($result['accepted'] ?? true)
                     ? 'aceptado'
                     : 'rechazado',
                 'sunat_code' => $result['code'] ?? null,
@@ -134,7 +136,11 @@ class SendDocumentToSunat implements ShouldQueue
 
     private function isRetryableError(string $errorCode): bool
     {
-        // Códigos SUNAT que indican error temporal (servidor ocupado, en mantenimiento, etc.)
+        // SUNAT Formato 1.3.4 error ranges:
+        // 0: Aceptado (shouldn't reach here, but treat as retryable if it does — transport-level ambiguity)
+        // 100-1999: Excepciones de servidor → algunos son temporales (100=timeout, 109=service down, 500=internal)
+        // 2000-3999: Errores de validación → permanentes, excepto 2800 (correlativo duplicado por concurrencia)
+        // 4000+: Observaciones → aceptado con advertencias (handled in success branch)
         $retryableCodes = ['0', '100', '109', '500', '1033', '2800'];
 
         return in_array($errorCode, $retryableCodes, true);

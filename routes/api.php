@@ -17,6 +17,9 @@ use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SucursalController;
 use App\Http\Controllers\Api\V1\SummaryController;
 use App\Http\Controllers\Api\V1\TenantController;
+use App\Http\Controllers\Api\V1\PerceptionController;
+use App\Http\Controllers\Api\V1\RetentionController;
+use App\Http\Controllers\Api\V1\ReversionController;
 use App\Http\Controllers\Api\V1\VoidedController;
 use Illuminate\Support\Facades\Route;
 
@@ -96,6 +99,23 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     // Comunicaciones de baja
     Route::post('voided', [VoidedController::class, 'store'])->middleware('check.limit:sunat');
     Route::get('voided/{id}/status', [VoidedController::class, 'checkStatus']);
+
+    // Retenciones (20)
+    Route::post('retentions', [RetentionController::class, 'store'])->middleware('check.limit:sunat');
+    Route::get('retentions', [RetentionController::class, 'index']);
+    Route::get('retentions/{id}', [RetentionController::class, 'show']);
+    Route::get('retentions/{id}/xml', [RetentionController::class, 'xml']);
+    Route::get('retentions/{id}/cdr', [RetentionController::class, 'cdr']);
+
+    // Percepciones (40)
+    Route::post('perceptions', [PerceptionController::class, 'store'])->middleware('check.limit:sunat');
+    Route::get('perceptions', [PerceptionController::class, 'index']);
+    Route::get('perceptions/{id}', [PerceptionController::class, 'show']);
+    Route::get('perceptions/{id}/xml', [PerceptionController::class, 'xml']);
+    Route::get('perceptions/{id}/cdr', [PerceptionController::class, 'cdr']);
+
+    // Reversión (RR) — Anulación de retenciones y percepciones
+    Route::post('reversions', [ReversionController::class, 'store'])->middleware('check.limit:sunat');
 
     // Consultar CDR en SUNAT
     Route::post('consult-cdr', [ConsultController::class, 'cdrStatus']);

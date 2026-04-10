@@ -1,12 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\StoreSummaryRequest;
 use App\Http\Traits\ApiResponse;
 use App\Jobs\SendSummaryToSunat;
 use App\Models\Boleta;
 use App\Models\CreditNote;
+use App\Models\DebitNote;
 use App\Models\Summary;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,15 +69,8 @@ class SummaryController extends Controller
      * 1. Enviar boletas pendientes: POST { "fecha_resumen": "2026-03-05" }
      * 2. Anular boletas: POST { "fecha_resumen": "2026-03-05", "anular": [{"id": 15, "motivo": "..."}, ...] }
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreSummaryRequest $request): JsonResponse
     {
-        $request->validate([
-            'fecha_resumen' => 'required|date',
-            'anular' => 'nullable|array',
-            'anular.*.id' => 'required_with:anular|integer|exists:boletas,id',
-            'anular.*.motivo' => 'required_with:anular|string|max:255',
-        ]);
-
         $tenant = $request->get('tenant');
         $fechaResumen = Carbon::parse($request->input('fecha_resumen'));
 

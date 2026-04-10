@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 class DocumentCalculationService
@@ -205,29 +207,32 @@ class DocumentCalculationService
             }
         }
 
-        // Apply global discount to gravadas and recalculate IGV
+        // Apply global discount to gravadas and recalculate IGV using actual rate (not hardcoded 0.18)
         if ($descuentoGlobalGravadas > 0) {
+            // Determine effective IGV rate from gravadas items (default 18%)
+            $igvRate = ($gravadas > 0) ? ($totalIgv / $gravadas) : 0.18;
             $gravadas -= $descuentoGlobalGravadas;
-            $totalIgv = round($gravadas * 0.18, 2);
+            $totalIgv = round($gravadas * $igvRate, 2);
         }
 
-        $gravadas = round($gravadas, 2);
-        $exoneradas = round($exoneradas, 2);
-        $inafectas = round($inafectas, 2);
-        $exportacion = round($exportacion, 2);
-        $baseIvap = round($baseIvap, 2);
-        $totalIvap = round($totalIvap, 2);
-        $gratuitas = round($gratuitas, 2);
-        $totalIgv = round($totalIgv, 2);
+        // Ensure all totals are non-negative (SUNAT rejects negative amounts)
+        $gravadas = max(0, round($gravadas, 2));
+        $exoneradas = max(0, round($exoneradas, 2));
+        $inafectas = max(0, round($inafectas, 2));
+        $exportacion = max(0, round($exportacion, 2));
+        $baseIvap = max(0, round($baseIvap, 2));
+        $totalIvap = max(0, round($totalIvap, 2));
+        $gratuitas = max(0, round($gratuitas, 2));
+        $totalIgv = max(0, round($totalIgv, 2));
         $igvGratuitas = round($igvGratuitas, 2);
-        $totalIsc = round($totalIsc, 2);
-        $totalIcbper = round($totalIcbper, 2);
+        $totalIsc = max(0, round($totalIsc, 2));
+        $totalIcbper = max(0, round($totalIcbper, 2));
         $totalImpuestos = round($totalIgv + $totalIvap + $totalIsc + $totalIcbper, 2);
         $valorVenta = round($gravadas + $exoneradas + $inafectas + $exportacion + $baseIvap, 2);
         $sumDescuentosNoBase = round($sumDescuentosNoBase, 2);
         $subTotal = round($valorVenta + $totalImpuestos, 2);
         $totalAnticipos = (float) ($data['total_anticipos'] ?? 0);
-        $mtoImpVenta = round($subTotal - $totalAnticipos - $sumDescuentosNoBase, 2);
+        $mtoImpVenta = max(0, round($subTotal - $totalAnticipos - $sumDescuentosNoBase, 2));
 
         return [
             'mto_oper_gravadas' => (float) ($data['mto_oper_gravadas'] ?? $gravadas),

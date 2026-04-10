@@ -8,7 +8,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class StoreVoidedRequest extends FormRequest
+class StoreSummaryRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -18,14 +18,13 @@ class StoreVoidedRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'fecha_generacion' => 'required|date',
-            'fecha_comunicacion' => 'sometimes|date',
-            'detalles' => 'required|array|min:1',
-            // Tipos soportados: 01=Factura, 03=Boleta, 07=NC, 08=ND, 20=Retención, 40=Percepción
-            'detalles.*.tipo_documento' => 'required|string|in:01,03,07,08,20,40',
-            'detalles.*.serie' => 'required|string|size:4',
-            'detalles.*.correlativo' => 'required|string',
-            'detalles.*.motivo' => 'required|string|max:255',
+            'fecha_resumen' => 'required|date',
+
+            // Modo anulación
+            'anular' => 'nullable|array',
+            'anular.*.id' => 'required_with:anular|integer',
+            'anular.*.motivo' => 'required_with:anular|string|max:255',
+            'anular.*.tipo_documento' => 'nullable|string|in:03,07,08',
         ];
     }
 
