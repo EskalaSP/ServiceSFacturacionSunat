@@ -36,12 +36,11 @@ class SucursalController extends Controller
             'ubigeo' => 'required|string|size:6',
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
-            'is_principal' => 'sometimes|boolean',
+            'es_principal' => 'sometimes|boolean',
         ], [
             'cod_local.regex' => 'El código de local debe ser 4 dígitos (ej: 0000, 0001).',
         ]);
 
-        // Validar cod_local único por tenant
         $exists = Sucursal::where('tenant_id', $tenant->id)
             ->where('cod_local', $request->input('cod_local'))
             ->exists();
@@ -50,12 +49,10 @@ class SucursalController extends Controller
             return $this->error("El código de local {$request->input('cod_local')} ya existe.", 409);
         }
 
-        // Si es principal, quitar principal de las demás
-        if ($request->boolean('is_principal')) {
+        if ($request->boolean('es_principal')) {
             Sucursal::where('tenant_id', $tenant->id)->update(['is_principal' => false]);
         }
 
-        // Si es la primera sucursal, hacerla principal
         $isFirst = Sucursal::where('tenant_id', $tenant->id)->count() === 0;
 
         $sucursal = Sucursal::create([
@@ -66,7 +63,7 @@ class SucursalController extends Controller
             'ubigeo' => $request->input('ubigeo'),
             'telefono' => $request->input('telefono'),
             'email' => $request->input('email'),
-            'is_principal' => $request->boolean('is_principal') || $isFirst,
+            'is_principal' => $request->boolean('es_principal') || $isFirst,
             'is_active' => true,
         ]);
 
@@ -92,20 +89,27 @@ class SucursalController extends Controller
             'ubigeo' => 'sometimes|string|size:6',
             'telefono' => 'sometimes|nullable|string|max:20',
             'email' => 'sometimes|nullable|email|max:255',
-            'is_principal' => 'sometimes|boolean',
-            'is_active' => 'sometimes|boolean',
+            'es_principal' => 'sometimes|boolean',
+            'activo' => 'sometimes|boolean',
         ]);
 
-        // Si se marca como principal, quitar principal de las demás
-        if ($request->boolean('is_principal')) {
+        if ($request->boolean('es_principal')) {
             Sucursal::where('tenant_id', $tenant->id)
                 ->where('id', '!=', $sucursal->id)
                 ->update(['is_principal' => false]);
         }
 
-        $sucursal->update($request->only([
-            'nombre', 'direccion', 'ubigeo', 'telefono', 'email', 'is_principal', 'is_active',
-        ]));
+        $data = $request->only(['nombre', 'direccion', 'ubigeo', 'telefono', 'email']);
+
+        if ($request->has('es_principal')) {
+            $data['is_principal'] = $request->boolean('es_principal');
+        }
+
+        if ($request->has('activo')) {
+            $data['is_active'] = $request->boolean('activo');
+        }
+
+        $sucursal->update($data);
 
         return $this->success($this->format($sucursal), 'Sucursal actualizada.');
     }
@@ -138,8 +142,8 @@ class SucursalController extends Controller
             'ubigeo' => $sucursal->ubigeo,
             'telefono' => $sucursal->telefono,
             'email' => $sucursal->email,
-            'is_principal' => $sucursal->is_principal,
-            'is_active' => $sucursal->is_active,
+            'es_principal' => $sucursal->is_principal,
+            'activo' => $sucursal->is_active,
             'total_series' => $sucursal->series_count ?? 0,
         ];
     }

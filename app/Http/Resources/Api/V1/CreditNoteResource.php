@@ -59,21 +59,21 @@ class CreditNoteResource extends JsonResource
             ], fn ($v, $k) => ! ($k === 'descuento' && $v == 0), ARRAY_FILTER_USE_BOTH))),
             'guias' => $this->when($this->guias, $this->guias),
             'sunat' => [
-                'status' => $this->sunat_status,
-                'code' => $this->sunat_code,
-                'description' => $this->sunat_description,
-                'notes' => $this->sunat_notes,
+                'estado' => $this->sunat_status,
+                'codigo' => $this->sunat_code,
+                'descripcion' => $this->sunat_description,
+                'notas' => $this->sunat_notes,
                 'hash_cpe' => $this->hash_cpe,
             ],
             'archivos' => [
-                'xml' => $this->xml_path ? url("/api/v1/credit-notes/{$this->id}/xml") : null,
-                'cdr' => $this->cdr_path ? url("/api/v1/credit-notes/{$this->id}/cdr") : null,
-                'pdf' => $this->pdf_path ? url("/api/v1/credit-notes/{$this->id}/pdf") : null,
+                'xml' => $this->xml_path ? url("/api/v1/notas-credito/{$this->id}/xml") : null,
+                'cdr' => $this->cdr_path ? url("/api/v1/notas-credito/{$this->id}/cdr") : null,
+                'pdf' => $this->pdf_path ? url("/api/v1/notas-credito/{$this->id}/pdf") : null,
             ],
             'leyenda' => $this->leyenda,
             'observacion' => $this->observacion,
-            'sent_at' => $this->sent_at?->toIso8601String(),
-            'created_at' => $this->created_at->toIso8601String(),
+            'enviado_en' => $this->sent_at?->toIso8601String(),
+            'creado_en' => $this->created_at->toIso8601String(),
         ];
     }
 }

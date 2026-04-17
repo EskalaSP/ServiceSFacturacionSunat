@@ -1,4 +1,4 @@
-{
+﻿{
   "info": {
     "_postman_id": "73d4ab2d-1799-43d5-be0d-831e831940d3",
     "name": "API-SUNAT",
@@ -54,7 +54,7 @@
                   "uuid": "50fda8f1-d6d5-4ff2-a373-5bb0ef2db854"
                 },
                 {
-                  "key": "environment",
+                  "key": "entorno",
                   "value": "beta",
                   "type": "text",
                   "uuid": "64eb727f-20ff-4ff2-be18-11275768cb5a"
@@ -66,14 +66,14 @@
                   "uuid": "1ad09444-a5fd-47c7-b891-ea58399bfd58"
                 },
                 {
-                  "key": "certificate",
+                  "key": "certificado",
                   "description": " Archivo .pfx, .p12, .pem, .cer o .crt ",
                   "type": "file",
                   "uuid": "71489a9d-d901-4c45-8adb-643be7102792",
                   "src": "postman-cloud:///1f111ecd-4986-4ff0-8abc-9069b9c4d4c9"
                 },
                 {
-                  "key": "certificate_password",
+                  "key": "contrasena_certificado",
                   "value": "123456",
                   "type": "text",
                   "uuid": "38979d83-3617-4bea-950f-2c2cb7a729da"
@@ -115,7 +115,7 @@
                   "uuid": "b210bbb9-ce52-425e-94fb-baec7663494b"
                 },
                 {
-                  "key": "webhook_url",
+                  "key": "url_webhook",
                   "value": "http://webhook-monitor.test/",
                   "type": "text",
                   "uuid": "bd6706a3-c6a1-4069-8118-be688ae62fb4"
@@ -123,12 +123,12 @@
               ]
             },
             "url": {
-              "raw": "{{base_url}}/register",
+              "raw": "{{base_url}}/api/v1/registro",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "register"
+                "registro"
               ]
             }
           },
@@ -165,7 +165,7 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/sucursales",
+              "raw": "{{base_url}}/api/v1/sucursales",
               "host": [
                 "{{base_url}}"
               ],
@@ -207,7 +207,7 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/series",
+              "raw": "{{base_url}}/api/v1/series",
               "host": [
                 "{{base_url}}"
               ],
@@ -254,12 +254,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -299,12 +299,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices/1",
+              "raw": "{{base_url}}/api/v1/facturas/1",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices",
+                "facturas",
                 "1"
               ]
             }
@@ -342,12 +342,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -384,12 +384,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -426,12 +426,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -468,12 +468,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -510,12 +510,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -552,12 +552,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -594,12 +594,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -636,12 +636,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -678,12 +678,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -720,12 +720,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -762,12 +762,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -804,12 +804,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -846,12 +846,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -888,12 +888,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -930,12 +930,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -972,12 +972,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -1014,12 +1014,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -1056,12 +1056,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -1098,12 +1098,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices",
+              "raw": "{{base_url}}/api/v1/facturas",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices"
+                "facturas"
               ]
             }
           },
@@ -1143,12 +1143,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices/{{id}}/pdf?format=a4",
+              "raw": "{{base_url}}/api/v1/facturas/{{id}}/pdf?format=a4",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices",
+                "facturas",
                 "{{id}}",
                 "pdf"
               ],
@@ -1196,12 +1196,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices/{{id}}/xml",
+              "raw": "{{base_url}}/api/v1/facturas/{{id}}/xml",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices",
+                "facturas",
                 "{{id}}",
                 "xml"
               ]
@@ -1243,12 +1243,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/invoices/{{id}}/cdr",
+              "raw": "{{base_url}}/api/v1/facturas/{{id}}/cdr",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "invoices",
+                "facturas",
                 "{{id}}",
                 "cdr"
               ]
@@ -1295,7 +1295,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{base_url}}/boletas?solo_registro=true",
+                  "raw": "{{base_url}}/api/v1/boletas?solo_registro=true",
                   "host": [
                     "{{base_url}}"
                   ],
@@ -1343,12 +1343,12 @@
                   }
                 },
                 "url": {
-                  "raw": "{{base_url}}/documents",
+                  "raw": "{{base_url}}/api/v1/documentos",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "documents"
+                    "documentos"
                   ]
                 }
               },
@@ -1390,12 +1390,12 @@
                   }
                 },
                 "url": {
-                  "raw": "{{base_url}}/summaries",
+                  "raw": "{{base_url}}/api/v1/resumenes",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "summaries"
+                    "resumenes"
                   ]
                 }
               },
@@ -1435,14 +1435,14 @@
                   }
                 },
                 "url": {
-                  "raw": "{{base_url}}/summaries/{{id}}/status",
+                  "raw": "{{base_url}}/api/v1/resumenes/{{id}}/estado",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "summaries",
+                    "resumenes",
                     "{{id}}",
-                    "status"
+                    "estado"
                   ]
                 }
               },
@@ -1486,12 +1486,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/credit-notes",
+              "raw": "{{base_url}}/api/v1/notas-credito",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "credit-notes"
+                "notas-credito"
               ]
             }
           },
@@ -1528,12 +1528,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/credit-notes",
+              "raw": "{{base_url}}/api/v1/notas-credito",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "credit-notes"
+                "notas-credito"
               ]
             }
           },
@@ -1570,12 +1570,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/credit-notes",
+              "raw": "{{base_url}}/api/v1/notas-credito",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "credit-notes"
+                "notas-credito"
               ]
             }
           },
@@ -1612,12 +1612,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/credit-notes",
+              "raw": "{{base_url}}/api/v1/notas-credito",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "credit-notes"
+                "notas-credito"
               ]
             }
           },
@@ -1654,12 +1654,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/credit-notes",
+              "raw": "{{base_url}}/api/v1/notas-credito",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "credit-notes"
+                "notas-credito"
               ]
             }
           },
@@ -1701,12 +1701,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/debit-notes",
+              "raw": "{{base_url}}/api/v1/notas-debito",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "debit-notes"
+                "notas-debito"
               ]
             }
           },
@@ -1743,12 +1743,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/debit-notes",
+              "raw": "{{base_url}}/api/v1/notas-debito",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "debit-notes"
+                "notas-debito"
               ]
             }
           },
@@ -1785,12 +1785,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/debit-notes",
+              "raw": "{{base_url}}/api/v1/notas-debito",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "debit-notes"
+                "notas-debito"
               ]
             }
           },
@@ -1827,12 +1827,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/debit-notes",
+              "raw": "{{base_url}}/api/v1/notas-debito",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "debit-notes"
+                "notas-debito"
               ]
             }
           },
@@ -1877,12 +1877,12 @@
                   }
                 },
                 "url": {
-                  "raw": "{{base_url}}/voided",
+                  "raw": "{{base_url}}/api/v1/anulaciones",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "voided"
+                    "anulaciones"
                   ]
                 }
               },
@@ -1919,12 +1919,12 @@
                   }
                 },
                 "url": {
-                  "raw": "{{base_url}}/voided",
+                  "raw": "{{base_url}}/api/v1/anulaciones",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "voided"
+                    "anulaciones"
                   ]
                 }
               },
@@ -1969,14 +1969,14 @@
                   }
                 },
                 "url": {
-                  "raw": "{{base_url}}/voided/{{ticket}}/status",
+                  "raw": "{{base_url}}/api/v1/anulaciones/{{ticket}}/estado",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "voided",
+                    "anulaciones",
                     "{{ticket}}",
-                    "status"
+                    "estado"
                   ]
                 }
               },
@@ -2013,12 +2013,12 @@
                   }
                 },
                 "url": {
-                  "raw": "{{base_url}}/summaries",
+                  "raw": "{{base_url}}/api/v1/resumenes",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "summaries"
+                    "resumenes"
                   ]
                 }
               },
@@ -2055,12 +2055,12 @@
                   }
                 },
                 "url": {
-                  "raw": "{{base_url}}/summaries",
+                  "raw": "{{base_url}}/api/v1/resumenes",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "summaries"
+                    "resumenes"
                   ]
                 }
               },
@@ -2107,14 +2107,14 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/dispatch-guides/{{id}}/status",
+              "raw": "{{base_url}}/api/v1/guias-remision/{{id}}/estado",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "dispatch-guides",
+                "guias-remision",
                 "{{id}}",
-                "status"
+                "estado"
               ]
             }
           },
@@ -2151,12 +2151,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/dispatch-guides",
+              "raw": "{{base_url}}/api/v1/guias-remision",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "dispatch-guides"
+                "guias-remision"
               ]
             }
           },
@@ -2193,12 +2193,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/dispatch-guides",
+              "raw": "{{base_url}}/api/v1/guias-remision",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "dispatch-guides"
+                "guias-remision"
               ]
             }
           },
@@ -2235,12 +2235,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/dispatch-guides",
+              "raw": "{{base_url}}/api/v1/guias-remision",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "dispatch-guides"
+                "guias-remision"
               ]
             }
           },
@@ -2277,12 +2277,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/dispatch-guides",
+              "raw": "{{base_url}}/api/v1/guias-remision",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "dispatch-guides"
+                "guias-remision"
               ]
             }
           },
@@ -2319,12 +2319,12 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/dispatch-guides",
+              "raw": "{{base_url}}/api/v1/guias-remision",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "dispatch-guides"
+                "guias-remision"
               ]
             }
           },

@@ -38,17 +38,17 @@ class DispatchGuideResource extends JsonResource
             'num_bultos' => $this->num_bultos,
             'items' => $this->items,
             'sunat' => [
-                'status' => $this->sunat_status,
-                'code' => $this->sunat_code,
-                'description' => $this->sunat_description,
+                'estado' => $this->sunat_status,
+                'codigo' => $this->sunat_code,
+                'descripcion' => $this->sunat_description,
                 'ticket' => $this->ticket,
             ],
             'archivos' => [
-                'xml_path' => $this->xml_path,
-                'cdr_path' => $this->cdr_path,
-                'pdf_path' => $this->pdf_path,
+                'xml' => $this->xml_path ? url("/api/v1/guias-remision/{$this->id}/xml") : null,
+                'cdr' => $this->cdr_path ? url("/api/v1/guias-remision/{$this->id}/cdr") : null,
+                'pdf' => $this->pdf_path ? url("/api/v1/guias-remision/{$this->id}/pdf") : null,
             ],
-            'created_at' => $this->created_at->toIso8601String(),
+            'creado_en' => $this->created_at->toIso8601String(),
         ];
     }
 }

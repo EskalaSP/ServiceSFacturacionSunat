@@ -64,14 +64,14 @@ class DebitNoteController extends Controller
             $query->where('tipo_moneda', $request->input('tipo_moneda'));
         }
 
-        $debitNotes = $query->paginate($request->integer('per_page', 15));
+        $debitNotes = $query->paginate($request->integer('por_pagina', 15));
 
         return $this->success([
             'data' => DebitNoteResource::collection($debitNotes),
-            'pagination' => [
-                'current_page' => $debitNotes->currentPage(),
-                'last_page' => $debitNotes->lastPage(),
-                'per_page' => $debitNotes->perPage(),
+            'paginacion' => [
+                'pagina_actual' => $debitNotes->currentPage(),
+                'ultima_pagina' => $debitNotes->lastPage(),
+                'por_pagina' => $debitNotes->perPage(),
                 'total' => $debitNotes->total(),
             ],
         ]);

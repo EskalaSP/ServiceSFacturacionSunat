@@ -27,35 +27,32 @@ class RegisterController extends Controller
             'distrito' => 'nullable|string|max:100',
             'sol_user' => 'required|string|max:20',
             'sol_pass' => 'required|string|max:50',
-            'environment' => 'sometimes|string|in:beta,production',
+            'entorno' => 'sometimes|string|in:beta,production',
             'plan' => 'sometimes|string|in:free,pro,business',
             'client_id' => 'nullable|string|max:100',
             'client_secret' => 'nullable|string|max:255',
-            'certificate' => 'required|file|max:100',
-            'certificate_password' => 'nullable|string|max:100',
+            'certificado' => 'required|file|max:100',
+            'contrasena_certificado' => 'nullable|string|max:100',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        // Validar extensión del certificado
-        $certFile = $request->file('certificate');
+        $certFile = $request->file('certificado');
         $extension = strtolower($certFile->getClientOriginalExtension());
 
         if (! in_array($extension, ['pfx', 'p12', 'pem', 'cer', 'crt'])) {
             return $this->error('Formato de certificado no soportado. Use .pfx, .p12, .pem, .cer o .crt', 422);
         }
 
-        // Si es PFX/P12, el password es obligatorio
-        if (in_array($extension, ['pfx', 'p12']) && ! $request->filled('certificate_password')) {
-            return $this->error('El campo certificate_password es obligatorio para archivos .pfx/.p12', 422);
+        if (in_array($extension, ['pfx', 'p12']) && ! $request->filled('contrasena_certificado')) {
+            return $this->error('El campo contrasena_certificado es obligatorio para archivos .pfx/.p12', 422);
         }
 
-        // Convertir a PEM
         $certService = new CertificateService();
         try {
             $pemContent = $certService->convertToPem(
                 file_get_contents($certFile->getRealPath()),
                 $extension,
-                $request->input('certificate_password')
+                $request->input('contrasena_certificado')
             );
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
@@ -77,14 +74,13 @@ class RegisterController extends Controller
             'sol_pass' => $request->input('sol_pass'),
             'client_id' => $request->input('client_id'),
             'client_secret' => $request->input('client_secret'),
-            'certificate_password' => $request->input('certificate_password'),
-            'environment' => $request->input('environment', 'beta'),
+            'certificate_password' => $request->input('contrasena_certificado'),
+            'environment' => $request->input('entorno', 'beta'),
             'plan' => $plan,
             'max_documents_month' => $plans[$plan]['max_documents'] ?? 20,
             'is_active' => true,
         ]);
 
-        // Guardar certificado convertido a PEM
         $storage = new DocumentStorageService();
         $certPath = $storage->storeCertificate($tenant, $pemContent);
 
@@ -103,7 +99,7 @@ class RegisterController extends Controller
             'tenant_id' => $tenant->id,
             'ruc' => $tenant->ruc,
             'razon_social' => $tenant->razon_social,
-            'environment' => $tenant->environment,
+            'entorno' => $tenant->environment,
             'plan' => $tenant->plan,
             'api_key' => $tenant->api_key,
             'api_secret' => $tenant->api_secret,

@@ -19,12 +19,18 @@ class DocumentCalculationService
             $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? $defaultIgvRate);
             $cantidad = (float) $item['cantidad'];
             $precioUnitario = (float) $item['precio_unitario'];
+            $porcentajeIsc = (float) ($item['porcentaje_isc'] ?? 0);
             $isGratuito = in_array($tipAfeIgv, $gratuitoCodes);
             $isGratuitoGravado = in_array($tipAfeIgv, $gratuitoGravadoCodes);
 
             // Usar más precisión para valorUnitario (SUNAT permite hasta 10 decimales)
             if ($tipAfeIgv === '10') {
-                $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 10);
+                // Si hay ISC y no se especificó mto_valor_unitario, precio_unitario incluye ISC+IGV
+                if ($porcentajeIsc > 0 && ! isset($item['mto_valor_unitario'])) {
+                    $valorUnitario = round($precioUnitario / ((1 + $porcentajeIsc / 100) * (1 + $porcentajeIgv / 100)), 10);
+                } else {
+                    $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 10);
+                }
             } elseif ($tipAfeIgv === '17') {
                 $valorUnitario = round($precioUnitario / (1 + $porcentajeIgv / 100), 10);
             } elseif (in_array($tipAfeIgv, ['20', '30', '40'])) {
@@ -47,7 +53,9 @@ class DocumentCalculationService
                 $recalculatedDescuentos = [];
                 foreach ($item['descuentos'] as $desc) {
                     $codTipo = $desc['cod_tipo'] ?? '00';
-                    if ($codTipo === '00') {
+                    // cod_tipo "00" y "01" se tratan igual a nivel de ítem (reducen base)
+                    // La distinción "no afecta base" solo aplica a descuentos globales (cod "03")
+                    if ($codTipo === '00' || $codTipo === '01') {
                         $factor = (float) ($desc['factor'] ?? 0);
                         $montoBase = $valorBruto;
                         $monto = round($montoBase * $factor, 2);
@@ -55,7 +63,7 @@ class DocumentCalculationService
                         $descuentoConIgv += round($totalConIgvBruto * $factor, 2);
                         $recalculatedDescuentos[] = [
                             'cod_tipo' => $codTipo,
-                            'monto_base' => $montoBase,
+                            'monto_base' => round($montoBase, 2),
                             'factor' => $factor,
                             'monto' => $monto,
                         ];
@@ -105,6 +113,17 @@ class DocumentCalculationService
             $valorVenta = (float) ($item['mto_valor_venta'] ?? $valorVenta);
             $isc = (float) ($item['isc'] ?? 0);
             $icbper = (float) ($item['icbper'] ?? 0);
+            $factorIcbper = (float) ($item['factor_icbper'] ?? 0);
+
+            // Auto-calcular ISC desde porcentaje_isc
+            if ($isc <= 0 && $porcentajeIsc > 0) {
+                $isc = round($valorVenta * $porcentajeIsc / 100, 2);
+            }
+
+            // Auto-calcular ICBPER desde factor_icbper × cantidad
+            if ($icbper <= 0 && $factorIcbper > 0) {
+                $icbper = round($factorIcbper * $cantidad, 2);
+            }
 
             // When ISC present, IGV base = valor_venta + ISC and IGV must be recalculated
             if ($isc > 0 && ! isset($item['mto_base_igv']) && ! isset($item['igv'])) {
@@ -113,6 +132,12 @@ class DocumentCalculationService
             } else {
                 $igv = (float) ($item['igv'] ?? $igv);
                 $baseIgv = (float) ($item['mto_base_igv'] ?? $valorVenta);
+            }
+
+            // SUNAT: Gratuita inafecta/exonerada (21, 31-36) → TaxableAmount = LineExtensionAmount (ref × cantidad)
+            // Evita 3272 (base imponible != importes) y 3224 (observación gratuita)
+            if (in_array($tipAfeIgv, $gratuitoInafectoCodes)) {
+                $baseIgv = $valorVenta;
             }
 
             $totalImpuestos = (float) ($item['total_impuestos'] ?? ($igv + $isc + $icbper));
@@ -140,7 +165,7 @@ class DocumentCalculationService
         return $calculated;
     }
 
-    public function calculateTotals(array $calculatedItems, array $data): array
+    public function calculateTotals(array $calculatedItems, array &$data): array
     {
         $gratuitoCodes = ['11', '12', '13', '14', '15', '16', '21', '31', '32', '33', '34', '35', '36'];
 
@@ -181,12 +206,24 @@ class DocumentCalculationService
             $totalIsc += $item['isc'];
             $totalIcbper += $item['icbper'];
 
-            if (! empty($item['descuentos'])) {
-                foreach ($item['descuentos'] as $desc) {
-                    if (($desc['cod_tipo'] ?? '00') === '01') {
-                        $sumDescuentosNoBase += (float) $desc['monto'];
-                    }
-                }
+            // cod_tipo "01" ya fue aplicado al mto_valor_venta en calculateItems,
+            // no se agrega a sumDescuentosNoBase para evitar error SUNAT 3300
+        }
+
+        // Auto-calcular anticipo: si hay anticipos pero no descuentos_globales cod 04, generarlos
+        if (! empty($data['anticipos']) && ! isset($data['total_anticipos'])) {
+            $data['total_anticipos'] = collect($data['anticipos'])->sum('total');
+        }
+        if (! empty($data['anticipos'])) {
+            $totalAnticipo = (float) ($data['total_anticipos'] ?? collect($data['anticipos'])->sum('total'));
+            $ya_tiene_descuento04 = collect($data['descuentos_globales'] ?? [])->contains(fn($d) => ($d['cod_tipo'] ?? '') === '04');
+            if (! $ya_tiene_descuento04 && $totalAnticipo > 0) {
+                $data['descuentos_globales'][] = [
+                    'cod_tipo'   => '04',
+                    'factor'     => 1,
+                    'monto'      => $totalAnticipo,
+                    'monto_base' => $totalAnticipo,
+                ];
             }
         }
 
@@ -231,24 +268,30 @@ class DocumentCalculationService
         $valorVenta = round($gravadas + $exoneradas + $inafectas + $exportacion + $baseIvap, 2);
         $sumDescuentosNoBase = round($sumDescuentosNoBase, 2);
         $subTotal = round($valorVenta + $totalImpuestos, 2);
-        $totalAnticipos = (float) ($data['total_anticipos'] ?? 0);
+        $totalAnticipos = (float) ($data['total_anticipos'] ?? collect($data['anticipos'] ?? [])->sum('total'));
         $mtoImpVenta = max(0, round($subTotal - $totalAnticipos - $sumDescuentosNoBase, 2));
 
+        // Para anticipos: mto_oper_gravadas y mto_igv se reducen proporcionalmente
+        // pero valor_venta y sub_total permanecen con el valor completo de los ítems
+        $gravadas_netas = $totalAnticipos > 0 ? round($gravadas - $totalAnticipos, 2) : $gravadas;
+        $igv_neto = $totalAnticipos > 0 ? round($gravadas_netas * 0.18, 2) : $totalIgv;
+        $totalImpuestos_neto = $totalAnticipos > 0 ? round($igv_neto + $totalIvap + $totalIsc + $totalIcbper, 2) : $totalImpuestos;
+
         return [
-            'mto_oper_gravadas' => (float) ($data['mto_oper_gravadas'] ?? $gravadas),
+            'mto_oper_gravadas' => (float) ($data['mto_oper_gravadas'] ?? $gravadas_netas),
             'mto_oper_exoneradas' => (float) ($data['mto_oper_exoneradas'] ?? $exoneradas),
             'mto_oper_inafectas' => (float) ($data['mto_oper_inafectas'] ?? $inafectas),
             'mto_oper_exportacion' => (float) ($data['mto_oper_exportacion'] ?? $exportacion),
             'mto_oper_gratuitas' => (float) ($data['mto_oper_gratuitas'] ?? $gratuitas),
-            'mto_igv' => (float) ($data['mto_igv'] ?? $totalIgv),
+            'mto_igv' => (float) ($data['mto_igv'] ?? $igv_neto),
             'mto_base_ivap' => (float) ($data['mto_base_ivap'] ?? $baseIvap),
             'mto_ivap' => (float) ($data['mto_ivap'] ?? $totalIvap),
             'mto_igv_gratuitas' => (float) ($data['mto_igv_gratuitas'] ?? $igvGratuitas),
             'mto_isc' => (float) ($data['mto_isc'] ?? $totalIsc),
             'mto_icbper' => (float) ($data['mto_icbper'] ?? $totalIcbper),
-            'total_impuestos' => (float) ($data['total_impuestos'] ?? $totalImpuestos),
-            'valor_venta' => (float) ($data['valor_venta'] ?? $valorVenta),
-            'sub_total' => (float) ($data['sub_total'] ?? $subTotal),
+            'total_impuestos' => (float) ($data['total_impuestos'] ?? $totalImpuestos_neto),
+            'valor_venta' => (float) ($data['valor_venta'] ?? $valorVenta),   // siempre el total de ítems
+            'sub_total' => (float) ($data['sub_total'] ?? $subTotal),          // siempre el total de ítems
             'mto_imp_venta' => (float) ($data['mto_imp_venta'] ?? $mtoImpVenta),
             'sum_otros_descuentos' => (float) ($data['sum_otros_descuentos'] ?? $sumDescuentosNoBase),
             'total_descuentos' => (float) ($data['total_descuentos'] ?? ($descuentoGlobalGravadas + $sumDescuentosNoBase)),

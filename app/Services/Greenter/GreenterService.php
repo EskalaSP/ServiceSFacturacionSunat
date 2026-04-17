@@ -146,29 +146,50 @@ class GreenterService
         $result = $see->send($document);
         $xml = $see->getFactory()->getLastXml();
 
+        // Verificar primero si es BillResult con CDR (incluye observaciones 3xxx)
+        if ($result instanceof BillResult) {
+            $cdr = $result->getCdrResponse();
+            $cdrCode = $cdr ? (string) $cdr->getCode() : null;
+            $isObservation = $cdrCode && str_starts_with($cdrCode, '3');
+
+            if ($result->isSuccess() || $isObservation) {
+                return [
+                    'success' => true,
+                    'xml' => $xml,
+                    'cdr_zip' => $result->getCdrZip(),
+                    'hash' => $this->extractHashFromXml($xml),
+                    'code' => $cdrCode,
+                    'description' => $cdr ? $this->sanitizeUtf8($cdr->getDescription()) : null,
+                    'notes' => $cdr ? array_map(fn ($n) => $this->sanitizeUtf8($n), $cdr->getNotes() ?? []) : [],
+                    'accepted' => $result->isSuccess() || $isObservation,
+                ];
+            }
+        }
+
         if (! $result->isSuccess()) {
             $error = $result->getError();
+            $errorCode = (string) $error->getCode();
+
+            // Observaciones 3xxx: documento aceptado por SUNAT con advertencia
+            // (aunque venga como SOAP fault, tratarlo como aceptado)
+            if (str_starts_with($errorCode, '3')) {
+                return [
+                    'success' => true,
+                    'xml' => $xml,
+                    'cdr_zip' => $result instanceof BillResult ? $result->getCdrZip() : null,
+                    'hash' => $this->extractHashFromXml($xml),
+                    'code' => $errorCode,
+                    'description' => 'Aceptado con observación',
+                    'notes' => [$this->sanitizeUtf8($error->getMessage())],
+                    'accepted' => true,
+                ];
+            }
 
             return [
                 'success' => false,
                 'xml' => $xml,
-                'error_code' => $error->getCode(),
+                'error_code' => $errorCode,
                 'error_message' => $error->getMessage(),
-            ];
-        }
-
-        if ($result instanceof BillResult) {
-            $cdr = $result->getCdrResponse();
-
-            return [
-                'success' => true,
-                'xml' => $xml,
-                'cdr_zip' => $result->getCdrZip(),
-                'hash' => $this->extractHashFromXml($xml),
-                'code' => $cdr->getCode(),
-                'description' => $this->sanitizeUtf8($cdr->getDescription()),
-                'notes' => array_map(fn ($n) => $this->sanitizeUtf8($n), $cdr->getNotes() ?? []),
-                'accepted' => $cdr->isAccepted(),
             ];
         }
 

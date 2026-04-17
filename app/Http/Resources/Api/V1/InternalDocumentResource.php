@@ -10,11 +10,11 @@ class InternalDocumentResource extends JsonResource
     public function toArray(Request $request): array
     {
         $tipoDoc = $this->getTipoDocumento();
-        $routePrefix = $this->type === 'quotation' ? 'quotations' : 'sale-notes';
+        $routePrefix = $this->type === 'quotation' ? 'cotizaciones' : 'notas-venta';
 
         return [
             'id' => $this->id,
-            'type' => $this->type,
+            'tipo' => $this->type,
             'tipo_documento' => $tipoDoc,
             'numero' => $this->numero,
             'fecha_emision' => $this->fecha_emision->format('Y-m-d H:i:s'),
@@ -53,11 +53,11 @@ class InternalDocumentResource extends JsonResource
                 'descuento' => (float) $item->descuento,
                 'total' => (float) $item->mto_valor_venta,
             ], fn ($v, $k) => ! ($k === 'descuento' && $v == 0), ARRAY_FILTER_USE_BOTH))),
-            'status' => $this->status,
+            'estado' => $this->status,
             'observacion' => $this->observacion,
-            'payment_status' => $this->when($this->type === 'sale_note', $this->payment_status),
+            'estado_pago' => $this->when($this->type === 'sale_note', $this->payment_status),
             'monto_pagado' => $this->when($this->type === 'sale_note', (float) $this->monto_pagado),
-            'payments' => $this->when($this->type === 'sale_note', fn () => $this->whenLoaded('payments', fn () => $this->payments->map(fn ($p) => [
+            'pagos' => $this->when($this->type === 'sale_note', fn () => $this->whenLoaded('payments', fn () => $this->payments->map(fn ($p) => [
                 'id' => $p->id,
                 'metodo' => $p->metodo,
                 'monto' => (float) $p->monto,
@@ -66,12 +66,12 @@ class InternalDocumentResource extends JsonResource
                 'vuelto' => $p->metodo === 'efectivo' && $p->monto_recibido
                     ? round((float) $p->monto_recibido - (float) $p->monto, 2) : null,
                 'notas' => $p->notas,
-                'created_at' => $p->created_at->toIso8601String(),
+                'creado_en' => $p->created_at->toIso8601String(),
             ]))),
             'archivos' => [
                 'pdf' => url("/api/v1/{$routePrefix}/{$this->id}/pdf"),
             ],
-            'created_at' => $this->created_at->toIso8601String(),
+            'creado_en' => $this->created_at->toIso8601String(),
         ];
     }
 }

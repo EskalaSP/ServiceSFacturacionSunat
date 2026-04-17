@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreInvoiceRequest;
 use App\Http\Resources\Api\V1\InvoiceResource;
 use App\Http\Traits\ApiResponse;
+use App\Http\Traits\AppliesDocumentFilters;
 use App\Http\Traits\CachesPdf;
 use App\Jobs\SendDocumentToSunat;
 use App\Models\Invoice;
@@ -18,7 +19,7 @@ use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
 {
-    use ApiResponse, CachesPdf;
+    use ApiResponse, AppliesDocumentFilters, CachesPdf;
 
     public function store(StoreInvoiceRequest $request, CreateInvoiceAction $action): JsonResponse
     {
@@ -37,50 +38,36 @@ class InvoiceController extends Controller
     {
         $tenant = $request->get('tenant');
 
-        $query = Invoice::forTenant($tenant->id)
-            ->orderByDesc('created_at');
+        $query = Invoice::forTenant($tenant->id);
 
-        if ($request->has('sunat_status')) {
-            $query->status($request->input('sunat_status'));
+        // Cargar relaciones solicitadas (?con=items,payments)
+        if ($request->filled('con')) {
+            $permitidas = ['items', 'payments'];
+            $relaciones = array_intersect(
+                explode(',', (string) $request->input('con')),
+                $permitidas
+            );
+            if (! empty($relaciones)) {
+                $query->with($relaciones);
+            }
         }
 
-        if ($request->has('fecha_desde') && $request->has('fecha_hasta')) {
-            $query->fechas($request->input('fecha_desde'), $request->input('fecha_hasta'));
-        }
-
-        if ($request->has('serie')) {
-            $query->where('serie', $request->input('serie'));
-        }
-
-        if ($request->has('correlativo')) {
-            $query->where('correlativo', $request->input('correlativo'));
+        // Cargar items automáticamente cuando se filtra por correlativo exacto
+        if ($request->filled('correlativo')) {
             $query->with('items');
         }
 
-        if ($request->has('client_num_doc')) {
-            $query->where('client_num_doc', $request->input('client_num_doc'));
-        }
+        $query = $this->applyDocumentFilters($query, $request);
 
-        if ($request->has('sucursal_id')) {
-            $query->where('sucursal_id', $request->input('sucursal_id'));
-        }
-
-        if ($request->has('payment_status')) {
-            $query->where('payment_status', $request->input('payment_status'));
-        }
-
-        if ($request->has('tipo_moneda')) {
-            $query->where('tipo_moneda', $request->input('tipo_moneda'));
-        }
-
-        $invoices = $query->paginate($request->integer('per_page', 15));
+        $perPage = min((int) $request->input('por_pagina', 15), 100);
+        $invoices = $query->paginate($perPage);
 
         return $this->success([
             'data' => InvoiceResource::collection($invoices),
-            'pagination' => [
-                'current_page' => $invoices->currentPage(),
-                'last_page' => $invoices->lastPage(),
-                'per_page' => $invoices->perPage(),
+            'paginacion' => [
+                'pagina_actual' => $invoices->currentPage(),
+                'ultima_pagina' => $invoices->lastPage(),
+                'por_pagina' => $invoices->perPage(),
                 'total' => $invoices->total(),
             ],
         ]);

@@ -50,11 +50,9 @@ class InvoiceResource extends JsonResource
                 $cantidad = (float) $item->cantidad;
                 $valorVenta = (float) $item->mto_valor_venta;
                 $igv = (float) $item->igv;
+                $icbper = (float) ($item->icbper ?? 0);
+                $isc = (float) ($item->isc ?? 0);
                 $descuentoBase = (float) $item->descuento;
-                // Descuento con IGV (lo que el usuario ingresó)
-                $descuentoConIgv = $descuentoBase > 0
-                    ? round($precioUnitario * $cantidad - ($valorVenta + $igv), 2)
-                    : 0;
 
                 return array_filter([
                     'codigo' => $item->codigo,
@@ -64,9 +62,11 @@ class InvoiceResource extends JsonResource
                     'precio_unitario' => $precioUnitario,
                     'valor_unitario' => (float) $item->mto_valor_unitario,
                     'igv' => $igv,
-                    'descuento' => $descuentoConIgv,
-                    'total' => round($valorVenta + $igv, 2),
-                ], fn ($v, $k) => ! ($k === 'descuento' && $v == 0), ARRAY_FILTER_USE_BOTH);
+                    'isc' => $isc,
+                    'icbper' => $icbper,
+                    'descuento' => $descuentoBase,
+                    'total' => round($valorVenta + $igv + $icbper + $isc, 2),
+                ], fn ($v, $k) => ! (in_array($k, ['descuento', 'isc', 'icbper'], true) && $v == 0), ARRAY_FILTER_USE_BOTH);
             })),
             'detraccion' => $this->when($this->detraccion, $this->detraccion),
             'percepcion' => $this->when($this->percepcion, $this->percepcion),
@@ -76,22 +76,22 @@ class InvoiceResource extends JsonResource
             'guias' => $this->when($this->guias, $this->guias),
             'extras' => $this->when($this->extras, $this->extras),
             'sunat' => [
-                'status' => $this->sunat_status,
-                'code' => $this->sunat_code,
-                'description' => $this->sunat_description,
-                'notes' => $this->sunat_notes,
+                'estado' => $this->sunat_status,
+                'codigo' => $this->sunat_code,
+                'descripcion' => $this->sunat_description,
+                'notas' => $this->sunat_notes,
                 'hash_cpe' => $this->hash_cpe,
             ],
             'archivos' => [
-                'xml' => $this->xml_path ? url("/api/v1/invoices/{$this->id}/xml") : null,
-                'cdr' => $this->cdr_path ? url("/api/v1/invoices/{$this->id}/cdr") : null,
-                'pdf' => $this->pdf_path ? url("/api/v1/invoices/{$this->id}/pdf") : null,
+                'xml' => $this->xml_path ? url("/api/v1/facturas/{$this->id}/xml") : null,
+                'cdr' => $this->cdr_path ? url("/api/v1/facturas/{$this->id}/cdr") : null,
+                'pdf' => $this->pdf_path ? url("/api/v1/facturas/{$this->id}/pdf") : null,
             ],
             'leyenda' => $this->leyenda,
             'observacion' => $this->observacion,
-            'payment_status' => $this->payment_status,
+            'estado_pago' => $this->payment_status,
             'monto_pagado' => (float) $this->monto_pagado,
-            'payments' => $this->whenLoaded('payments', fn () => $this->payments->map(fn ($p) => [
+            'pagos' => $this->whenLoaded('payments', fn () => $this->payments->map(fn ($p) => [
                 'id' => $p->id,
                 'metodo' => $p->metodo,
                 'monto' => (float) $p->monto,
@@ -100,10 +100,10 @@ class InvoiceResource extends JsonResource
                 'vuelto' => $p->metodo === 'efectivo' && $p->monto_recibido
                     ? round((float) $p->monto_recibido - (float) $p->monto, 2) : null,
                 'notas' => $p->notas,
-                'created_at' => $p->created_at->toIso8601String(),
+                'creado_en' => $p->created_at->toIso8601String(),
             ])),
-            'sent_at' => $this->sent_at?->toIso8601String(),
-            'created_at' => $this->created_at->toIso8601String(),
+            'enviado_en' => $this->sent_at?->toIso8601String(),
+            'creado_en' => $this->created_at->toIso8601String(),
         ];
     }
 }

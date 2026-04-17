@@ -104,11 +104,15 @@ class SendDocumentToSunat implements ShouldQueue
                     'sunat_status' => 'aceptado',
                     'sunat_code' => substr($errorCode, 0, 20),
                     'sunat_description' => $result['error_message'] ? substr($result['error_message'], 0, 500) : null,
+                    'hash_cpe' => $result['hash'] ?? null,
                     'sent_at' => now(),
                 ]);
 
                 if (! empty($result['xml'])) {
                     $storage->storeXml($document, $tenant, $result['xml']);
+                }
+                if (! empty($result['cdr_zip'])) {
+                    $storage->storeCdr($document, $tenant, $result['cdr_zip']);
                 }
 
                 if (config('pdf.auto_generate', true)) {
@@ -200,6 +204,21 @@ class SendDocumentToSunat implements ShouldQueue
             'razon_social' => $document->client_razon_social,
             'direccion' => $document->client_direccion,
         ];
+        // Calcular sum_otros_descuentos desde descuentos_globales cod "03" y "04"
+        // para que Greenter renderice <cbc:AllowanceTotalAmount> (SUNAT 3300)
+        $sumOtrosDescuentos = 0;
+        if (! empty($document->descuentos_globales)) {
+            foreach ($document->descuentos_globales as $desc) {
+                $codTipo = $desc['cod_tipo'] ?? '02';
+                if (in_array($codTipo, ['03', '04'], true)) {
+                    $sumOtrosDescuentos += (float) ($desc['monto'] ?? 0);
+                }
+            }
+        }
+        if ($sumOtrosDescuentos > 0) {
+            $data['sum_otros_descuentos'] = round($sumOtrosDescuentos, 2);
+        }
+
         $data['items'] = $document->items->map(function ($item) {
             $mapped = [
                 'codigo' => $item->codigo,

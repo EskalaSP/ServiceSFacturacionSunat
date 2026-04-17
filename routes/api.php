@@ -25,8 +25,8 @@ use Illuminate\Support\Facades\Route;
 
 // === Rutas públicas (sin autenticación) ===
 Route::prefix('v1')->middleware(['throttle:api'])->group(function () {
-    Route::post('register', [RegisterController::class, 'store']);
-    Route::get('plans', [SubscriptionController::class, 'plans']);
+    Route::post('registro', [RegisterController::class, 'store']);
+    Route::get('planes', [SubscriptionController::class, 'plans']);
 });
 
 // === Rutas protegidas (requieren X-Api-Key + X-Api-Secret) ===
@@ -35,70 +35,73 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     // === Documentos SUNAT (con límite de plan) ===
 
     // Facturas (01)
-    Route::post('invoices', [InvoiceController::class, 'store'])->middleware('check.limit:sunat');
-    Route::get('invoices', [InvoiceController::class, 'index']);
-    Route::get('invoices/{id}', [InvoiceController::class, 'show']);
-    Route::put('invoices/{id}', [InvoiceController::class, 'update']);
-    Route::get('invoices/{id}/xml', [InvoiceController::class, 'xml']);
-    Route::get('invoices/{id}/cdr', [InvoiceController::class, 'cdr']);
-    Route::get('invoices/{id}/pdf', [InvoiceController::class, 'pdf']);
-    Route::post('invoices/{id}/resend', [InvoiceController::class, 'resend']);
-    Route::post('invoices/{id}/payments', [PaymentController::class, 'store'])->defaults('docType', 'invoices');
-    Route::get('invoices/{id}/payments', [PaymentController::class, 'index'])->defaults('docType', 'invoices');
-    Route::delete('invoices/{id}/payments/{paymentId}', [PaymentController::class, 'destroy'])->defaults('docType', 'invoices');
+    Route::post('facturas', [InvoiceController::class, 'store'])->middleware('check.limit:sunat');
+    Route::get('facturas', [InvoiceController::class, 'index']);
+    Route::get('facturas/{id}', [InvoiceController::class, 'show']);
+    Route::put('facturas/{id}', [InvoiceController::class, 'update']);
+    Route::get('facturas/{id}/xml', [InvoiceController::class, 'xml']);
+    Route::get('facturas/{id}/cdr', [InvoiceController::class, 'cdr']);
+    Route::get('facturas/{id}/pdf', [InvoiceController::class, 'pdf']);
+    Route::post('facturas/{id}/reenviar', [InvoiceController::class, 'resend']);
+    Route::post('facturas/{id}/pagos', [PaymentController::class, 'store'])->defaults('docType', 'facturas');
+    Route::get('facturas/{id}/pagos', [PaymentController::class, 'index'])->defaults('docType', 'facturas');
+    Route::delete('facturas/{id}/pagos/{paymentId}', [PaymentController::class, 'destroy'])->defaults('docType', 'facturas');
 
     // Boletas (03)
     Route::post('boletas', [BoletaController::class, 'store'])->middleware('check.limit:sunat');
     Route::get('boletas', [BoletaController::class, 'index']);
     Route::get('boletas/{id}', [BoletaController::class, 'show']);
     Route::put('boletas/{id}', [BoletaController::class, 'update']);
+    Route::delete('boletas/{id}', [BoletaController::class, 'destroy']);
     Route::get('boletas/{id}/xml', [BoletaController::class, 'xml']);
     Route::get('boletas/{id}/cdr', [BoletaController::class, 'cdr']);
     Route::get('boletas/{id}/pdf', [BoletaController::class, 'pdf']);
-    Route::post('boletas/{id}/resend', [BoletaController::class, 'resend']);
-    Route::post('boletas/{id}/payments', [PaymentController::class, 'store'])->defaults('docType', 'boletas');
-    Route::get('boletas/{id}/payments', [PaymentController::class, 'index'])->defaults('docType', 'boletas');
-    Route::delete('boletas/{id}/payments/{paymentId}', [PaymentController::class, 'destroy'])->defaults('docType', 'boletas');
+    Route::post('boletas/{id}/reenviar', [BoletaController::class, 'resend']);
+    Route::post('boletas/{id}/pagos', [PaymentController::class, 'store'])->defaults('docType', 'boletas');
+    Route::get('boletas/{id}/pagos', [PaymentController::class, 'index'])->defaults('docType', 'boletas');
+    Route::delete('boletas/{id}/pagos/{paymentId}', [PaymentController::class, 'destroy'])->defaults('docType', 'boletas');
 
     // Notas de Crédito (07)
-    Route::post('credit-notes', [CreditNoteController::class, 'store'])->middleware('check.limit:sunat');
-    Route::get('credit-notes', [CreditNoteController::class, 'index']);
-    Route::get('credit-notes/{id}', [CreditNoteController::class, 'show']);
-    Route::get('credit-notes/{id}/xml', [CreditNoteController::class, 'xml']);
-    Route::get('credit-notes/{id}/cdr', [CreditNoteController::class, 'cdr']);
-    Route::get('credit-notes/{id}/pdf', [CreditNoteController::class, 'pdf']);
-    Route::put('credit-notes/{id}', [CreditNoteController::class, 'update']);
-    Route::post('credit-notes/{id}/resend', [CreditNoteController::class, 'resend']);
+    Route::post('notas-credito', [CreditNoteController::class, 'store'])->middleware('check.limit:sunat');
+    Route::get('notas-credito', [CreditNoteController::class, 'index']);
+    Route::get('notas-credito/{id}', [CreditNoteController::class, 'show']);
+    Route::get('notas-credito/{id}/xml', [CreditNoteController::class, 'xml']);
+    Route::get('notas-credito/{id}/cdr', [CreditNoteController::class, 'cdr']);
+    Route::get('notas-credito/{id}/pdf', [CreditNoteController::class, 'pdf']);
+    Route::put('notas-credito/{id}', [CreditNoteController::class, 'update']);
+    Route::post('notas-credito/{id}/reenviar', [CreditNoteController::class, 'resend']);
 
     // Notas de Débito (08)
-    Route::post('debit-notes', [DebitNoteController::class, 'store'])->middleware('check.limit:sunat');
-    Route::get('debit-notes', [DebitNoteController::class, 'index']);
-    Route::get('debit-notes/{id}', [DebitNoteController::class, 'show']);
-    Route::get('debit-notes/{id}/xml', [DebitNoteController::class, 'xml']);
-    Route::get('debit-notes/{id}/cdr', [DebitNoteController::class, 'cdr']);
-    Route::get('debit-notes/{id}/pdf', [DebitNoteController::class, 'pdf']);
-    Route::put('debit-notes/{id}', [DebitNoteController::class, 'update']);
-    Route::post('debit-notes/{id}/resend', [DebitNoteController::class, 'resend']);
+    Route::post('notas-debito', [DebitNoteController::class, 'store'])->middleware('check.limit:sunat');
+    Route::get('notas-debito', [DebitNoteController::class, 'index']);
+    Route::get('notas-debito/{id}', [DebitNoteController::class, 'show']);
+    Route::get('notas-debito/{id}/xml', [DebitNoteController::class, 'xml']);
+    Route::get('notas-debito/{id}/cdr', [DebitNoteController::class, 'cdr']);
+    Route::get('notas-debito/{id}/pdf', [DebitNoteController::class, 'pdf']);
+    Route::put('notas-debito/{id}', [DebitNoteController::class, 'update']);
+    Route::post('notas-debito/{id}/reenviar', [DebitNoteController::class, 'resend']);
 
     // Guías de remisión
-    Route::post('dispatch-guides', [DispatchGuideController::class, 'store'])->middleware('check.limit:sunat');
-    Route::get('dispatch-guides', [DispatchGuideController::class, 'index']);
-    Route::get('dispatch-guides/{id}', [DispatchGuideController::class, 'show']);
-    Route::put('dispatch-guides/{id}', [DispatchGuideController::class, 'update']);
-    Route::get('dispatch-guides/{id}/pdf', [DispatchGuideController::class, 'pdf']);
-    Route::get('dispatch-guides/{id}/xml', [DispatchGuideController::class, 'xml']);
-    Route::get('dispatch-guides/{id}/status', [DispatchGuideController::class, 'checkStatus']);
+    Route::post('guias-remision', [DispatchGuideController::class, 'store'])->middleware('check.limit:sunat');
+    Route::get('guias-remision', [DispatchGuideController::class, 'index']);
+    Route::get('guias-remision/{id}', [DispatchGuideController::class, 'show']);
+    Route::put('guias-remision/{id}', [DispatchGuideController::class, 'update']);
+    Route::get('guias-remision/{id}/pdf', [DispatchGuideController::class, 'pdf']);
+    Route::get('guias-remision/{id}/xml', [DispatchGuideController::class, 'xml']);
+    Route::get('guias-remision/{id}/estado', [DispatchGuideController::class, 'checkStatus']);
 
     // Resúmenes diarios
-    Route::get('summaries', [SummaryController::class, 'index']);
-    Route::post('summaries', [SummaryController::class, 'store'])->middleware('check.limit:sunat');
-    Route::get('summaries/{id}/status', [SummaryController::class, 'checkStatus']);
-    Route::get('summaries/{id}/xml', [SummaryController::class, 'xml']);
-    Route::get('summaries/{id}/cdr', [SummaryController::class, 'cdr']);
+    Route::get('resumenes', [SummaryController::class, 'index']);
+    Route::post('resumenes', [SummaryController::class, 'store'])->middleware('check.limit:sunat');
+    Route::get('resumenes/{id}/estado', [SummaryController::class, 'checkStatus']);
+    Route::get('resumenes/{id}/xml', [SummaryController::class, 'xml']);
+    Route::get('resumenes/{id}/cdr', [SummaryController::class, 'cdr']);
 
     // Comunicaciones de baja
-    Route::post('voided', [VoidedController::class, 'store'])->middleware('check.limit:sunat');
-    Route::get('voided/{id}/status', [VoidedController::class, 'checkStatus']);
+    Route::post('anulaciones', [VoidedController::class, 'store'])->middleware('check.limit:sunat');
+    Route::get('anulaciones', [VoidedController::class, 'index']);
+    Route::get('anulaciones/{id}', [VoidedController::class, 'show']);
+    Route::get('anulaciones/{id}/estado', [VoidedController::class, 'checkStatus']);
 
     // Retenciones (20)
     Route::post('retentions', [RetentionController::class, 'store'])->middleware('check.limit:sunat');
@@ -118,22 +121,22 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::post('reversions', [ReversionController::class, 'store'])->middleware('check.limit:sunat');
 
     // Consultar CDR en SUNAT
-    Route::post('consult-cdr', [ConsultController::class, 'cdrStatus']);
+    Route::post('consultar-cdr', [ConsultController::class, 'cdrStatus']);
 
     // Buscar RUC/DNI (local + SUNAT/RENIEC)
-    Route::get('lookup-document', [ConsultController::class, 'lookupDocument']);
+    Route::get('buscar-documento', [ConsultController::class, 'lookupDocument']);
 
-    // Tenant (perfil)
-    Route::get('tenant', [TenantController::class, 'show']);
-    Route::put('tenant', [TenantController::class, 'update']);
-    Route::post('tenant/logo', [TenantController::class, 'uploadLogo']);
-    Route::post('tenant/certificate', [TenantController::class, 'uploadCertificate']);
+    // Empresa (perfil)
+    Route::get('empresa', [TenantController::class, 'show']);
+    Route::put('empresa', [TenantController::class, 'update']);
+    Route::post('empresa/logo', [TenantController::class, 'uploadLogo']);
+    Route::post('empresa/certificado', [TenantController::class, 'uploadCertificate']);
 
     // Sucursales
     Route::apiResource('sucursales', SucursalController::class);
 
     // Clientes
-    Route::apiResource('clients', ClientController::class);
+    Route::apiResource('clientes', ClientController::class);
 
     // Series
     Route::apiResource('series', SerieController::class)->except(['destroy']);
@@ -141,40 +144,40 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     // === Documentos internos (sin SUNAT) ===
 
     // Cotizaciones
-    Route::post('quotations', [QuotationController::class, 'store'])->middleware('check.limit:internal');
-    Route::get('quotations', [QuotationController::class, 'index']);
-    Route::get('quotations/{id}', [QuotationController::class, 'show']);
-    Route::put('quotations/{id}', [QuotationController::class, 'update']);
-    Route::put('quotations/{id}/status', [QuotationController::class, 'updateStatus']);
-    Route::get('quotations/{id}/pdf', [QuotationController::class, 'pdf']);
+    Route::post('cotizaciones', [QuotationController::class, 'store'])->middleware('check.limit:internal');
+    Route::get('cotizaciones', [QuotationController::class, 'index']);
+    Route::get('cotizaciones/{id}', [QuotationController::class, 'show']);
+    Route::put('cotizaciones/{id}', [QuotationController::class, 'update']);
+    Route::put('cotizaciones/{id}/estado', [QuotationController::class, 'updateStatus']);
+    Route::get('cotizaciones/{id}/pdf', [QuotationController::class, 'pdf']);
 
     // Notas de Venta
-    Route::post('sale-notes', [SaleNoteController::class, 'store'])->middleware('check.limit:internal');
-    Route::get('sale-notes', [SaleNoteController::class, 'index']);
-    Route::get('sale-notes/{id}', [SaleNoteController::class, 'show']);
-    Route::put('sale-notes/{id}', [SaleNoteController::class, 'update']);
-    Route::get('sale-notes/{id}/pdf', [SaleNoteController::class, 'pdf']);
-    Route::post('sale-notes/{id}/payments', [PaymentController::class, 'store'])->defaults('docType', 'sale-notes');
-    Route::get('sale-notes/{id}/payments', [PaymentController::class, 'index'])->defaults('docType', 'sale-notes');
-    Route::delete('sale-notes/{id}/payments/{paymentId}', [PaymentController::class, 'destroy'])->defaults('docType', 'sale-notes');
+    Route::post('notas-venta', [SaleNoteController::class, 'store'])->middleware('check.limit:internal');
+    Route::get('notas-venta', [SaleNoteController::class, 'index']);
+    Route::get('notas-venta/{id}', [SaleNoteController::class, 'show']);
+    Route::put('notas-venta/{id}', [SaleNoteController::class, 'update']);
+    Route::get('notas-venta/{id}/pdf', [SaleNoteController::class, 'pdf']);
+    Route::post('notas-venta/{id}/pagos', [PaymentController::class, 'store'])->defaults('docType', 'notas-venta');
+    Route::get('notas-venta/{id}/pagos', [PaymentController::class, 'index'])->defaults('docType', 'notas-venta');
+    Route::delete('notas-venta/{id}/pagos/{paymentId}', [PaymentController::class, 'destroy'])->defaults('docType', 'notas-venta');
 
-    // === Dashboard (aggregated) ===
-    Route::get('dashboard', [\App\Http\Controllers\Api\V1\DashboardController::class, 'index']);
+    // === Panel (aggregated) ===
+    Route::get('panel', [\App\Http\Controllers\Api\V1\DashboardController::class, 'index']);
 
     // === Reportes ===
-    Route::get('reports/registro-ventas', [ReportController::class, 'registroVentas']);
-    Route::get('reports/ventas-consolidado', [ReportController::class, 'ventasConsolidado']);
-    Route::get('reports/notas', [ReportController::class, 'notas']);
-    Route::get('reports/cobranzas', [ReportController::class, 'cobranzas']);
-    Route::get('reports/documentos-internos', [ReportController::class, 'documentosInternos']);
-    Route::get('reports/por-cliente', [ReportController::class, 'porCliente']);
-    Route::get('reports/por-sucursal', [ReportController::class, 'porSucursal']);
+    Route::get('reportes/registro-ventas', [ReportController::class, 'registroVentas']);
+    Route::get('reportes/ventas-consolidado', [ReportController::class, 'ventasConsolidado']);
+    Route::get('reportes/notas', [ReportController::class, 'notas']);
+    Route::get('reportes/cobranzas', [ReportController::class, 'cobranzas']);
+    Route::get('reportes/documentos-internos', [ReportController::class, 'documentosInternos']);
+    Route::get('reportes/por-cliente', [ReportController::class, 'porCliente']);
+    Route::get('reportes/por-sucursal', [ReportController::class, 'porSucursal']);
 
     // === Suscripciones y Billing ===
-    Route::get('subscription', [SubscriptionController::class, 'show']);
-    Route::post('subscription', [SubscriptionController::class, 'store']);
-    Route::put('subscription/change-plan', [SubscriptionController::class, 'changePlan']);
-    Route::put('subscription/cancel', [SubscriptionController::class, 'cancel']);
-    Route::get('subscription/payments', [SubscriptionController::class, 'payments']);
-    Route::get('subscription/usage', [SubscriptionController::class, 'usage']);
+    Route::get('suscripcion', [SubscriptionController::class, 'show']);
+    Route::post('suscripcion', [SubscriptionController::class, 'store']);
+    Route::put('suscripcion/cambiar-plan', [SubscriptionController::class, 'changePlan']);
+    Route::put('suscripcion/cancelar', [SubscriptionController::class, 'cancel']);
+    Route::get('suscripcion/pagos', [SubscriptionController::class, 'payments']);
+    Route::get('suscripcion/uso', [SubscriptionController::class, 'usage']);
 });

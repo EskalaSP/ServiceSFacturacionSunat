@@ -57,8 +57,8 @@ class QuotationController extends Controller
             ->forTenant($tenant->id)
             ->orderByDesc('created_at');
 
-        if ($request->has('status')) {
-            $query->status($request->input('status'));
+        if ($request->has('estado')) {
+            $query->status($request->input('estado'));
         }
 
         if ($request->has('fecha_desde') && $request->has('fecha_hasta')) {
@@ -69,14 +69,14 @@ class QuotationController extends Controller
             $query->where('client_num_doc', $request->input('client_num_doc'));
         }
 
-        $docs = $query->paginate($request->integer('per_page', 15));
+        $docs = $query->paginate($request->integer('por_pagina', 15));
 
         return $this->success([
             'data' => InternalDocumentResource::collection($docs),
-            'pagination' => [
-                'current_page' => $docs->currentPage(),
-                'last_page' => $docs->lastPage(),
-                'per_page' => $docs->perPage(),
+            'paginacion' => [
+                'pagina_actual' => $docs->currentPage(),
+                'ultima_pagina' => $docs->lastPage(),
+                'por_pagina' => $docs->perPage(),
                 'total' => $docs->total(),
             ],
         ]);
@@ -171,12 +171,12 @@ class QuotationController extends Controller
     public function updateStatus(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'status' => 'required|string|in:' . implode(',', Quotation::$validStatuses),
+            'estado' => 'required|string|in:' . implode(',', Quotation::$validStatuses),
         ]);
 
         $tenant = $request->get('tenant');
         $quotation = Quotation::forTenant($tenant->id)->findOrFail($id);
-        $quotation->update(['status' => $request->input('status')]);
+        $quotation->update(['status' => $request->input('estado')]);
 
         return $this->success(new InternalDocumentResource($quotation->fresh(['items'])), 'Estado actualizado.');
     }

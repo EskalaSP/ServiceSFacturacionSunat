@@ -1,7 +1,10 @@
 {{-- Información de pago: forma de pago, cuotas, adelanto, detracción --}}
+@php
+    $guia_tipo_map = ['09' => 'Guía de Remisión', '31' => 'Guía de Remisión Transportista', '71' => 'Guía de Remisión Remitente'];
+@endphp
 @if($tipo_documento === '01' || $tipo_documento === '03')
     @if($is_ticket)
-        @if(!empty($forma_pago) || !empty($cuotas) || !empty($detraccion) || !empty($pagos))
+        @if(!empty($forma_pago) || !empty($cuotas) || !empty($detraccion) || !empty($pagos) || !empty($guias))
         <div class="payment-section">
             @if(!empty($forma_pago))
             <div class="payment-title">Forma de Pago: {{ $forma_pago }}</div>
@@ -34,10 +37,17 @@
                 <div class="info-line"><span class="info-label">Monto:</span> {{ $moneda_simbolo }} {{ number_format($percepcion['monto'] ?? 0, 2) }}</div>
             </div>
             @endif
+            @if(!empty($guias))
+            <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 3px;">
+                @foreach($guias as $g)
+                <div class="info-line"><span class="info-label">{{ $guia_tipo_map[$g['tipo_doc']] ?? 'Guía' }}:</span> {{ $g['nro_doc'] }}</div>
+                @endforeach
+            </div>
+            @endif
         </div>
         @endif
     @else
-        @if(!empty($forma_pago) || !empty($cuotas) || !empty($detraccion) || !empty($pagos))
+        @if(!empty($forma_pago) || !empty($cuotas) || !empty($detraccion) || !empty($pagos) || !empty($guias))
         <div class="payment-section">
             <table>
                 @if(!empty($forma_pago))
@@ -82,6 +92,14 @@
                         Monto: {{ $moneda_simbolo }} {{ number_format($percepcion['monto'] ?? 0, 2) }}
                     </td>
                 </tr>
+                @endif
+                @if(!empty($guias))
+                    @foreach($guias as $g)
+                    <tr>
+                        <td><strong>{{ $loop->first ? 'Guías de Remisión:' : '' }}</strong></td>
+                        <td>{{ $guia_tipo_map[$g['tipo_doc']] ?? 'Guía' }} — {{ $g['nro_doc'] }}</td>
+                    </tr>
+                    @endforeach
                 @endif
             </table>
         </div>

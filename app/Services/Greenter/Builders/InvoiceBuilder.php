@@ -77,6 +77,20 @@ class InvoiceBuilder
         $mtoOperExportacion = (float) ($data['mto_oper_exportacion'] ?? 0);
         $mtoIgv = (float) ($data['mto_igv'] ?? 0);
 
+        // Calcular mto_igv_gratuitas desde ítems si no está almacenado
+        if (empty($data['mto_igv_gratuitas']) && ! empty($data['items'])) {
+            $gratuitoGravadoCodes = ['11', '12', '13', '14', '15', '16'];
+            $computedIgvGratuitas = 0;
+            foreach ($data['items'] as $item) {
+                if (in_array($item['tip_afe_igv'] ?? '', $gratuitoGravadoCodes)) {
+                    $computedIgvGratuitas += (float) ($item['igv'] ?? 0);
+                }
+            }
+            if ($computedIgvGratuitas > 0) {
+                $data['mto_igv_gratuitas'] = round($computedIgvGratuitas, 2);
+            }
+        }
+
         if ($mtoOperGravadas > 0) {
             $invoice->setMtoOperGravadas($mtoOperGravadas);
         }
@@ -138,6 +152,28 @@ class InvoiceBuilder
         if (! empty($data['leyendas'])) {
             foreach ($data['leyendas'] as $legend) {
                 $legends[] = (new Legend())->setCode($legend['code'])->setValue($legend['value']);
+            }
+        }
+        // Leyenda 2006 requerida por SUNAT cuando hay detracción
+        if (! empty($data['detraccion'])) {
+            $ya_tiene_2006 = collect($legends)->contains(fn($l) => $l->getCode() === '2006');
+            if (! $ya_tiene_2006) {
+                $legends[] = (new Legend())->setCode('2006')->setValue('Operación sujeta a detracción');
+            }
+        }
+        // Leyenda 2000 requerida por SUNAT cuando hay percepción
+        if (! empty($data['percepcion'])) {
+            $ya_tiene_2000 = collect($legends)->contains(fn($l) => $l->getCode() === '2000');
+            if (! $ya_tiene_2000) {
+                $legends[] = (new Legend())->setCode('2000')->setValue('COMPROBANTE DE PERCEPCIÓN');
+            }
+        }
+        // Leyenda 2007 requerida por SUNAT cuando hay ítems con IVAP (tip_afe_igv "17")
+        $tieneIvap = collect($data['items'] ?? [])->contains(fn($it) => ($it['tip_afe_igv'] ?? '') === '17');
+        if ($tieneIvap) {
+            $ya_tiene_2007 = collect($legends)->contains(fn($l) => $l->getCode() === '2007');
+            if (! $ya_tiene_2007) {
+                $legends[] = (new Legend())->setCode('2007')->setValue('Operación sujeta al IVAP');
             }
         }
         if (! empty($legends)) {
@@ -262,7 +298,7 @@ class InvoiceBuilder
             $valorUnitario = $precioUnitario;
         }
 
-        // Calcular descuentos por línea sobre la base sin IGV (cod_tipo '00')
+        // Calcular descuentos por línea sobre la base sin IGV (cod_tipo '00' y '01' se tratan igual)
         $descuentoBase = 0;
         $descuentoConIgv = 0;
         $recalculatedDescuentos = null;
@@ -272,14 +308,17 @@ class InvoiceBuilder
             $totalConIgvBruto = round($precioUnitario * $cantidad, 2);
             $recalculatedDescuentos = [];
             foreach ($item['descuentos'] as $desc) {
-                if (($desc['cod_tipo'] ?? '00') === '00') {
+                $codTipo = $desc['cod_tipo'] ?? '00';
+                if ($codTipo === '00' || $codTipo === '01') {
                     $factor = (float) ($desc['factor'] ?? 0);
                     $montoBase = round($valorBruto, 2);
                     $monto = round($montoBase * $factor, 2);
                     $descuentoBase += $monto;
                     $descuentoConIgv += round($totalConIgvBruto * $factor, 2);
+                    // Normalizar "01" → "00" en el XML: ambos se aplican a la base en nuestra implementación
+                    // SUNAT 3271: "01" exige TaxableAmount=gross; como reducimos la base, debe ser "00"
                     $recalculatedDescuentos[] = [
-                        'cod_tipo' => $desc['cod_tipo'] ?? '00',
+                        'cod_tipo' => '00',
                         'monto_base' => $montoBase,
                         'factor' => $factor,
                         'monto' => $monto,
@@ -307,9 +346,9 @@ class InvoiceBuilder
             // Gratuita gravada (11-17): lleva IGV
             $valorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
             $valorUnitario = 0;
-            // LineExtensionAmount = 0 for free items (SUNAT 3271)
-            $valorVenta = 0;
+            // LineExtensionAmount = monto referencial (greenter factura-gratuita.php)
             $igvBase = round($valorGratuito * $cantidad, 2);
+            $valorVenta = $igvBase;
             $igv = (float) ($item['igv'] ?? round($igvBase * $porcentajeIgv / 100, 2));
         } elseif ($isGratuito) {
             // Gratuita inafecta/exonerada (21, 31-36): NO lleva IGV
@@ -329,9 +368,17 @@ class InvoiceBuilder
         if (! $isGratuito) {
             $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $valorUnitario);
         }
-        // For gratuitas, LineExtensionAmount must be 0 regardless of DB value
-        if ($isGratuito || $isGratuitoGravado) {
-            $valorVenta = 0;
+        if ($isGratuitoGravado) {
+            // Gravada gratuita (11-16): LineExtensionAmount = monto referencial (base del IGV)
+            $valorVenta = (float) ($item['mto_valor_venta'] ?? $valorVenta);
+        } elseif ($isGratuito) {
+            // Inafecta/exonerada gratuita (21, 31-36): LineExtensionAmount = monto referencial
+            // SUNAT 3224: LineExtensionAmount debe ser el ref × cantidad para que SUNAT no observe
+            $valorRefUnit = (float) ($item['mto_valor_unitario'] ?? 0);
+            if ($valorRefUnit <= 0) {
+                $valorRefUnit = (float) ($item['mto_valor_venta'] ?? 0) / max($cantidad, 1);
+            }
+            $valorVenta = round($valorRefUnit * $cantidad, 2);
         } else {
             $valorVenta = (float) ($item['mto_valor_venta'] ?? $valorVenta);
         }
@@ -357,6 +404,11 @@ class InvoiceBuilder
             $baseIgv = (float) ($item['mto_base_igv'] ?? $defaultBaseIgv);
         }
 
+        // SUNAT: Gratuita inafecta/exonerada (21, 31-36) → TaxableAmount = LineExtensionAmount (ref × cantidad)
+        if (in_array($tipAfeIgv, $gratuitoInafectoCodes)) {
+            $baseIgv = $valorVenta;
+        }
+
         // totalImpuestos = IGV + ISC + ICBPER (SUNAT 3292 requires all taxes summed)
         $totalImpuestos = (float) ($item['total_impuestos'] ?? ($igv + $isc + $icbper));
 
@@ -374,15 +426,24 @@ class InvoiceBuilder
             ->setTotalImpuestos($totalImpuestos);
 
         if ($isGratuito || $isGratuitoGravado) {
-            // Gratuito: precio de venta = 0 (PriceTypeCode=01), valor referencial (PriceTypeCode=02)
-            $mtoValorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
+            // Gratuito: SUNAT requires AlternativeConditionPrice con PriceTypeCode=02
+            // SUNAT 2640: Price/PriceAmount DEBE ser 0 para gratuita (no el valor referencial)
+            $mtoValorGratuito = (float) ($item['mto_valor_unitario'] ?? 0);
+            if ($mtoValorGratuito <= 0 && $cantidad > 0) {
+                $refTotal = (float) ($item['mto_valor_venta'] ?? 0);
+                $mtoValorGratuito = round($refTotal / $cantidad, 2);
+            }
+            if ($mtoValorGratuito <= 0) {
+                $mtoValorGratuito = $precioUnitario;
+            }
             $detail->setMtoPrecioUnitario(0);
             $detail->setMtoValorGratuito($mtoValorGratuito);
         } else {
-            // SUNAT 3270: PriceAmount must reflect effective price after line discount
+            // SUNAT 3270/3271: PricingReference × Qty debe cuadrar con LineExtensionAmount + IGV
+            // Usar más precisión (10 decimales) para evitar diferencia de redondeo
             if ($descuentoConIgv > 0 && $cantidad > 0) {
                 $effectiveTotal = round($precioUnitario * $cantidad, 2) - $descuentoConIgv;
-                $detail->setMtoPrecioUnitario(round($effectiveTotal / $cantidad, 2));
+                $detail->setMtoPrecioUnitario(round($effectiveTotal / $cantidad, 10));
             } else {
                 $detail->setMtoPrecioUnitario($precioUnitario);
             }
@@ -433,9 +494,9 @@ class InvoiceBuilder
             ->setRuc($this->tenant->ruc)
             ->setRazonSocial($this->tenant->razon_social);
 
-        if ($this->tenant->nombre_comercial) {
-            $company->setNombreComercial($this->tenant->nombre_comercial);
-        }
+        // SUNAT 4092: Greenter siempre emite <cac:PartyName/cbc:Name>, si está vacío
+        // SUNAT observa. Fallback a razon_social cuando no hay nombre_comercial.
+        $company->setNombreComercial($this->tenant->nombre_comercial ?: $this->tenant->razon_social);
 
         $address = (new Address())
             ->setCodLocal($codLocal)

@@ -1,5 +1,9 @@
 {{-- Totales completos para tickets (tabla) --}}
 @if($tipo_documento !== '09')
+@php
+    $moneda_prefix = $tipo_moneda !== 'PEN' ? $tipo_moneda : $moneda_simbolo;
+    $igv_pct = (isset($tipo_operacion) && str_starts_with($tipo_operacion, '02')) ? 0 : 18;
+@endphp
 <div class="totals-section">
     <table class="totals-table-ticket">
         @if($mto_oper_gravadas > 0)
@@ -26,10 +30,22 @@
             <td class="total-value">{{ number_format($mto_oper_gratuitas, 2) }}</td>
         </tr>
         @endif
+        @if(!empty($mto_base_ivap) && $mto_base_ivap > 0)
+        <tr>
+            <td class="total-label">Op. IVAP</td>
+            <td class="total-value">{{ number_format($mto_base_ivap, 2) }}</td>
+        </tr>
         <tr class="total-separator">
-            <td class="total-label">IGV (18%)</td>
+            <td class="total-label">IVAP (4%)</td>
+            <td class="total-value">{{ number_format($mto_ivap, 2) }}</td>
+        </tr>
+        @endif
+        @if($mto_igv > 0 || empty($mto_base_ivap) || $mto_base_ivap == 0)
+        <tr class="total-separator">
+            <td class="total-label">IGV ({{ $igv_pct }}%)</td>
             <td class="total-value">{{ number_format($mto_igv, 2) }}</td>
         </tr>
+        @endif
         @if($mto_isc > 0)
         <tr>
             <td class="total-label">ISC</td>
@@ -57,20 +73,20 @@
         @if(!empty($percepcion))
         <tr>
             <td class="total-label">Subtotal</td>
-            <td class="total-value">{{ $moneda_simbolo }} {{ number_format($mto_imp_venta, 2) }}</td>
+            <td class="total-value">{{ $moneda_prefix }} {{ number_format($mto_imp_venta, 2) }}</td>
         </tr>
         <tr>
             <td class="total-label">Percepción ({{ $percepcion['porcentaje'] }}%)</td>
-            <td class="total-value">{{ number_format($percepcion['monto'], 2) }}</td>
+            <td class="total-value">{{ $moneda_prefix }} {{ number_format($percepcion['monto'], 2) }}</td>
         </tr>
         <tr class="total-final">
             <td class="total-label">TOTAL</td>
-            <td class="total-value">{{ $moneda_simbolo }} {{ number_format($percepcion['mto_total'], 2) }}</td>
+            <td class="total-value">{{ $moneda_prefix }} {{ number_format($percepcion['mto_total'], 2) }}</td>
         </tr>
         @else
         <tr class="total-final">
             <td class="total-label">TOTAL</td>
-            <td class="total-value">{{ $moneda_simbolo }} {{ number_format($mto_imp_venta, 2) }}</td>
+            <td class="total-value">{{ $moneda_prefix }} {{ number_format($mto_imp_venta, 2) }}</td>
         </tr>
         @endif
     </table>

@@ -60,7 +60,6 @@ class VoidedController extends Controller
                 'sunat_status' => 'pendiente',
             ]);
 
-            // Mark original documents as "in annulment process" immediately
             $this->markDocumentsAsProcessing($tenant->id, $validated['detalles']);
 
             SendVoidedToSunat::dispatch($voided->id);
@@ -70,13 +69,13 @@ class VoidedController extends Controller
                 'success' => true,
                 'message' => 'Comunicación de baja encolada para envío a SUNAT.',
                 'data' => [
-                    'voided_id' => $voided->id,
+                    'id_anulacion' => $voided->id,
                     'identifier' => $identifier,
                     'correlativo' => $correlativo,
                     'fecha_comunicacion' => $fechaCom,
                     'total_documentos' => count($validated['detalles']),
-                    'sunat_status' => 'enviado',
-                    'consulta_estado' => url("/api/v1/voided/{$voided->id}/status"),
+                    'estado_sunat' => 'enviado',
+                    'consulta_estado' => url("/api/v1/anulaciones/{$voided->id}/estado"),
                 ],
             ], 201);
         } catch (\Throwable $e) {
@@ -206,6 +205,11 @@ class VoidedController extends Controller
 
     public function checkStatus(Request $request, int $id): JsonResponse
     {
+        return $this->show($request, $id);
+    }
+
+    public function show(Request $request, int $id): JsonResponse
+    {
         $tenant = $request->get('tenant');
 
         $voided = VoidedDocument::where('tenant_id', $tenant->id)->findOrFail($id);
@@ -213,15 +217,50 @@ class VoidedController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'voided_id' => $voided->id,
+                'id_anulacion' => $voided->id,
                 'identifier' => $voided->identifier,
+                'correlativo' => $voided->correlativo,
                 'ticket' => $voided->ticket,
-                'sunat_status' => $voided->sunat_status,
-                'sunat_code' => $voided->sunat_code,
-                'sunat_description' => $voided->sunat_description,
-                'sunat_notes' => $voided->sunat_notes,
+                'fecha_generacion' => $voided->fecha_generacion?->format('Y-m-d'),
+                'fecha_comunicacion' => $voided->fecha_comunicacion?->format('Y-m-d'),
+                'estado_sunat' => $voided->sunat_status,
+                'codigo_sunat' => $voided->sunat_code,
+                'descripcion_sunat' => $voided->sunat_description,
+                'notas_sunat' => $voided->sunat_notes,
                 'total_documentos' => $voided->total_documentos,
                 'detalles' => $voided->detalles,
+                'creado_en' => $voided->created_at?->toIso8601String(),
+                'actualizado_en' => $voided->updated_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+
+        $query = VoidedDocument::where('tenant_id', $tenant->id);
+
+        if ($request->filled('estado')) {
+            $query->where('sunat_status', $request->input('estado'));
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->where('fecha_comunicacion', '>=', $request->input('fecha_desde'));
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->where('fecha_comunicacion', '<=', $request->input('fecha_hasta'));
+        }
+
+        $anulaciones = $query->orderByDesc('id')->paginate((int) $request->input('per_page', 15));
+
+        return response()->json([
+            'success' => true,
+            'data' => $anulaciones->items(),
+            'meta' => [
+                'current_page' => $anulaciones->currentPage(),
+                'per_page' => $anulaciones->perPage(),
+                'total' => $anulaciones->total(),
+                'last_page' => $anulaciones->lastPage(),
             ],
         ]);
     }

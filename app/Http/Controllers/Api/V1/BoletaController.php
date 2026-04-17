@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreBoletaRequest;
 use App\Http\Resources\Api\V1\BoletaResource;
 use App\Http\Traits\ApiResponse;
+use App\Http\Traits\AppliesDocumentFilters;
 use App\Http\Traits\CachesPdf;
 use App\Jobs\SendDocumentToSunat;
 use App\Models\Boleta;
@@ -18,7 +19,7 @@ use Illuminate\Http\Request;
 
 class BoletaController extends Controller
 {
-    use ApiResponse, CachesPdf;
+    use ApiResponse, AppliesDocumentFilters, CachesPdf;
 
     public function store(StoreBoletaRequest $request, CreateBoletaAction $action): JsonResponse
     {
@@ -42,50 +43,35 @@ class BoletaController extends Controller
     {
         $tenant = $request->get('tenant');
 
-        $query = Boleta::forTenant($tenant->id)
-            ->orderByDesc('created_at');
+        $query = Boleta::forTenant($tenant->id);
 
-        if ($request->has('sunat_status')) {
-            $query->status($request->input('sunat_status'));
+        if ($request->filled('con')) {
+            $permitidas = ['items', 'payments'];
+            $relaciones = array_intersect(
+                explode(',', (string) $request->input('con')),
+                $permitidas
+            );
+            if (! empty($relaciones)) {
+                $query->with($relaciones);
+            }
         }
 
-        if ($request->has('fecha_desde') && $request->has('fecha_hasta')) {
-            $query->fechas($request->input('fecha_desde'), $request->input('fecha_hasta'));
-        }
-
-        if ($request->has('serie')) {
-            $query->where('serie', $request->input('serie'));
-        }
-
-        if ($request->has('correlativo')) {
-            $query->where('correlativo', $request->input('correlativo'));
+        // Cargar items automáticamente cuando se filtra por correlativo exacto
+        if ($request->filled('correlativo')) {
             $query->with('items');
         }
 
-        if ($request->has('client_num_doc')) {
-            $query->where('client_num_doc', $request->input('client_num_doc'));
-        }
+        $query = $this->applyDocumentFilters($query, $request);
 
-        if ($request->has('sucursal_id')) {
-            $query->where('sucursal_id', $request->input('sucursal_id'));
-        }
-
-        if ($request->has('payment_status')) {
-            $query->where('payment_status', $request->input('payment_status'));
-        }
-
-        if ($request->has('tipo_moneda')) {
-            $query->where('tipo_moneda', $request->input('tipo_moneda'));
-        }
-
-        $boletas = $query->paginate($request->integer('per_page', 15));
+        $perPage = min((int) $request->input('por_pagina', 15), 100);
+        $boletas = $query->paginate($perPage);
 
         return $this->success([
             'data' => BoletaResource::collection($boletas),
-            'pagination' => [
-                'current_page' => $boletas->currentPage(),
-                'last_page' => $boletas->lastPage(),
-                'per_page' => $boletas->perPage(),
+            'paginacion' => [
+                'pagina_actual' => $boletas->currentPage(),
+                'ultima_pagina' => $boletas->lastPage(),
+                'por_pagina' => $boletas->perPage(),
                 'total' => $boletas->total(),
             ],
         ]);
@@ -188,6 +174,25 @@ class BoletaController extends Controller
                 'Boleta actualizada y reenviada a SUNAT.'
             );
         });
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $boleta = Boleta::forTenant($tenant->id)->findOrFail($id);
+
+        // Solo se pueden eliminar boletas que SUNAT no conoce (pendiente o rechazado sin hash)
+        if (! in_array($boleta->sunat_status, ['pendiente', 'rechazado'], true) || $boleta->hash_cpe) {
+            return $this->error(
+                'No se puede eliminar una boleta ya aceptada por SUNAT. Debe anularla vía resumen RC.',
+                422
+            );
+        }
+
+        $boleta->items()->delete();
+        $boleta->delete();
+
+        return $this->success(null, 'Boleta eliminada localmente.');
     }
 
     public function resend(Request $request, int $id): JsonResponse

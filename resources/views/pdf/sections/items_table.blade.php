@@ -20,7 +20,7 @@
             <td>
                 {{ $item['descripcion'] }}
                 @if(!empty($item['descuento']) && $item['descuento'] > 0)
-                <br><small style="color: #999;">Dscto: -{{ number_format($item['descuento'], 2) }}</small>
+                <br><small style="color: #c0392b; font-weight: bold;">Dscto: -{{ number_format($item['descuento'], 2) }}</small>
                 @endif
             </td>
             <td class="text-center">{{ $item['unidad'] }}</td>

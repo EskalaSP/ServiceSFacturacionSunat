@@ -28,8 +28,8 @@ class SummaryController extends Controller
 
         $query = Summary::where('tenant_id', $tenant->id);
 
-        if ($month = $request->query('month')) {
-            $query->whereRaw("DATE_FORMAT(fecha_envio, '%Y-%m') = ?", [$month]);
+        if ($mes = $request->query('mes')) {
+            $query->whereRaw("DATE_FORMAT(fecha_envio, '%Y-%m') = ?", [$mes]);
         }
 
         if ($tipo = $request->query('tipo')) {
@@ -37,7 +37,7 @@ class SummaryController extends Controller
         }
 
         $summaries = $query->orderByDesc('created_at')
-            ->paginate($request->query('per_page', 15));
+            ->paginate($request->query('por_pagina', 15));
 
         return response()->json([
             'success' => true,
@@ -49,15 +49,15 @@ class SummaryController extends Controller
                 'fecha_envio' => $s->fecha_envio->format('Y-m-d'),
                 'total_documentos' => $s->total_documentos,
                 'ticket' => $s->ticket,
-                'sunat_status' => $s->sunat_status,
-                'sunat_code' => $s->sunat_code,
-                'sunat_description' => $s->sunat_description,
-                'created_at' => $s->created_at->toIso8601String(),
+                'estado_sunat' => $s->sunat_status,
+                'codigo_sunat' => $s->sunat_code,
+                'descripcion_sunat' => $s->sunat_description,
+                'creado_en' => $s->created_at->toIso8601String(),
             ]),
-            'meta' => [
+            'paginacion' => [
                 'total' => $summaries->total(),
-                'current_page' => $summaries->currentPage(),
-                'last_page' => $summaries->lastPage(),
+                'pagina_actual' => $summaries->currentPage(),
+                'ultima_pagina' => $summaries->lastPage(),
             ],
         ]);
     }
@@ -161,7 +161,6 @@ class SummaryController extends Controller
             $fechaId = str_replace('-', '', $fechaEnvio);
             $identifier = "RC-{$fechaId}-{$correlativo}";
 
-            // Crear registro en tabla summaries
             $summary = Summary::create([
                 'tenant_id' => $tenant->id,
                 'identifier' => $identifier,
@@ -174,13 +173,11 @@ class SummaryController extends Controller
                 'sunat_status' => 'pendiente',
             ]);
 
-            // Mark boletas as "in annulment process" immediately
             if ($isAnulacion) {
                 Boleta::whereIn('id', $boletas->pluck('id')->toArray())
                     ->update(['sunat_status' => 'anulacion_en_proceso']);
             }
 
-            // Encolar el envío a SUNAT
             SendSummaryToSunat::dispatch($summary->id);
             $summary->update(['sunat_status' => 'enviado']);
 
@@ -190,20 +187,20 @@ class SummaryController extends Controller
                     ? 'Resumen de anulación encolado para envío a SUNAT.'
                     : 'Resumen diario encolado para envío a SUNAT.',
                 'data' => [
-                    'summary_id' => $summary->id,
+                    'id_resumen' => $summary->id,
                     'identifier' => $identifier,
                     'fecha_envio' => $fechaEnvio,
                     'fecha_documentos' => $fechaResumen->format('Y-m-d'),
                     'correlativo' => $correlativo,
                     'accion' => $isAnulacion ? 'anulacion' : 'envio',
                     'total_documentos' => $boletas->count(),
-                    'sunat_status' => 'enviado',
+                    'estado_sunat' => 'enviado',
                     'documentos' => $boletas->map(fn (Boleta $doc) => [
                         'id' => $doc->id,
                         'numero' => $doc->numero_completo,
                         'total' => (float) $doc->mto_imp_venta,
                     ])->toArray(),
-                    'consulta_estado' => url("/api/v1/summaries/{$summary->id}/status"),
+                    'consulta_estado' => url("/api/v1/resumenes/{$summary->id}/estado"),
                 ],
             ], 201);
         } catch (\Throwable $e) {
@@ -211,9 +208,6 @@ class SummaryController extends Controller
         }
     }
 
-    /**
-     * Consultar estado de un resumen por ID.
-     */
     public function checkStatus(Request $request, int $id): JsonResponse
     {
         $tenant = $request->get('tenant');
@@ -226,20 +220,20 @@ class SummaryController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'summary_id' => $summary->id,
+                'id_resumen' => $summary->id,
                 'identifier' => $summary->identifier,
                 'ticket' => $summary->ticket,
-                'sunat_status' => $summary->sunat_status,
-                'sunat_code' => $summary->sunat_code,
-                'sunat_description' => $summary->sunat_description,
-                'sunat_notes' => $summary->sunat_notes,
+                'estado_sunat' => $summary->sunat_status,
+                'codigo_sunat' => $summary->sunat_code,
+                'descripcion_sunat' => $summary->sunat_description,
+                'notas_sunat' => $summary->sunat_notes,
                 'tipo' => $summary->tipo,
                 'total_documentos' => $summary->total_documentos,
                 'documentos' => $boletas->map(fn (Boleta $doc) => [
                     'id' => $doc->id,
                     'numero' => $doc->serie . '-' . $doc->correlativo,
                     'total' => (float) $doc->mto_imp_venta,
-                    'sunat_status' => $doc->sunat_status,
+                    'estado_sunat' => $doc->sunat_status,
                 ])->toArray(),
             ],
         ]);

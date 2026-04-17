@@ -64,14 +64,14 @@ class CreditNoteController extends Controller
             $query->where('tipo_moneda', $request->input('tipo_moneda'));
         }
 
-        $creditNotes = $query->paginate($request->integer('per_page', 15));
+        $creditNotes = $query->paginate($request->integer('por_pagina', 15));
 
         return $this->success([
             'data' => CreditNoteResource::collection($creditNotes),
-            'pagination' => [
-                'current_page' => $creditNotes->currentPage(),
-                'last_page' => $creditNotes->lastPage(),
-                'per_page' => $creditNotes->perPage(),
+            'paginacion' => [
+                'pagina_actual' => $creditNotes->currentPage(),
+                'ultima_pagina' => $creditNotes->lastPage(),
+                'por_pagina' => $creditNotes->perPage(),
                 'total' => $creditNotes->total(),
             ],
         ]);

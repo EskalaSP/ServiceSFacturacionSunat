@@ -68,7 +68,7 @@ class ConsultController extends Controller
                 'num_doc' => $client->numero_documento,
                 'razon_social' => $client->razon_social,
                 'direccion' => $client->direccion ?? '',
-                'source' => 'local',
+                'fuente' => 'local',
             ]);
         }
 

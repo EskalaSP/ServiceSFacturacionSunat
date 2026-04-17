@@ -40,14 +40,14 @@ class DispatchGuideController extends Controller
 
         $guides = DispatchGuide::forTenant($tenant->id)
             ->orderByDesc('created_at')
-            ->paginate($request->integer('per_page', 15));
+            ->paginate($request->integer('por_pagina', 15));
 
         return $this->success([
             'data' => DispatchGuideResource::collection($guides),
-            'pagination' => [
-                'current_page' => $guides->currentPage(),
-                'last_page' => $guides->lastPage(),
-                'per_page' => $guides->perPage(),
+            'paginacion' => [
+                'pagina_actual' => $guides->currentPage(),
+                'ultima_pagina' => $guides->lastPage(),
+                'por_pagina' => $guides->perPage(),
                 'total' => $guides->total(),
             ],
         ]);

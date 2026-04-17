@@ -15,13 +15,26 @@ use Illuminate\Http\Request;
 class PaymentController extends Controller
 {
     private const DOC_TYPE_MAP = [
-        'invoices' => Invoice::class,
+        'facturas' => Invoice::class,
         'boletas' => Boleta::class,
-        'sale-notes' => SaleNote::class,
+        'notas-venta' => SaleNote::class,
     ];
 
-    public function store(Request $request, string $docType, int $docId, RegisterPaymentAction $action): JsonResponse
+    public function store(Request $request, string $id, RegisterPaymentAction $action): JsonResponse
     {
+        // Acepta un pago único {metodo, monto, ...} o un array pagos:[{...}]
+        if ($request->has('metodo') && !$request->has('pagos')) {
+            $request->merge(['pagos' => [
+                [
+                    'metodo'          => $request->input('metodo'),
+                    'monto'           => $request->input('monto'),
+                    'referencia'      => $request->input('referencia'),
+                    'monto_recibido'  => $request->input('monto_recibido'),
+                    'notas'           => $request->input('notas'),
+                ],
+            ]]);
+        }
+
         $request->validate([
             'pagos' => 'required|array|min:1',
             'pagos.*.metodo' => 'required|string|in:' . implode(',', Payment::METODOS),
@@ -31,7 +44,7 @@ class PaymentController extends Controller
             'pagos.*.notas' => 'nullable|string|max:255',
         ]);
 
-        $document = $this->resolveDocument($docType, $docId);
+        $document = $this->resolveDocument($this->detectDocType($request), (int) $id);
 
         $action->execute($document, $request->input('pagos'));
 
@@ -39,29 +52,29 @@ class PaymentController extends Controller
 
         return response()->json([
             'message' => 'Pagos registrados correctamente',
-            'payment_status' => $document->payment_status,
+            'estado_pago' => $document->payment_status,
             'monto_pagado' => (float) $document->monto_pagado,
-            'payments' => $document->payments->map(fn ($p) => $this->formatPayment($p)),
+            'pagos' => $document->payments->map(fn ($p) => $this->formatPayment($p)),
         ]);
     }
 
-    public function index(Request $request, string $docType, int $docId): JsonResponse
+    public function index(Request $request, string $id): JsonResponse
     {
-        $document = $this->resolveDocument($docType, $docId);
+        $document = $this->resolveDocument($this->detectDocType($request), (int) $id);
 
         return response()->json([
             'data' => $document->payments->map(fn ($p) => $this->formatPayment($p)),
-            'payment_status' => $document->payment_status,
+            'estado_pago' => $document->payment_status,
             'monto_pagado' => (float) $document->monto_pagado,
             'total_documento' => (float) $document->mto_imp_venta,
         ]);
     }
 
-    public function destroy(Request $request, string $docType, int $docId, int $paymentId, RegisterPaymentAction $action): JsonResponse
+    public function destroy(Request $request, string $id, string $paymentId, RegisterPaymentAction $action): JsonResponse
     {
-        $document = $this->resolveDocument($docType, $docId);
+        $document = $this->resolveDocument($this->detectDocType($request), (int) $id);
 
-        $payment = $document->payments()->where('id', $paymentId)->firstOrFail();
+        $payment = $document->payments()->where('id', (int) $paymentId)->firstOrFail();
         $payment->delete();
 
         $action->recalculate($document);
@@ -70,12 +83,18 @@ class PaymentController extends Controller
 
         return response()->json([
             'message' => 'Pago eliminado correctamente',
-            'payment_status' => $document->payment_status,
+            'estado_pago' => $document->payment_status,
             'monto_pagado' => (float) $document->monto_pagado,
         ]);
     }
 
-    private function resolveDocument(string $docType, int $docId): Model
+    private function detectDocType(Request $request): string
+    {
+        // URL: /api/v1/{docType}/{id}/pagos  → segmento en índice 2
+        return $request->segment(3) ?? '';
+    }
+
+    private function resolveDocument(string $docType, int|string $docId): Model
     {
         $modelClass = self::DOC_TYPE_MAP[$docType] ?? null;
 
@@ -83,7 +102,7 @@ class PaymentController extends Controller
             abort(404, 'Tipo de documento no válido');
         }
 
-        $tenant = request()->attributes->get('tenant');
+        $tenant = request()->get('tenant');
 
         return $modelClass::where('tenant_id', $tenant->id)
             ->with('payments')
@@ -102,7 +121,7 @@ class PaymentController extends Controller
                 ? round((float) $payment->monto_recibido - (float) $payment->monto, 2)
                 : null,
             'notas' => $payment->notas,
-            'created_at' => $payment->created_at->toIso8601String(),
+            'creado_en' => $payment->created_at->toIso8601String(),
         ];
     }
 }

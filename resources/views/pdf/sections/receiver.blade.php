@@ -27,8 +27,8 @@
             <td>{{ $fecha_emision }}</td>
         </tr>
         <tr>
-            <td class="info-label">{{ $tipoDocLabel }}:</td>
-            <td>{{ $receptor['num_doc'] }}</td>
+            <td class="info-label">{{ !empty($receptor['num_doc']) ? $tipoDocLabel.':' : '' }}</td>
+            <td>{{ $receptor['num_doc'] ?? '' }}</td>
             <td class="info-label">Moneda:</td>
             <td>{{ $tipo_moneda }}</td>
         </tr>

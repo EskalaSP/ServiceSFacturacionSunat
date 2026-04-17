@@ -339,9 +339,9 @@ class NoteBuilder
             ->setRuc($this->tenant->ruc)
             ->setRazonSocial($this->tenant->razon_social);
 
-        if ($this->tenant->nombre_comercial) {
-            $company->setNombreComercial($this->tenant->nombre_comercial);
-        }
+        // SUNAT 4092: Greenter siempre emite <cac:PartyName/cbc:Name>, si está vacío
+        // SUNAT observa. Fallback a razon_social cuando no hay nombre_comercial.
+        $company->setNombreComercial($this->tenant->nombre_comercial ?: $this->tenant->razon_social);
 
         $address = (new Address())
             ->setCodLocal($codLocal)

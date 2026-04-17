@@ -41,11 +41,6 @@ class DocumentDataMapper
             $igv = (float) ($item->igv ?? 0);
             $descuentoBase = (float) ($item->descuento ?? 0);
 
-            // Descuento con IGV para mostrar al usuario (monto original que ingresó)
-            $descuentoConIgv = $descuentoBase > 0
-                ? round($precioUnitario * $cantidad - ($valorVenta + $igv), 2)
-                : 0;
-
             return [
                 'codigo' => $item->codigo ?? $item->cod_producto ?? '-',
                 'descripcion' => $item->descripcion,
@@ -54,20 +49,29 @@ class DocumentDataMapper
                 'precio_unitario' => $precioUnitario,
                 'igv' => $igv,
                 'importe' => $valorVenta,
-                'descuento' => $descuentoConIgv,
+                'descuento' => $descuentoBase,
                 'total_item' => $valorVenta,
             ];
         })->toArray();
 
         $tipoDocumento = $document->getTipoDocumento();
 
+        // Detectar comprobante de contingencia: serie totalmente numérica
+        // (ej. "0001" en vez de "F001"/"B001")
+        $esContingencia = ctype_digit((string) $document->serie);
+        $tituloBase = DocumentTypeConfig::titulo($tipoDocumento);
+        if ($esContingencia && in_array($tipoDocumento, ['01', '03'], true)) {
+            $tituloBase = str_replace('ELECTRÓNICA', 'DE CONTINGENCIA', $tituloBase);
+        }
+
         $data = [
             'tipo_documento' => $tipoDocumento,
-            'titulo' => DocumentTypeConfig::titulo($tipoDocumento),
+            'titulo' => $tituloBase,
+            'es_contingencia' => $esContingencia,
             'serie' => $document->serie,
             'correlativo' => $document->correlativo,
             'numero_completo' => $document->numero_completo,
-            'fecha_emision' => $document->fecha_emision?->format('Y-m-d h:i A') ?? '',
+            'fecha_emision' => $document->fecha_emision?->format('d/m/Y h:i A') ?? '',
             'fecha_vencimiento' => $document->fecha_vencimiento?->format('Y-m-d') ?? null,
             'tipo_moneda' => $document->tipo_moneda ?? 'PEN',
             'forma_pago' => $document->forma_pago ?? null,
@@ -99,6 +103,8 @@ class DocumentDataMapper
             'mto_oper_inafectas' => (float) $document->mto_oper_inafectas,
             'mto_oper_gratuitas' => (float) $document->mto_oper_gratuitas,
             'mto_igv' => (float) $document->mto_igv,
+            'mto_base_ivap' => (float) ($document->mto_base_ivap ?? 0),
+            'mto_ivap' => (float) ($document->mto_ivap ?? 0),
             'mto_isc' => (float) ($document->mto_isc ?? 0),
             'mto_icbper' => (float) ($document->mto_icbper ?? 0),
             'total_impuestos' => (float) $document->total_impuestos,
@@ -109,6 +115,7 @@ class DocumentDataMapper
             'total_descuentos' => (float) ($document->total_descuentos ?? 0),
 
             'leyenda' => $document->leyenda ?? '',
+            'leyendas_sunat' => $this->buildSunatLegends($document, $items),
             'observacion' => $document->observacion ?? null,
             'hash_cpe' => $document->hash_cpe ?? '',
             'sunat_status' => $document->sunat_status ?? '',
@@ -128,6 +135,7 @@ class DocumentDataMapper
             'detraccion' => $this->normalizeDetraccion($document->detraccion ?? null),
             'percepcion' => $this->normalizePercepcion($document->percepcion ?? null),
             'anticipos' => $document->anticipos ?? null,
+            'guias' => $document->guias ?? null,
 
             // Nota de crédito/débito
             'doc_afectado_tipo' => $document->doc_afectado_tipo ?? null,
@@ -168,7 +176,7 @@ class DocumentDataMapper
             'serie' => $guide->serie,
             'correlativo' => $guide->correlativo,
             'numero_completo' => $guide->numero_completo,
-            'fecha_emision' => $guide->fecha_emision?->format('Y-m-d h:i A') ?? '',
+            'fecha_emision' => $guide->fecha_emision?->format('d/m/Y h:i A') ?? '',
             'tipo_moneda' => 'PEN',
 
             'emisor' => [
@@ -273,7 +281,7 @@ class DocumentDataMapper
             'serie' => '',
             'correlativo' => '',
             'numero_completo' => $document->numero,
-            'fecha_emision' => $document->fecha_emision?->format('Y-m-d h:i A') ?? '',
+            'fecha_emision' => $document->fecha_emision?->format('d/m/Y h:i A') ?? '',
             'fecha_vencimiento' => $document->fecha_vencimiento?->format('Y-m-d') ?? null,
             'tipo_moneda' => $document->tipo_moneda ?? 'PEN',
             'forma_pago' => $document->forma_pago ?? null,
@@ -302,6 +310,8 @@ class DocumentDataMapper
             'mto_oper_inafectas' => (float) $document->mto_oper_inafectas,
             'mto_oper_gratuitas' => (float) $document->mto_oper_gratuitas,
             'mto_igv' => (float) $document->mto_igv,
+            'mto_base_ivap' => (float) ($document->mto_base_ivap ?? 0),
+            'mto_ivap' => (float) ($document->mto_ivap ?? 0),
             'mto_isc' => (float) ($document->mto_isc ?? 0),
             'mto_icbper' => (float) ($document->mto_icbper ?? 0),
             'total_impuestos' => (float) $document->total_impuestos,
@@ -404,6 +414,24 @@ class DocumentDataMapper
         $svg = $writer->writeString($qrData);
 
         return self::$qrCache[$qrData] = 'data:image/svg+xml;base64,' . base64_encode($svg);
+    }
+
+    private function buildSunatLegends($document, array $items): array
+    {
+        $legends = [];
+        if (! empty($document->detraccion)) {
+            $legends[] = 'Operación sujeta a detracción';
+        }
+        if (! empty($document->percepcion)) {
+            $legends[] = 'COMPROBANTE DE PERCEPCIÓN';
+        }
+        $tieneIvap = $document->relationLoaded('items')
+            ? $document->items->contains(fn($it) => ($it->tip_afe_igv ?? '') === '17')
+            : false;
+        if ($tieneIvap) {
+            $legends[] = 'Operación sujeta al IVAP';
+        }
+        return $legends;
     }
 
     private function normalizeDetraccion(?array $detraccion): ?array

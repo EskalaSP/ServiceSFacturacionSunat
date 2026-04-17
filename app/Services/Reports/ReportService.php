@@ -178,7 +178,7 @@ class ReportService
                     'mto_igv' => (float) $nc->mto_igv,
                     'mto_imp_venta' => (float) $nc->mto_imp_venta,
                     'tipo_moneda' => $nc->tipo_moneda,
-                    'sunat_status' => $nc->sunat_status,
+                    'estado_sunat' => $nc->sunat_status,
                 ];
             });
 
@@ -202,7 +202,7 @@ class ReportService
                     'mto_igv' => (float) $nd->mto_igv,
                     'mto_imp_venta' => (float) $nd->mto_imp_venta,
                     'tipo_moneda' => $nd->tipo_moneda,
-                    'sunat_status' => $nd->sunat_status,
+                    'estado_sunat' => $nd->sunat_status,
                 ];
             });
 
@@ -290,7 +290,7 @@ class ReportService
                 'cobrado' => (float) $doc->monto_pagado,
                 'pendiente' => round($pendiente, 2),
                 'dias_atraso' => $diasAtraso,
-                'payment_status' => $doc->payment_status,
+                'estado_pago' => $doc->payment_status,
             ];
         })->sortByDesc('pendiente')->values();
 
@@ -404,7 +404,7 @@ class ReportService
             'client_num_doc' => $d->client_num_doc,
             'mto_imp_venta' => (float) $d->mto_imp_venta,
             'tipo_moneda' => $d->tipo_moneda,
-            'status' => $d->status,
+            'estado' => $d->status,
         ])->values();
 
         $detalleNV = $notasVenta->map(fn ($d) => [
@@ -416,8 +416,8 @@ class ReportService
             'mto_imp_venta' => (float) $d->mto_imp_venta,
             'monto_pagado' => (float) $d->monto_pagado,
             'tipo_moneda' => $d->tipo_moneda,
-            'status' => $d->status,
-            'payment_status' => $d->payment_status,
+            'estado' => $d->status,
+            'estado_pago' => $d->payment_status,
         ])->values();
 
         // Top clientes
@@ -496,8 +496,8 @@ class ReportService
                 'fecha_vencimiento' => $doc->fecha_vencimiento?->format('Y-m-d'),
                 'mto_imp_venta' => (float) $doc->mto_imp_venta,
                 'tipo_moneda' => $doc->tipo_moneda,
-                'sunat_status' => $doc->sunat_status ?? null,
-                'payment_status' => $doc->payment_status ?? null,
+                'estado_sunat' => $doc->sunat_status ?? null,
+                'estado_pago' => $doc->payment_status ?? null,
                 'monto_pagado' => (float) ($doc->monto_pagado ?? 0),
             ];
         };
@@ -658,12 +658,12 @@ class ReportService
             $query->where('tipo_moneda', $filters['tipo_moneda']);
         }
 
-        if ($mode === 'sunat' && ! empty($filters['sunat_status'])) {
-            $query->where('sunat_status', $filters['sunat_status']);
+        if ($mode === 'sunat' && ! empty($filters['estado_sunat'])) {
+            $query->where('sunat_status', $filters['estado_sunat']);
         }
 
-        if ($mode === 'payment' && ! empty($filters['payment_status'])) {
-            $query->where('payment_status', $filters['payment_status']);
+        if ($mode === 'payment' && ! empty($filters['estado_pago'])) {
+            $query->where('payment_status', $filters['estado_pago']);
         }
 
         return $query;
@@ -693,7 +693,7 @@ class ReportService
             'otros_tributos' => 0,
             'mto_imp_venta' => (float) $doc->mto_imp_venta,
             'tipo_moneda' => $doc->tipo_moneda,
-            'sunat_status' => $doc->sunat_status,
+            'estado_sunat' => $doc->sunat_status,
         ];
     }
 
@@ -853,8 +853,8 @@ class ReportService
             'sucursal_id' => 'Sucursal',
             'serie' => 'Serie',
             'client_num_doc' => 'Cliente',
-            'sunat_status' => 'Estado SUNAT',
-            'payment_status' => 'Estado Pago',
+            'estado_sunat' => 'Estado SUNAT',
+            'estado_pago' => 'Estado Pago',
             'tipo_moneda' => 'Moneda',
             'agrupacion' => 'Agrupación',
             'vencido' => 'Solo vencidos',

@@ -19,7 +19,7 @@ class StoreInvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'serie' => 'required|string|size:4|regex:/^F/',
+            'serie' => ['required', 'string', 'size:4', 'regex:/^(F\d{3}|\d{4})$/'],
             'cod_local' => 'nullable|string|size:4',
             'fecha_emision' => 'required|date',
             'fecha_vencimiento' => 'nullable|date',
@@ -60,6 +60,7 @@ class StoreInvoiceRequest extends FormRequest
             'items.*.tip_afe_igv' => ['nullable', 'string', new SunatCatalog('07')],
             'items.*.igv' => 'nullable|numeric',
             'items.*.isc' => 'nullable|numeric',
+            'items.*.porcentaje_isc' => 'nullable|numeric|min:0',
             'items.*.tip_sis_isc' => ['nullable', 'string', new SunatCatalog('08')],
             'items.*.icbper' => 'nullable|numeric',
             'items.*.factor_icbper' => 'nullable|numeric',

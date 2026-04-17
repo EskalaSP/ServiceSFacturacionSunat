@@ -20,7 +20,7 @@ class DashboardController extends Controller
     public function index(Request $request): JsonResponse
     {
         $tenant = $request->get('tenant');
-        $month = $request->query('month', now()->format('Y-m'));
+        $month = $request->query('mes', now()->format('Y-m'));
 
         $startDate = $month . '-01 00:00:00';
         $endDate = \Carbon\Carbon::parse($month . '-01')->endOfMonth()->format('Y-m-d') . ' 23:59:59';
@@ -126,33 +126,33 @@ class DashboardController extends Controller
         ", [$tid, $startDate, $endDate, $tid, $startDate, $endDate]);
 
         return $this->success([
-            'month' => $month,
-            'invoices' => $summaryMap['invoices'],
+            'mes' => $month,
+            'facturas' => $summaryMap['invoices'],
             'boletas' => $summaryMap['boletas'],
-            'credit_notes' => $summaryMap['credit_notes'],
-            'debit_notes' => $summaryMap['debit_notes'],
-            'sale_notes' => $summaryMap['sale_notes'],
-            'chart' => array_map(fn ($r) => [
-                'date' => $r->day,
+            'notas_credito' => $summaryMap['credit_notes'],
+            'notas_debito' => $summaryMap['debit_notes'],
+            'notas_venta' => $summaryMap['sale_notes'],
+            'grafico' => array_map(fn ($r) => [
+                'fecha' => $r->day,
                 'ventas' => round((float) $r->ventas, 2),
             ], $dailyChart),
-            'top_products' => array_map(fn ($r) => [
-                'name' => mb_substr($r->name, 0, 40),
+            'top_productos' => array_map(fn ($r) => [
+                'nombre' => mb_substr($r->name, 0, 40),
                 'total' => (float) $r->total,
             ], $topProducts),
-            'top_clients' => array_map(fn ($r) => [
-                'name' => mb_substr($r->name, 0, 40),
+            'top_clientes' => array_map(fn ($r) => [
+                'nombre' => mb_substr($r->name, 0, 40),
                 'total' => (float) $r->total,
             ], $topClients),
-            'comparison' => [
-                'current_sales' => round($currentTotal, 2),
-                'previous_sales' => round($prevTotal, 2),
-                'sales_change_percent' => $prevTotal > 0
+            'comparacion' => [
+                'ventas_actuales' => round($currentTotal, 2),
+                'ventas_anteriores' => round($prevTotal, 2),
+                'cambio_ventas_porcentaje' => $prevTotal > 0
                     ? round((($currentTotal - $prevTotal) / $prevTotal) * 100, 1)
                     : 0,
-                'current_docs' => $currentDocs,
-                'previous_docs' => $prevDocs,
-                'docs_change_percent' => $prevDocs > 0
+                'documentos_actuales' => $currentDocs,
+                'documentos_anteriores' => $prevDocs,
+                'cambio_documentos_porcentaje' => $prevDocs > 0
                     ? round((($currentDocs - $prevDocs) / $prevDocs) * 100, 1)
                     : 0,
             ],

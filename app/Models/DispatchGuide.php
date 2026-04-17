@@ -13,6 +13,7 @@ class DispatchGuide extends Model
 
     protected $fillable = [
         'tenant_id',
+        'sucursal_id',
         'document_id',
         'serie',
         'correlativo',
@@ -28,11 +29,17 @@ class DispatchGuide extends Model
         'num_bultos',
         'llegada_ubigeo',
         'llegada_direccion',
+        'llegada_ruc',
+        'llegada_cod_local',
         'partida_ubigeo',
         'partida_direccion',
+        'partida_ruc',
+        'partida_cod_local',
         'transportista',
         'vehiculo',
         'conductor',
+        'indicadores',
+        'observacion',
         'items',
         'cod_local',
         'xml_content',
@@ -59,6 +66,7 @@ class DispatchGuide extends Model
             'transportista' => 'array',
             'vehiculo' => 'array',
             'conductor' => 'array',
+            'indicadores' => 'array',
             'items' => 'array',
             'sent_at' => 'datetime',
         ];

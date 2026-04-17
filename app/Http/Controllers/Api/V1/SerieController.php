@@ -165,7 +165,7 @@ class SerieController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'is_active' => 'sometimes|boolean',
+            'activo' => 'sometimes|boolean',
             'correlativo' => 'sometimes|integer|min:0',
             'sucursal_id' => 'sometimes|integer|exists:sucursales,id',
         ]);
@@ -184,7 +184,11 @@ class SerieController extends Controller
             ]);
         }
 
-        $serie->update($request->only(['is_active', 'correlativo']));
+        $data = $request->only(['correlativo']);
+        if ($request->has('activo')) {
+            $data['is_active'] = $request->boolean('activo');
+        }
+        $serie->update($data);
 
         return $this->success($this->formatSerie($serie->load('sucursal')), 'Serie actualizada.');
     }
@@ -203,7 +207,7 @@ class SerieController extends Controller
                 'nombre' => $serie->sucursal->nombre,
                 'cod_local' => $serie->sucursal->cod_local,
             ] : null,
-            'is_active' => $serie->is_active,
+            'activo' => $serie->is_active,
         ];
     }
 }

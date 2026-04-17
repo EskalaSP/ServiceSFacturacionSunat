@@ -19,22 +19,22 @@ class ClientController extends Controller
 
         $query = Client::forTenant($tenant->id)->orderBy('razon_social');
 
-        if ($request->has('search')) {
-            $search = $request->input('search');
+        if ($request->has('buscar')) {
+            $search = $request->input('buscar');
             $query->where(function ($q) use ($search) {
                 $q->where('razon_social', 'like', "%{$search}%")
                     ->orWhere('numero_documento', 'like', "%{$search}%");
             });
         }
 
-        $clients = $query->paginate($request->integer('per_page', 15));
+        $clients = $query->paginate($request->integer('por_pagina', 15));
 
         return $this->success([
             'data' => ClientResource::collection($clients),
-            'pagination' => [
-                'current_page' => $clients->currentPage(),
-                'last_page' => $clients->lastPage(),
-                'per_page' => $clients->perPage(),
+            'paginacion' => [
+                'pagina_actual' => $clients->currentPage(),
+                'ultima_pagina' => $clients->lastPage(),
+                'por_pagina' => $clients->perPage(),
                 'total' => $clients->total(),
             ],
         ]);

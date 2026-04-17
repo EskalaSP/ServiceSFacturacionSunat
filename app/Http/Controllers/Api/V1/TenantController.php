@@ -36,8 +36,8 @@ class TenantController extends Controller
             'sol_pass' => 'nullable|string|max:50',
             'client_id' => 'nullable|string|max:100',
             'client_secret' => 'nullable|string|max:255',
-            'environment' => 'nullable|string|in:beta,production',
-            'webhook_url' => 'nullable|url|max:500',
+            'entorno' => 'nullable|string|in:beta,production',
+            'url_webhook' => 'nullable|url|max:500',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'telefonos' => 'nullable|array|max:5',
             'telefonos.*' => 'string|max:20',
@@ -60,27 +60,27 @@ class TenantController extends Controller
 
         $tenant = $request->get('tenant');
 
-        $data = $request->only([
-            'razon_social',
-            'nombre_comercial',
-            'direccion',
-            'ubigeo',
-            'departamento',
-            'provincia',
-            'distrito',
-            'sol_user',
-            'sol_pass',
-            'client_id',
-            'client_secret',
-            'environment',
-            'webhook_url',
-            'telefonos',
-            'emails',
-            'cuentas_bancarias',
-            'billeteras_digitales',
-            'mensaje_agradecimiento',
-            'mensaje_promocional',
-        ]);
+        $data = array_filter([
+            'razon_social' => $request->input('razon_social'),
+            'nombre_comercial' => $request->input('nombre_comercial'),
+            'direccion' => $request->input('direccion'),
+            'ubigeo' => $request->input('ubigeo'),
+            'departamento' => $request->input('departamento'),
+            'provincia' => $request->input('provincia'),
+            'distrito' => $request->input('distrito'),
+            'sol_user' => $request->input('sol_user'),
+            'sol_pass' => $request->input('sol_pass'),
+            'client_id' => $request->input('client_id'),
+            'client_secret' => $request->input('client_secret'),
+            'environment' => $request->input('entorno'),
+            'webhook_url' => $request->input('url_webhook'),
+            'telefonos' => $request->input('telefonos'),
+            'emails' => $request->input('emails'),
+            'cuentas_bancarias' => $request->input('cuentas_bancarias'),
+            'billeteras_digitales' => $request->input('billeteras_digitales'),
+            'mensaje_agradecimiento' => $request->input('mensaje_agradecimiento'),
+            'mensaje_promocional' => $request->input('mensaje_promocional'),
+        ], fn ($v) => $v !== null);
 
         if ($request->hasFile('logo')) {
             $data['logo_path'] = $request->file('logo')->storeAs(
@@ -94,7 +94,7 @@ class TenantController extends Controller
 
         Cache::forget("tenant:key:{$tenant->api_key}");
 
-        return $this->success(new TenantResource($tenant->fresh()), 'Tenant actualizado.');
+        return $this->success(new TenantResource($tenant->fresh()), 'Empresa actualizada.');
     }
 
     public function uploadLogo(Request $request): JsonResponse
@@ -123,21 +123,21 @@ class TenantController extends Controller
     public function uploadCertificate(Request $request): JsonResponse
     {
         $request->validate([
-            'certificate' => 'required|file|max:100',
-            'certificate_password' => 'nullable|string|max:100',
+            'certificado' => 'required|file|max:100',
+            'contrasena_certificado' => 'nullable|string|max:100',
         ]);
 
         $tenant = $request->get('tenant');
 
-        $certFile = $request->file('certificate');
+        $certFile = $request->file('certificado');
         $extension = strtolower($certFile->getClientOriginalExtension());
 
         if (! in_array($extension, ['pfx', 'p12', 'pem', 'cer', 'crt'])) {
             return $this->error('Formato no soportado. Use .pfx, .p12, .pem, .cer o .crt', 422);
         }
 
-        if (in_array($extension, ['pfx', 'p12']) && ! $request->filled('certificate_password')) {
-            return $this->error('El campo certificate_password es obligatorio para archivos .pfx/.p12', 422);
+        if (in_array($extension, ['pfx', 'p12']) && ! $request->filled('contrasena_certificado')) {
+            return $this->error('El campo contrasena_certificado es obligatorio para archivos .pfx/.p12', 422);
         }
 
         $certService = new CertificateService();
@@ -145,7 +145,7 @@ class TenantController extends Controller
             $pemContent = $certService->convertToPem(
                 file_get_contents($certFile->getRealPath()),
                 $extension,
-                $request->input('certificate_password')
+                $request->input('contrasena_certificado')
             );
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
@@ -155,7 +155,7 @@ class TenantController extends Controller
         $certPath = $storage->storeCertificate($tenant, $pemContent);
         $tenant->update([
             'certificate_path' => $certPath,
-            'certificate_password' => $request->input('certificate_password'),
+            'certificate_password' => $request->input('contrasena_certificado'),
         ]);
 
         Cache::forget("tenant:key:{$tenant->api_key}");
