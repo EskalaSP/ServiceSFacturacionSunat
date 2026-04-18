@@ -14,15 +14,18 @@ beforeEach(function () {
 describe('Ajustes Posteriores (4 variants × 4 acciones)', function () {
     $variants = ['actual', 'no-domiciliados', 'periodos-anteriores', 'periodos-anteriores-nd'];
 
-    foreach ($variants as $variant) {
-        test("POST /ajustes-posteriores/{$variant}/cargar dispara TUS + ticket", function () use ($variant) {
+    foreach ($variants as $i => $variant) {
+        test("POST /ajustes-posteriores/{$variant}/cargar dispara TUS + ticket", function () use ($variant, $i) {
             Queue::fake();
             $this->mockAuthSuccess();
             $this->mockResponse(201, '', ['Location' => 'https://api-sire.sunat.gob.pe/v1/upload/x']);
             $this->mockResponse(204, ['numTicket' => '2026040088888888']);
 
+            // Secuencia única por variante para evitar colisión de nombre de ZIP en Windows
+            // (variants 'actual' y 'periodos-anteriores' comparten codProceso=59)
             $response = $this->postJson("/api/v1/sire/rce/202604/ajustes-posteriores/{$variant}/cargar", [
                 'txt' => "data line\n",
+                'secuencia' => 100 + $i,
             ], $this->headers());
 
             $response->assertStatus(202);
