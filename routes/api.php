@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\BoletaController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\ConsultController;
+use App\Http\Controllers\Api\V1\CpeConsultaController;
 use App\Http\Controllers\Api\V1\CreditNoteController;
 use App\Http\Controllers\Api\V1\DebitNoteController;
 use App\Http\Controllers\Api\V1\DispatchGuideController;
@@ -122,6 +123,9 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
 
     // Consultar CDR en SUNAT
     Route::post('consultar-cdr', [ConsultController::class, 'cdrStatus']);
+
+    // Consultar CPE (estado integrado de comprobante) en SUNAT
+    Route::get('consultar-cpe', [CpeConsultaController::class, 'consultar']);
 
     // Buscar RUC/DNI (local + SUNAT/RENIEC)
     Route::get('buscar-documento', [ConsultController::class, 'lookupDocument']);
