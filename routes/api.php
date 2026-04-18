@@ -161,8 +161,20 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('notas-venta/{id}/pagos', [PaymentController::class, 'index'])->defaults('docType', 'notas-venta');
     Route::delete('notas-venta/{id}/pagos/{paymentId}', [PaymentController::class, 'destroy'])->defaults('docType', 'notas-venta');
 
-    // === Panel (aggregated) ===
-    Route::get('panel', [\App\Http\Controllers\Api\V1\DashboardController::class, 'index']);
+    // === Panel / Dashboard ===
+    Route::prefix('panel')->controller(\App\Http\Controllers\Api\V1\DashboardController::class)->group(function () {
+        Route::get('/', 'index');                          // Vista completa del mes
+        Route::get('indicadores', 'indicadores');          // KPIs: hoy/semana/mes/año + crecimiento
+        Route::get('estado-sunat', 'estadoSunat');         // Breakdown SUNAT + rechazos recientes
+        Route::get('cobranzas', 'cobranzas');              // Aging de cuentas por cobrar
+        Route::get('ventas-mensuales', 'ventasMensuales'); // Gráfico 12 meses vs año anterior
+        Route::get('por-sucursal', 'porSucursal');         // Ranking por sucursal
+        Route::get('por-moneda', 'porMoneda');             // Desglose PEN/USD
+        Route::get('clientes', 'clientes');                // Top + nuevos + recurrentes
+        Route::get('productos', 'productos');              // Top venta/cantidad + tipo IGV
+        Route::get('documentos-recientes', 'documentosRecientes'); // Feed últimos 20
+        Route::get('alertas', 'alertas');                  // Rechazos, vencimientos, series
+    });
 
     // === Reportes ===
     Route::get('reportes/registro-ventas', [ReportController::class, 'registroVentas']);
