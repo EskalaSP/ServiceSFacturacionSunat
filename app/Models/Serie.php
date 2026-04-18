@@ -14,13 +14,14 @@ class Serie extends Model
 
     // Mapeo: nombre amigable → código SUNAT
     public const TIPOS = [
-        'factura'        => '01',
-        'boleta'         => '03',
-        'nota_credito'   => '07',
-        'nota_debito'    => '08',
-        'guia_remision'  => '09',
-        'retencion'      => '20',
-        'percepcion'     => '40',
+        'factura'             => '01',
+        'boleta'              => '03',
+        'nota_credito'        => '07',
+        'nota_debito'         => '08',
+        'guia_remision'       => '09',  // Guía Remitente
+        'guia_transportista'  => '31',  // Guía Transportista
+        'retencion'           => '20',
+        'percepcion'          => '40',
     ];
 
     // Mapeo inverso: código → nombre amigable
@@ -30,19 +31,21 @@ class Serie extends Model
         '07' => 'nota_credito',
         '08' => 'nota_debito',
         '09' => 'guia_remision',
+        '31' => 'guia_transportista',
         '20' => 'retencion',
         '40' => 'percepcion',
     ];
 
-    // Prefijos válidos por tipo de documento
+    // Prefijos válidos por tipo de documento (según Cat. 61 SUNAT)
     public const PREFIJOS = [
-        '01' => ['F'],           // Factura: F001, F002...
-        '03' => ['B'],           // Boleta: B001, B002...
-        '07' => ['F', 'B'],     // NC: FC01, BC01...
-        '08' => ['F', 'B'],     // ND: FD01, BD01...
-        '09' => ['T', 'V'],     // Guía: T001, V001...
-        '20' => ['R'],           // Retención: R001...
-        '40' => ['P'],           // Percepción: P001...
+        '01' => ['F'],        // Factura: F001, F002...
+        '03' => ['B'],        // Boleta: B001, B002...
+        '07' => ['F', 'B'],   // NC: FC01, BC01...
+        '08' => ['F', 'B'],   // ND: FD01, BD01...
+        '09' => ['T'],        // Guía Remitente: T001, T002... (formato: [T][A-Z0-9]{3})
+        '31' => ['V'],        // Guía Transportista: V001, V002... (formato: [V][A-Z0-9]{3})
+        '20' => ['R'],        // Retención: R001...
+        '40' => ['P'],        // Percepción: P001...
     ];
 
     protected $fillable = [

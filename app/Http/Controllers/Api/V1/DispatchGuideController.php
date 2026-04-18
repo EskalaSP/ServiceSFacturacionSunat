@@ -34,6 +34,25 @@ class DispatchGuideController extends Controller
         }
     }
 
+    /**
+     * Atajo para emitir Guía de Remisión Transportista (tipo 31).
+     * Forza tipo_documento='31' antes de la validación via Form Request.
+     */
+    public function storeTransportista(StoreDispatchGuideRequest $request, CreateDispatchGuideAction $action): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $data = $request->validated();
+        $data['tipo_documento'] = '31'; // forzar GRT
+
+        try {
+            $guide = $action->execute($tenant, $data);
+
+            return $this->created(new DispatchGuideResource($guide), 'Guía de Remisión Transportista creada y encolada para envío a SUNAT.');
+        } catch (\Throwable $e) {
+            return $this->error('Error al crear guía transportista: '.$e->getMessage(), 500);
+        }
+    }
+
     public function index(Request $request): JsonResponse
     {
         $tenant = $request->get('tenant');

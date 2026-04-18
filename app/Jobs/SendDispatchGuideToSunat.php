@@ -41,10 +41,26 @@ class SendDispatchGuideToSunat implements ShouldQueue
         ];
 
         try {
-            $despatch = $service->buildDespatch($data);
-            $api = $service->createApi();
-            $result = $api->send($despatch);
-            $xml = $api->getLastXml();
+            if ($guide->tipo_documento === '31') {
+                // GRT — flujo custom (inyectar DespatchParty antes de firmar).
+                // Si no se especificó remitente explícito, asumir que el tenant = remitente
+                // (caso poco común, pero evita errores).
+                $data['remitente'] = $guide->remitente ?? [
+                    'tipo_doc' => '6',
+                    'num_doc' => $tenant->ruc,
+                    'razon_social' => $tenant->razon_social,
+                ];
+
+                $grtResult = $service->sendGrt($data);
+                $result = $grtResult['result'];
+                $xml = $grtResult['xml'];
+            } else {
+                // GRR — flujo normal Greenter
+                $despatch = $service->buildDespatch($data);
+                $api = $service->createApi();
+                $result = $api->send($despatch);
+                $xml = $api->getLastXml();
+            }
         } catch (\Throwable $e) {
             // Error de conexión REST API (GRE caído, timeout) → reintentar
             if ($this->isConnectionError($e)) {

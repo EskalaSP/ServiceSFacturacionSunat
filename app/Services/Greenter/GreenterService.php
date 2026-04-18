@@ -130,6 +130,90 @@ class GreenterService
         return (new DespatchBuilder($this->tenant))->build($data);
     }
 
+    /**
+     * Envía una GRT (tipo 31) a SUNAT con flujo custom:
+     *   1. Genera XML vía XmlBuilderResolver (no firmado)
+     *   2. Inyecta cac:DespatchParty dentro de cac:Despatch (remitente)
+     *      — Greenter no soporta este nodo nativamente para GRT
+     *   3. Firma con SignedXml
+     *   4. Envía via $api->sendXml()
+     *
+     * $data debe incluir:
+     *   - 'remitente' => ['tipo_doc'=>'6','num_doc'=>'20XXXXXXXXX','razon_social'=>'...']
+     */
+    public function sendGrt(array $data): array
+    {
+        $despatch = $this->buildDespatch($data);
+
+        // 1. XML no firmado
+        $resolver = new \Greenter\Factory\XmlBuilderResolver([
+            'strict_variables' => true,
+            'optimizations' => 0,
+            'debug' => false,
+            'cache' => false,
+        ]);
+        $xmlBuilder = $resolver->find(get_class($despatch));
+        $unsignedXml = $xmlBuilder->build($despatch);
+
+        // 2. Inyectar DespatchParty (remitente) para GRT
+        $unsignedXml = $this->injectDespatchPartyGrt($unsignedXml, $data['remitente'] ?? null);
+
+        // 3. Firmar
+        $cert = $this->tenant->getCertificateContent();
+        if (! $cert) {
+            throw new \RuntimeException('Certificado no encontrado para ' . $this->tenant->ruc);
+        }
+        $signer = new \Greenter\Xml\Signed\SignedXml();
+        $signer->setCertificate($cert);
+        $signedXml = $signer->signXml($unsignedXml);
+
+        // 4. Enviar
+        $api = $this->createApi();
+        $result = $api->sendXml($despatch->getName(), $signedXml);
+
+        return [
+            'result' => $result,
+            'xml' => $signedXml,
+        ];
+    }
+
+    /**
+     * Inyecta el bloque cac:DespatchParty dentro de cac:Despatch.
+     *
+     * Path SUNAT: /DespatchAdvice/cac:Shipment/cac:Delivery/cac:Despatch/cac:DespatchParty
+     * Se inserta ANTES de cac:DespatchAddress (que Greenter sí emite).
+     */
+    private function injectDespatchPartyGrt(string $xml, ?array $remitente): string
+    {
+        if (empty($remitente) || empty($remitente['num_doc']) || empty($remitente['razon_social'])) {
+            throw new \RuntimeException('GRT requiere los datos del remitente (tipo_doc, num_doc, razon_social).');
+        }
+
+        $tipoDoc = $remitente['tipo_doc'] ?? '6';
+        $numDoc = htmlspecialchars($remitente['num_doc'], ENT_XML1);
+        $razonSocial = htmlspecialchars($remitente['razon_social'], ENT_XML1);
+
+        $block = '<cac:DespatchParty>'
+            . '<cac:PartyIdentification>'
+            . '<cbc:ID schemeID="' . $tipoDoc . '" schemeName="Documento de Identidad" '
+            . 'schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">'
+            . $numDoc
+            . '</cbc:ID>'
+            . '</cac:PartyIdentification>'
+            . '<cac:PartyLegalEntity>'
+            . '<cbc:RegistrationName><![CDATA[' . $razonSocial . ']]></cbc:RegistrationName>'
+            . '</cac:PartyLegalEntity>'
+            . '</cac:DespatchParty>';
+
+        // Insertar antes de <cac:DespatchAddress> (primer ocurrencia dentro de cac:Despatch)
+        $pattern = '/(<cac:Despatch>\s*)(<cac:DespatchAddress>)/';
+        $replaced = preg_replace($pattern, '$1' . $block . '$2', $xml, 1, $count);
+        if ($count === 0) {
+            throw new \RuntimeException('No se encontró el nodo cac:Despatch > cac:DespatchAddress en el XML para inyectar DespatchParty.');
+        }
+        return $replaced;
+    }
+
     public function buildSummary(array $data): \Greenter\Model\Summary\Summary
     {
         return (new SummaryBuilder($this->tenant))->build($data);

@@ -82,7 +82,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::put('notas-debito/{id}', [DebitNoteController::class, 'update']);
     Route::post('notas-debito/{id}/reenviar', [DebitNoteController::class, 'resend']);
 
-    // Guías de remisión
+    // Guías de remisión (GRR - tipo 09 por default, GRT - tipo 31 vía payload.tipo_documento='31')
     Route::post('guias-remision', [DispatchGuideController::class, 'store'])->middleware('check.limit:sunat');
     Route::get('guias-remision', [DispatchGuideController::class, 'index']);
     Route::get('guias-remision/{id}', [DispatchGuideController::class, 'show']);
@@ -90,6 +90,9 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('guias-remision/{id}/pdf', [DispatchGuideController::class, 'pdf']);
     Route::get('guias-remision/{id}/xml', [DispatchGuideController::class, 'xml']);
     Route::get('guias-remision/{id}/estado', [DispatchGuideController::class, 'checkStatus']);
+
+    // Guía de Remisión Transportista (atajo — forza tipo_documento='31' en el payload)
+    Route::post('guias-remision-transportista', [DispatchGuideController::class, 'storeTransportista'])->middleware('check.limit:sunat');
 
     // Resúmenes diarios
     Route::get('resumenes', [SummaryController::class, 'index']);

@@ -15,6 +15,7 @@
 - [**Anular.md**](./Anular.md) — Comunicaciones de Baja (Facturas/NC/ND/Retención/Percepción)
 - [**Resumen-diario.md**](./Resumen-diario.md) — Resumen Diario de Boletas (envío en lote + anulación)
 - [**Guia-remision-RM.md**](./Guia-remision-RM.md) — Guías de remisión remitente (Tipo 09)
+- [**Guia-transportista.md**](./Guia-transportista.md) — Guías de remisión transportista (Tipo 31) — GRE REST OAuth2
 
 ### 🧾 Régimenes tributarios
 - [**Tasas-IGV.md**](./Tasas-IGV.md) — Configurar régimen (general 18%, MYPE restaurantes, override manual)

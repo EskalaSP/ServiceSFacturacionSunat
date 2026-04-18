@@ -13,9 +13,30 @@ class StoreDispatchGuideRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Normalizar payload antes de validar:
+     *  1. Si la ruta es /guias-remision-transportista → forzar tipo_documento=31
+     *  2. Si doc_relacionado viene como objeto único → envolver en array
+     */
+    protected function prepareForValidation(): void
+    {
+        // Ruta GRT → forzar tipo_documento='31'
+        if (str_contains($this->path(), 'guias-remision-transportista')) {
+            $this->merge(['tipo_documento' => '31']);
+        }
+
+        // doc_relacionado como objeto único → array
+        $doc = $this->input('doc_relacionado');
+        if (is_array($doc) && isset($doc['tipo_codigo'])) {
+            $this->merge(['doc_relacionado' => [$doc]]);
+        }
+    }
+
     public function rules(): array
     {
         return [
+            // tipo_documento: '09' Guía Remitente (default) o '31' Guía Transportista
+            'tipo_documento' => 'sometimes|string|in:09,31',
             'serie' => 'required|string|size:4',
             'fecha_emision' => 'required|date',
             'observacion' => 'nullable|string|max:500',
@@ -90,6 +111,46 @@ class StoreDispatchGuideRequest extends FormRequest
             'conductores.*.apellidos' => 'required|string|max:100',
             'conductores.*.licencia' => 'required|string|max:20',
 
+            // Documento(s) relacionado(s) — OBLIGATORIO para GRT, opcional para GRR.
+            // Siempre array; si viene un solo objeto, envuélvalo en [] antes de enviar.
+            'doc_relacionado' => 'nullable|array|max:5',
+            'doc_relacionado.*.tipo_codigo' => 'required_with:doc_relacionado|string|in:01,03,04,09,12,48,50,52,65,66,67,68,69,71,72,73,74,75,76,77,78,80,82,91',
+            'doc_relacionado.*.numero' => 'required_with:doc_relacionado|string|max:100',
+            'doc_relacionado.*.tipo_descripcion' => 'nullable|string|max:120',
+            'doc_relacionado.*.ruc_emisor' => 'nullable|string|size:11',
+
+            // Remitente — solo GRT (el tenant es el transportista, no el remitente)
+            'remitente' => 'nullable|array',
+            'remitente.tipo_doc' => 'required_with:remitente|string|in:1,6',
+            'remitente.num_doc' => 'required_with:remitente|string|max:15',
+            'remitente.razon_social' => 'required_with:remitente|string|max:250',
+
+            // Subcontratación (solo GRT)
+            'datos_subcontratador' => 'nullable|array',
+            'datos_subcontratador.num_doc' => 'required_with:datos_subcontratador|string|size:11',
+            'datos_subcontratador.razon_social' => 'required_with:datos_subcontratador|string|max:250',
+
+            // Pagador del flete (solo GRT, cuando paga un tercero distinto al remitente/subcontratador)
+            'datos_pagador_flete' => 'nullable|array',
+            'datos_pagador_flete.tipo' => 'required_with:datos_pagador_flete|string|in:remitente,subcontratador,tercero',
+            'datos_pagador_flete.tipo_doc' => 'nullable|string|in:1,6',
+            'datos_pagador_flete.num_doc' => 'nullable|string|max:15',
+            'datos_pagador_flete.razon_social' => 'nullable|string|max:250',
+
+            // Autorización especial (Cat D-37: MATPEL, MTC, etc.)
+            'autorizacion_especial' => 'nullable|array',
+            'autorizacion_especial.cod_emisor' => 'nullable|string|size:2',
+            'autorizacion_especial.nro_autorizacion' => 'nullable|string|max:50',
+
+            // Vehículo extendido con TUC y autorización especial
+            'vehiculo.nro_circulacion' => 'nullable|string|max:15',
+            'vehiculo.tuc' => 'nullable|string|max:15',
+            'vehiculo.cod_emisor' => 'nullable|string|size:2',
+            'vehiculo.nro_autorizacion' => 'nullable|string|max:50',
+            'vehiculo.secundarios.*.nro_circulacion' => 'nullable|string|max:15',
+            'vehiculo.secundarios.*.cod_emisor' => 'nullable|string|size:2',
+            'vehiculo.secundarios.*.nro_autorizacion' => 'nullable|string|max:50',
+
             // Items
             'items' => 'required|array|min:1',
             'items.*.descripcion' => 'required|string|max:500',
@@ -103,24 +164,84 @@ class StoreDispatchGuideRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $tipoDocumento = $this->input('tipo_documento', '09');
             $indicadores = $this->input('indicadores', []);
             $esM1L = is_array($indicadores) && collect($indicadores)->contains(fn ($i) => str_contains($i, 'M1L'));
             $modTraslado = $this->input('mod_traslado');
+            $esGRT = $tipoDocumento === '31';
 
-            // Transporte público (01) requiere transportista, excepto M1L
-            if ($modTraslado === '01' && ! $esM1L) {
-                if (empty($this->input('transportista'))) {
-                    $validator->errors()->add('transportista', 'El transportista es requerido para transporte público.');
+            // ─── Reglas específicas GRT ──────────────────────────────────
+            if ($esGRT) {
+                // GRT requiere datos del remitente (el transportista es el emisor, no el remitente)
+                if (empty($this->input('remitente'))) {
+                    $validator->errors()->add(
+                        'remitente',
+                        'La Guía de Remisión Transportista requiere los datos del remitente (quien envía la carga).'
+                    );
+                }
+
+                // El remitente no puede ser el mismo transportista (tenant)
+                $remitente = $this->input('remitente', []);
+                $tenant = $this->get('tenant');
+                if ($tenant && ($remitente['num_doc'] ?? null) === $tenant->ruc) {
+                    $validator->errors()->add(
+                        'remitente.num_doc',
+                        'El remitente no puede ser el mismo que el transportista emisor (RUC del tenant).'
+                    );
+                }
+
+                // GRT requiere documento relacionado OBLIGATORIO (factura, boleta, DAM, GRR, etc.)
+                if (empty($this->input('doc_relacionado'))) {
+                    $validator->errors()->add(
+                        'doc_relacionado',
+                        'La Guía de Remisión Transportista requiere al menos un documento relacionado (factura, boleta, DAM, GRR, etc.).'
+                    );
+                }
+
+                // GRT exige vehículo + conductor (el transportista es el que emite)
+                if (empty($this->input('vehiculo'))) {
+                    $validator->errors()->add('vehiculo', 'La Guía Transportista requiere datos del vehículo.');
+                }
+                if (empty($this->input('conductor')) && empty($this->input('conductores'))) {
+                    $validator->errors()->add('conductor', 'La Guía Transportista requiere al menos un conductor.');
+                }
+
+                // Si hay subcontratación, debe informar pagador de flete
+                if (! empty($this->input('datos_subcontratador')) && empty($this->input('datos_pagador_flete'))) {
+                    $validator->errors()->add(
+                        'datos_pagador_flete',
+                        'Si existe transporte subcontratado, debe informar quién paga el flete (remitente/subcontratador/tercero).'
+                    );
+                }
+
+                // Si el pagador es tercero, deben venir sus datos de identidad
+                if ($this->input('datos_pagador_flete.tipo') === 'tercero') {
+                    if (empty($this->input('datos_pagador_flete.num_doc'))) {
+                        $validator->errors()->add('datos_pagador_flete.num_doc', 'Si el pagador es tercero, debe informar su número de documento.');
+                    }
+                    if (empty($this->input('datos_pagador_flete.razon_social'))) {
+                        $validator->errors()->add('datos_pagador_flete.razon_social', 'Si el pagador es tercero, debe informar su razón social.');
+                    }
                 }
             }
 
-            // Transporte privado (02) requiere vehículo + conductor, excepto M1L
-            if ($modTraslado === '02' && ! $esM1L) {
-                if (empty($this->input('vehiculo'))) {
-                    $validator->errors()->add('vehiculo', 'El vehículo es requerido para transporte privado.');
+            // ─── Reglas existentes GRR ───────────────────────────────────
+            if (! $esGRT) {
+                // GRR transporte público (01) requiere transportista, excepto M1L
+                if ($modTraslado === '01' && ! $esM1L) {
+                    if (empty($this->input('transportista'))) {
+                        $validator->errors()->add('transportista', 'El transportista es requerido para transporte público.');
+                    }
                 }
-                if (empty($this->input('conductor')) && empty($this->input('conductores'))) {
-                    $validator->errors()->add('conductor', 'Al menos un conductor es requerido para transporte privado.');
+
+                // GRR transporte privado (02) requiere vehículo + conductor, excepto M1L
+                if ($modTraslado === '02' && ! $esM1L) {
+                    if (empty($this->input('vehiculo'))) {
+                        $validator->errors()->add('vehiculo', 'El vehículo es requerido para transporte privado.');
+                    }
+                    if (empty($this->input('conductor')) && empty($this->input('conductores'))) {
+                        $validator->errors()->add('conductor', 'Al menos un conductor es requerido para transporte privado.');
+                    }
                 }
             }
         });

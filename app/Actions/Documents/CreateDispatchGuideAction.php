@@ -15,9 +15,12 @@ class CreateDispatchGuideAction
     public function execute(Tenant $tenant, array $data): DispatchGuide
     {
         return DB::transaction(function () use ($tenant, $data) {
+            // tipo_documento: '09' (GRR) default o '31' (GRT)
+            $tipoDocumento = $data['tipo_documento'] ?? '09';
+
             $serie = Serie::with('sucursal')
                 ->where('tenant_id', $tenant->id)
-                ->where('tipo_documento', '09')
+                ->where('tipo_documento', $tipoDocumento)
                 ->where('serie', $data['serie'])
                 ->where('is_active', true)
                 ->lockForUpdate()
@@ -25,6 +28,7 @@ class CreateDispatchGuideAction
 
             $correlativo = $serie->nextCorrelativo();
             $data['correlativo'] = $correlativo;
+            $data['tipo_documento'] = $tipoDocumento;
 
             $sucursal = $serie->sucursal;
 
@@ -32,6 +36,7 @@ class CreateDispatchGuideAction
                 'tenant_id' => $tenant->id,
                 'sucursal_id' => $sucursal?->id,
                 'cod_local' => $sucursal?->cod_local ?? $data['cod_local'] ?? '0000',
+                'tipo_documento' => $tipoDocumento,
                 'serie' => $data['serie'],
                 'correlativo' => $correlativo,
                 'fecha_emision' => $this->resolveEmisionDateTime($data['fecha_emision']),
@@ -56,6 +61,11 @@ class CreateDispatchGuideAction
                 'vehiculo' => $data['vehiculo'] ?? null,
                 'conductor' => $data['conductor'] ?? $data['conductores'] ?? null,
                 'indicadores' => $data['indicadores'] ?? null,
+                'remitente' => $data['remitente'] ?? null,
+                'doc_relacionado' => $data['doc_relacionado'] ?? null,
+                'datos_subcontratador' => $data['datos_subcontratador'] ?? null,
+                'datos_pagador_flete' => $data['datos_pagador_flete'] ?? null,
+                'autorizacion_especial' => $data['autorizacion_especial'] ?? null,
                 'observacion' => $data['observacion'] ?? null,
                 'items' => $data['items'],
                 'sunat_status' => 'pendiente',
