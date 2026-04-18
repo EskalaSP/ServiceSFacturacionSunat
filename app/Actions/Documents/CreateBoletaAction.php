@@ -43,8 +43,9 @@ class CreateBoletaAction
 
             $client = $this->clientResolver->resolve($tenant, $data['cliente']);
 
-            $calculatedItems = $this->calculator->calculateItems($data['items']);
-            $totals = $this->calculator->calculateTotals($calculatedItems, $data);
+            $fechaEmision = $data['fecha_emision'] ?? null;
+            $calculatedItems = $this->calculator->calculateItems($data['items'], $tenant, $fechaEmision);
+            $totals = $this->calculator->calculateTotals($calculatedItems, $data, $tenant, $fechaEmision);
             $data = array_merge($data, $totals);
 
             if (empty($data['leyenda'])) {
@@ -63,7 +64,8 @@ class CreateBoletaAction
                 'correlativo' => $correlativo,
                 'fecha_emision' => $this->resolveEmisionDateTime($data['fecha_emision']),
                 'fecha_vencimiento' => $data['fecha_vencimiento'] ?? null,
-                'tipo_operacion' => $data['tipo_operacion'] ?? '0101',
+                // NRUS: tipo_operacion 0113 (Venta Interna - NRUS, Cat. 51); otros: 0101 estándar.
+                'tipo_operacion' => $data['tipo_operacion'] ?? ($tenant->tax_regime === 'nrus' ? '0113' : '0101'),
                 'tipo_moneda' => $data['tipo_moneda'] ?? 'PEN',
                 'forma_pago' => $data['forma_pago'] ?? 'Contado',
                 'client_tipo_doc' => $data['cliente']['tipo_doc'],

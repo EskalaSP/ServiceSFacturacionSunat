@@ -4,9 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Tenant;
+
 class DocumentCalculationService
 {
-    public function calculateItems(array $items): array
+    public function __construct(private ?TaxRateService $taxRates = null)
+    {
+        $this->taxRates ??= new TaxRateService();
+    }
+
+    public function calculateItems(array $items, ?Tenant $tenant = null, ?string $fechaEmision = null): array
     {
         $gratuitoGravadoCodes = ['11', '12', '13', '14', '15', '16'];
         $gratuitoInafectoCodes = ['21', '31', '32', '33', '34', '35', '36'];
@@ -14,9 +21,11 @@ class DocumentCalculationService
         $calculated = [];
 
         foreach ($items as $item) {
-            $tipAfeIgv = $item['tip_afe_igv'] ?? '10';
-            $defaultIgvRate = ($tipAfeIgv === '17') ? 4 : 18;
-            $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? $defaultIgvRate);
+            // Para NRUS, si el item no trae tip_afe_igv, default a '30' (Inafecto).
+            // Para otros regímenes, default a '10' (Gravado) como siempre.
+            $tipAfeIgv = $item['tip_afe_igv'] ?? $this->taxRates->defaultTipAfeIgv($tenant);
+            // Tasa por régimen (general=18, mype_restaurantes=variable por año, nrus=0), o override por item.
+            $porcentajeIgv = $this->taxRates->rateForItem($item, $tenant, $fechaEmision);
             $cantidad = (float) $item['cantidad'];
             $precioUnitario = (float) $item['precio_unitario'];
             $porcentajeIsc = (float) ($item['porcentaje_isc'] ?? 0);
@@ -165,7 +174,7 @@ class DocumentCalculationService
         return $calculated;
     }
 
-    public function calculateTotals(array $calculatedItems, array &$data): array
+    public function calculateTotals(array $calculatedItems, array &$data, ?Tenant $tenant = null, ?string $fechaEmision = null): array
     {
         $gratuitoCodes = ['11', '12', '13', '14', '15', '16', '21', '31', '32', '33', '34', '35', '36'];
 
@@ -244,10 +253,11 @@ class DocumentCalculationService
             }
         }
 
-        // Apply global discount to gravadas and recalculate IGV using actual rate (not hardcoded 0.18)
+        // Apply global discount to gravadas and recalculate IGV using actual rate
         if ($descuentoGlobalGravadas > 0) {
-            // Determine effective IGV rate from gravadas items (default 18%)
-            $igvRate = ($gravadas > 0) ? ($totalIgv / $gravadas) : 0.18;
+            // Deriva la tasa de los ítems gravados emitidos; si no hay, usa la del régimen del tenant.
+            $defaultFrac = $this->taxRates->defaultIgvRate($tenant, $fechaEmision) / 100;
+            $igvRate = ($gravadas > 0) ? ($totalIgv / $gravadas) : $defaultFrac;
             $gravadas -= $descuentoGlobalGravadas;
             $totalIgv = round($gravadas * $igvRate, 2);
         }
@@ -274,7 +284,9 @@ class DocumentCalculationService
         // Para anticipos: mto_oper_gravadas y mto_igv se reducen proporcionalmente
         // pero valor_venta y sub_total permanecen con el valor completo de los ítems
         $gravadas_netas = $totalAnticipos > 0 ? round($gravadas - $totalAnticipos, 2) : $gravadas;
-        $igv_neto = $totalAnticipos > 0 ? round($gravadas_netas * 0.18, 2) : $totalIgv;
+        // Usa la tasa efectiva del régimen (no hardcodear 0.18)
+        $anticipoRateFrac = $this->taxRates->defaultIgvRate($tenant, $fechaEmision) / 100;
+        $igv_neto = $totalAnticipos > 0 ? round($gravadas_netas * $anticipoRateFrac, 2) : $totalIgv;
         $totalImpuestos_neto = $totalAnticipos > 0 ? round($igv_neto + $totalIvap + $totalIsc + $totalIcbper, 2) : $totalImpuestos;
 
         return [

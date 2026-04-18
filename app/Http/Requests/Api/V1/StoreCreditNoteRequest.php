@@ -98,6 +98,21 @@ class StoreCreditNoteRequest extends FormRequest
         ];
     }
 
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            // NRUS solo puede emitir notas de crédito contra BOLETAS (tipo 03).
+            // No puede contra facturas (01) ni liquidaciones de compra (12).
+            $tenant = $this->get('tenant');
+            if ($tenant && $tenant->tax_regime === 'nrus' && $this->input('doc_afectado_tipo') !== '03') {
+                $v->errors()->add(
+                    'doc_afectado_tipo',
+                    'Los contribuyentes del régimen NRUS solo pueden emitir notas de crédito contra boletas de venta (tipo 03).'
+                );
+            }
+        });
+    }
+
     protected function failedValidation(Validator $validator): void
     {
         throw new HttpResponseException(response()->json([

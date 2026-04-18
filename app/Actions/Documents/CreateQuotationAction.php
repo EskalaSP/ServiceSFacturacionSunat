@@ -27,8 +27,9 @@ class CreateQuotationAction
 
             $client = $this->clientResolver->resolve($tenant, $data['cliente']);
 
-            $calculatedItems = $this->calculator->calculateItems($data['items']);
-            $totals = $this->calculator->calculateTotals($calculatedItems, $data);
+            $fechaEmision = $data['fecha_emision'] ?? null;
+            $calculatedItems = $this->calculator->calculateItems($data['items'], $tenant, $fechaEmision);
+            $totals = $this->calculator->calculateTotals($calculatedItems, $data, $tenant, $fechaEmision);
 
             $quotation = Quotation::create([
                 'tenant_id' => $tenant->id,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Greenter\Builders;
 
 use App\Models\Tenant;
+use App\Services\TaxRateService;
 use DateTime;
 use DateTimeZone;
 use Greenter\Model\Client\Client;
@@ -19,14 +20,18 @@ use Greenter\Model\Sale\SaleDetail;
 class NoteBuilder
 {
     private Tenant $tenant;
+    private TaxRateService $taxRates;
+    private ?string $fechaEmision = null;
 
-    public function __construct(Tenant $tenant)
+    public function __construct(Tenant $tenant, ?TaxRateService $taxRates = null)
     {
         $this->tenant = $tenant;
+        $this->taxRates = $taxRates ?? new TaxRateService();
     }
 
     public function build(array $data): Note
     {
+        $this->fechaEmision = $data['fecha_emision'] ?? null;
         $note = new Note();
 
         $note
@@ -148,10 +153,10 @@ class NoteBuilder
 
         $detail = new SaleDetail();
 
-        $tipAfeIgv = $item['tip_afe_igv'] ?? '10';
-        // IVAP (17) uses 4% rate, not standard 18% IGV
-        $defaultIgvRate = ($tipAfeIgv === '17') ? 4 : 18;
-        $porcentajeIgv = (float) ($item['porcentaje_igv'] ?? $defaultIgvRate);
+        // NRUS default '30' (Inafecto); otros regímenes default '10' (Gravado).
+        $tipAfeIgv = $item['tip_afe_igv'] ?? $this->taxRates->defaultTipAfeIgv($this->tenant);
+        // Tasa según régimen del tenant + fecha (general=18, mype_restaurantes según schedule, nrus=0)
+        $porcentajeIgv = $this->taxRates->rateForItem($item, $this->tenant, $this->fechaEmision);
         $cantidad = (float) $item['cantidad'];
         $precioUnitario = (float) $item['precio_unitario'];
         $isGratuito = in_array($tipAfeIgv, $gratuitoCodes);

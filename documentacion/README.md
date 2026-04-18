@@ -16,6 +16,10 @@
 - [**Resumen-diario.md**](./Resumen-diario.md) — Resumen Diario de Boletas (envío en lote + anulación)
 - [**Guia-remision-RM.md**](./Guia-remision-RM.md) — Guías de remisión remitente (Tipo 09)
 
+### 🧾 Régimenes tributarios
+- [**Tasas-IGV.md**](./Tasas-IGV.md) — Configurar régimen (general 18%, MYPE restaurantes, override manual)
+- [**NRUS.md**](./NRUS.md) — Guía completa NRUS: registro, operación real, ejemplos, errores comunes
+
 ### 🔍 Consultas y análisis
 - [**Consultar-CPE.md**](./Consultar-CPE.md) — Consulta integrada de comprobantes en SUNAT
 - [**Panel-de-control.md**](./Panel-de-control.md) — Dashboard: KPIs, gráficos, aging, alertas, reportes

@@ -140,6 +140,15 @@ class StoreInvoiceRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $v) {
+            // NRUS no puede emitir facturas (solo boletas). Ley del Nuevo RUS.
+            $tenant = $this->get('tenant');
+            if ($tenant && $tenant->tax_regime === 'nrus') {
+                $v->errors()->add(
+                    'tax_regime',
+                    'Los contribuyentes del régimen NRUS solo pueden emitir boletas de venta, no facturas.'
+                );
+            }
+
             // Factura: si forma_pago es Credito, cuotas son obligatorias
             if ($this->input('forma_pago') === 'Credito' && empty($this->input('cuotas'))) {
                 $v->errors()->add('cuotas', 'Las cuotas son obligatorias cuando la forma de pago es Crédito.');

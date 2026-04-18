@@ -29,6 +29,15 @@ class RegisterController extends Controller
             'sol_pass' => 'required|string|max:50',
             'entorno' => 'sometimes|string|in:beta,production',
             'plan' => 'sometimes|string|in:free,pro,business',
+            // Régimen tributario. Por defecto 'general' (18%).
+            //  - general: 18% IGV
+            //  - mype_restaurantes: tasa reducida según schedule (Ley 31556)
+            //  - nrus: Nuevo Régimen Único Simplificado (solo boletas, IGV=0, cuota mensual fija)
+            'tax_regime' => 'sometimes|string|in:general,mype_restaurantes,nrus',
+            // Opcional: forzar una tasa de IGV específica (tiene precedencia sobre el régimen).
+            'igv_rate_override' => 'nullable|numeric|between:0,30',
+            // Solo para NRUS: categoría 1 (cuota S/20) o 2 (cuota S/50). Ignorado para otros regímenes.
+            'nrus_categoria' => 'nullable|integer|in:1,2',
             'client_id' => 'nullable|string|max:100',
             'client_secret' => 'nullable|string|max:255',
             'certificado' => 'required|file|max:100',
@@ -77,6 +86,9 @@ class RegisterController extends Controller
             'certificate_password' => $request->input('contrasena_certificado'),
             'environment' => $request->input('entorno', 'beta'),
             'plan' => $plan,
+            'tax_regime' => $request->input('tax_regime', 'general'),
+            'igv_rate_override' => $request->input('igv_rate_override'),
+            'nrus_categoria' => $request->input('tax_regime') === 'nrus' ? $request->input('nrus_categoria') : null,
             'max_documents_month' => $plans[$plan]['max_documents'] ?? 20,
             'is_active' => true,
         ]);
@@ -101,6 +113,9 @@ class RegisterController extends Controller
             'razon_social' => $tenant->razon_social,
             'entorno' => $tenant->environment,
             'plan' => $tenant->plan,
+            'tax_regime' => $tenant->tax_regime,
+            'igv_rate_override' => $tenant->igv_rate_override,
+            'nrus_categoria' => $tenant->nrus_categoria,
             'api_key' => $tenant->api_key,
             'api_secret' => $tenant->api_secret,
             'importante' => 'Guarde sus credenciales. El api_secret NO se puede recuperar.',

@@ -56,6 +56,9 @@ class TenantController extends Controller
             'billeteras_digitales.*.titular' => 'nullable|string|max:100',
             'mensaje_agradecimiento' => 'nullable|string|max:500',
             'mensaje_promocional' => 'nullable|string|max:500',
+            'tax_regime' => 'nullable|string|in:general,mype_restaurantes,nrus',
+            'igv_rate_override' => 'nullable|numeric|between:0,30',
+            'nrus_categoria' => 'nullable|integer|in:1,2',
         ]);
 
         $tenant = $request->get('tenant');
@@ -80,7 +83,23 @@ class TenantController extends Controller
             'billeteras_digitales' => $request->input('billeteras_digitales'),
             'mensaje_agradecimiento' => $request->input('mensaje_agradecimiento'),
             'mensaje_promocional' => $request->input('mensaje_promocional'),
+            'tax_regime' => $request->input('tax_regime'),
         ], fn ($v) => $v !== null);
+
+        // igv_rate_override acepta null explícito para "borrar" el override
+        if ($request->has('igv_rate_override')) {
+            $data['igv_rate_override'] = $request->input('igv_rate_override');
+        }
+
+        // nrus_categoria: acepta null, solo tiene sentido con tax_regime=nrus
+        if ($request->has('nrus_categoria')) {
+            $data['nrus_categoria'] = $request->input('nrus_categoria');
+        }
+
+        // Si cambian a un régimen que no es NRUS, limpiar nrus_categoria
+        if (array_key_exists('tax_regime', $data) && $data['tax_regime'] !== 'nrus') {
+            $data['nrus_categoria'] = null;
+        }
 
         if ($request->hasFile('logo')) {
             $data['logo_path'] = $request->file('logo')->storeAs(
