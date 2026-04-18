@@ -13,6 +13,10 @@ return new class extends Migration
 
     public function up(): void
     {
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         foreach ($this->tables as $table) {
             DB::statement("ALTER TABLE `{$table}` MODIFY `sunat_status` {$this->newEnum} NOT NULL DEFAULT 'pendiente'");
         }
@@ -20,6 +24,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         foreach ($this->tables as $table) {
             DB::statement("ALTER TABLE `{$table}` MODIFY `sunat_status` {$this->oldEnum} NOT NULL DEFAULT 'pendiente'");
         }

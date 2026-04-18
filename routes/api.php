@@ -189,6 +189,59 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('reportes/por-cliente', [ReportController::class, 'porCliente']);
     Route::get('reportes/por-sucursal', [ReportController::class, 'porSucursal']);
 
+    // === SIRE (Sistema Integrado de Registros Electrónicos) ===
+    Route::prefix('sire')->group(function () {
+        // Activación — NO requiere sire.enabled (es el que activa)
+        Route::post('activar',    [\App\Http\Controllers\Api\V1\Sire\SireActivacionController::class, 'activar']);
+        Route::post('desactivar', [\App\Http\Controllers\Api\V1\Sire\SireActivacionController::class, 'desactivar']);
+
+        // Resto de endpoints requieren SIRE activado
+        Route::middleware('sire.enabled')->group(function () {
+            Route::get('periodos', [\App\Http\Controllers\Api\V1\Sire\SirePeriodoController::class, 'index']);
+
+            // === RCE ===
+            Route::prefix('rce')->group(function () {
+                Route::get('constancia', [\App\Http\Controllers\Api\V1\Sire\SireRceController::class, 'constancia']);
+
+                Route::prefix('{periodo}')->group(function () {
+                    Route::get('propuesta',            [\App\Http\Controllers\Api\V1\Sire\SireRceController::class, 'propuesta']);
+                    Route::get('resumen',              [\App\Http\Controllers\Api\V1\Sire\SireRceController::class, 'resumen']);
+                    Route::post('aceptar-propuesta',   [\App\Http\Controllers\Api\V1\Sire\SireRceController::class, 'aceptarPropuesta']);
+                    Route::post('registrar-preliminar',[\App\Http\Controllers\Api\V1\Sire\SireRceController::class, 'registrarPreliminar']);
+
+                    // Uploads TUS (5.3, 5.5, 5.6)
+                    Route::post('reemplazar-propuesta',   [\App\Http\Controllers\Api\V1\Sire\SireUploadController::class, 'reemplazarPropuesta']);
+                    Route::post('no-domiciliados',         [\App\Http\Controllers\Api\V1\Sire\SireUploadController::class, 'noDomiciliados']);
+                    Route::post('complementar-propuesta',  [\App\Http\Controllers\Api\V1\Sire\SireUploadController::class, 'complementarPropuesta']);
+
+                    // Ajustes Posteriores (5.18-5.29 + 5.45-5.48) — 4 variants × 4 acciones = 16 combinaciones
+                    Route::prefix('ajustes-posteriores/{variant}')->group(function () {
+                        Route::post('cargar',    [\App\Http\Controllers\Api\V1\Sire\SireAjustesController::class, 'cargar']);
+                        Route::post('enviar',    [\App\Http\Controllers\Api\V1\Sire\SireAjustesController::class, 'enviar']);
+                        Route::get('descargar',  [\App\Http\Controllers\Api\V1\Sire\SireAjustesController::class, 'descargar']);
+                        Route::post('eliminar',  [\App\Http\Controllers\Api\V1\Sire\SireAjustesController::class, 'eliminar']);
+                    });
+
+                    Route::get('comprobantes',        [\App\Http\Controllers\Api\V1\Sire\SireComprobanteController::class, 'index']);
+                    Route::get('comprobantes/{id}',   [\App\Http\Controllers\Api\V1\Sire\SireComprobanteController::class, 'show']);
+
+                    // Reconciliación
+                    Route::get('reconciliar',         [\App\Http\Controllers\Api\V1\Sire\SireReconciliationController::class, 'reconciliar']);
+                    Route::post('reconciliar-async',  [\App\Http\Controllers\Api\V1\Sire\SireReconciliationController::class, 'reconciliarAsync']);
+                    Route::get('reconciliaciones',    [\App\Http\Controllers\Api\V1\Sire\SireReconciliationController::class, 'historial']);
+                });
+
+                Route::get('reconciliaciones/{id}', [\App\Http\Controllers\Api\V1\Sire\SireReconciliationController::class, 'show']);
+            });
+
+            // === Tickets ===
+            Route::get('tickets',                        [\App\Http\Controllers\Api\V1\Sire\SireTicketController::class, 'index']);
+            Route::get('tickets/{numTicket}',            [\App\Http\Controllers\Api\V1\Sire\SireTicketController::class, 'show']);
+            Route::post('tickets/{numTicket}/refrescar', [\App\Http\Controllers\Api\V1\Sire\SireTicketController::class, 'refresh']);
+            Route::get('tickets/{numTicket}/archivo',    [\App\Http\Controllers\Api\V1\Sire\SireTicketController::class, 'archivo']);
+        });
+    });
+
     // === Suscripciones y Billing ===
     Route::get('suscripcion', [SubscriptionController::class, 'show']);
     Route::post('suscripcion', [SubscriptionController::class, 'store']);

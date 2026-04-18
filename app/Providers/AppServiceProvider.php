@@ -73,6 +73,17 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute($limit)->by($tenant?->id ?? $request->ip());
         });
+
+        // Rate limiter para jobs que llaman SUNAT SIRE (por tenant).
+        // Evita saturar a SUNAT cuando muchos jobs del mismo tenant corren en paralelo.
+        RateLimiter::for('sunat-sire', function ($job) {
+            $tenantId = $job->ticket?->tenant_id
+                ?? $job->tenantId
+                ?? (method_exists($job, 'tenantId') ? $job->tenantId() : 'global');
+
+            return Limit::perMinute(config('sire.rate_limit.per_tenant_per_minute', 30))
+                ->by("sire:{$tenantId}");
+        });
     }
 
     protected function configureDefaults(): void

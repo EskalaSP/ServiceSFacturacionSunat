@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CheckDocumentLimit;
 use App\Http\Middleware\CheckPlanLimit;
+use App\Http\Middleware\EnsureSireEnabled;
 use App\Http\Middleware\UsageWarningHeader;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.limit' => CheckDocumentLimit::class,
             'plan' => CheckPlanLimit::class,
             'usage.headers' => UsageWarningHeader::class,
+            'sire.enabled' => EnsureSireEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

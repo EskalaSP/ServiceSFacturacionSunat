@@ -23,3 +23,15 @@ Schedule::job(new \App\Jobs\CheckTrialExpiration)->dailyAt('07:00');
 
 // Resetear contadores mensuales de uso (1ro de cada mes a las 00:05 AM)
 Schedule::job(new \App\Jobs\ResetMonthlyUsage)->monthlyOn(1, '00:05');
+
+// === SIRE ===
+// Poolear tickets pendientes cada minuto (idempotente, usa withoutOverlapping)
+Schedule::command('sire:poll-pending')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();
+
+// Reconciliar todos los tenants activos (diario 03:00 AM)
+Schedule::command('sire:reconcile-all')
+    ->dailyAt('03:00')
+    ->withoutOverlapping();

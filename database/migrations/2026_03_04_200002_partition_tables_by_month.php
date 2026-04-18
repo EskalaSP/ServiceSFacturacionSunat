@@ -9,6 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // SQLite (tests) no soporta particionamiento ni INFORMATION_SCHEMA — skip la migración completa
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // ─── Particionar documents por fecha_emision ───
         // MySQL no soporta FK en tablas particionadas. Eliminamos FK constraints
         // y mantenemos integridad referencial a nivel de aplicación (ya garantizada por Actions).
@@ -86,6 +91,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Remover particiones de api_logs y restaurar
         if ($this->isPartitioned('api_logs')) {
             DB::statement('ALTER TABLE api_logs REMOVE PARTITIONING');
@@ -121,6 +130,11 @@ return new class extends Migration
 
     private function isPartitioned(string $table): bool
     {
+        // SQLite (tests) no soporta particionamiento — se considera no particionado
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return false;
+        }
+
         $result = DB::select(
             'SELECT PARTITION_NAME FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND PARTITION_NAME IS NOT NULL LIMIT 1',
             [config('database.connections.mysql.database'), $table]
@@ -131,6 +145,10 @@ return new class extends Migration
 
     private function dropForeignIfExists(string $table, string $foreignKey): void
     {
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         $exists = DB::select(
             "SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
              WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY'",
@@ -146,6 +164,10 @@ return new class extends Migration
 
     private function indexExists(string $table, string $indexName): bool
     {
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return false;
+        }
+
         $exists = DB::select(
             'SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?',
             [config('database.connections.mysql.database'), $table, $indexName]

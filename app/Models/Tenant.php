@@ -46,6 +46,11 @@ class Tenant extends Model
         'usage_reset_month',
         'is_active',
         'user_id',
+        'sire_enabled',
+        'sire_last_period_synced',
+        'sire_last_reconciliation_at',
+        'sire_client_id',
+        'sire_client_secret',
     ];
 
     protected $hidden = [
@@ -53,6 +58,7 @@ class Tenant extends Model
         'client_secret',
         'certificate_password',
         'api_secret',
+        'sire_client_secret',
     ];
 
     protected function casts(): array
@@ -68,7 +74,33 @@ class Tenant extends Model
             'billeteras_digitales' => 'array',
             'is_active' => 'boolean',
             'max_documents_month' => 'integer',
+            'sire_enabled' => 'boolean',
+            'sire_client_secret' => 'encrypted',
+            'sire_last_reconciliation_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Devuelve las credenciales SIRE efectivas, con fallback a las globales del tenant.
+     *
+     * @return array{client_id: ?string, client_secret: ?string}
+     */
+    public function sireCredentials(): array
+    {
+        return [
+            'client_id'     => $this->sire_client_id     ?? $this->client_id,
+            'client_secret' => $this->sire_client_secret ?? $this->client_secret,
+        ];
+    }
+
+    public function sirePeriodos(): HasMany
+    {
+        return $this->hasMany(\App\Sire\Models\SirePeriodo::class);
+    }
+
+    public function sireTickets(): HasMany
+    {
+        return $this->hasMany(\App\Sire\Models\SireTicket::class);
     }
 
     protected static function booted(): void
