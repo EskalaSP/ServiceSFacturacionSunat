@@ -12,7 +12,8 @@
 - [**Boletas.md**](./Boletas.md) — Boletas de venta (Tipo 03)
 - [**Notas-credito.md**](./Notas-credito.md) — Notas de crédito (Tipo 07) — anular/devolver/descontar
 - [**Notas-debito.md**](./Notas-debito.md) — Notas de débito (Tipo 08) — intereses/penalidades/cargos
-- [**Anular.md**](./Anular.md) — Comunicaciones de Baja + Resúmenes Diarios de Boletas
+- [**Anular.md**](./Anular.md) — Comunicaciones de Baja (Facturas/NC/ND/Retención/Percepción)
+- [**Resumen-diario.md**](./Resumen-diario.md) — Resumen Diario de Boletas (envío en lote + anulación)
 - [**Guia-remision-RM.md**](./Guia-remision-RM.md) — Guías de remisión remitente (Tipo 09)
 
 ### 🔍 Consultas y análisis

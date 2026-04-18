@@ -302,10 +302,10 @@ class DashboardController extends Controller
                    COALESCE(SUM(mto_imp_venta - monto_pagado), 0) AS saldo
             FROM (
                 SELECT payment_status, mto_imp_venta, monto_pagado FROM invoices
-                WHERE tenant_id = ? AND sunat_status = 'aceptado' AND deleted_at IS NULL
+                WHERE tenant_id = ? AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso') AND deleted_at IS NULL
                 UNION ALL
                 SELECT payment_status, mto_imp_venta, monto_pagado FROM boletas
-                WHERE tenant_id = ? AND sunat_status = 'aceptado' AND deleted_at IS NULL
+                WHERE tenant_id = ? AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso') AND deleted_at IS NULL
             ) d GROUP BY payment_status
         ", [$tid, $tid]);
 
@@ -322,22 +322,28 @@ class DashboardController extends Controller
             $resumen[$k] = $resumen[$k] ?: ['documentos' => 0, 'monto_total' => 0, 'monto_pagado' => 0, 'saldo' => 0];
         }
 
-        // Aging de saldos pendientes (incluye parciales)
+        // Aging de saldos pendientes — compatible con MySQL y PostgreSQL
+        $driver = DB::connection()->getDriverName();
+        // Días entre hoy y la fecha de vencimiento (positivo = vencido, negativo = por vencer)
+        $diasExpr = $driver === 'pgsql'
+            ? "(?::date - fecha_vencimiento)"
+            : "DATEDIFF(?, fecha_vencimiento)";
+
         $aging = DB::select("
             SELECT
-                SUM(CASE WHEN DATEDIFF(?, fecha_vencimiento) < 0 THEN saldo ELSE 0 END) AS por_vencer,
-                SUM(CASE WHEN DATEDIFF(?, fecha_vencimiento) BETWEEN 0 AND 30 THEN saldo ELSE 0 END) AS vencido_0_30,
-                SUM(CASE WHEN DATEDIFF(?, fecha_vencimiento) BETWEEN 31 AND 60 THEN saldo ELSE 0 END) AS vencido_31_60,
-                SUM(CASE WHEN DATEDIFF(?, fecha_vencimiento) BETWEEN 61 AND 90 THEN saldo ELSE 0 END) AS vencido_61_90,
-                SUM(CASE WHEN DATEDIFF(?, fecha_vencimiento) > 90 THEN saldo ELSE 0 END) AS vencido_mas_90,
+                SUM(CASE WHEN {$diasExpr} < 0 THEN saldo ELSE 0 END) AS por_vencer,
+                SUM(CASE WHEN {$diasExpr} BETWEEN 0 AND 30 THEN saldo ELSE 0 END) AS vencido_0_30,
+                SUM(CASE WHEN {$diasExpr} BETWEEN 31 AND 60 THEN saldo ELSE 0 END) AS vencido_31_60,
+                SUM(CASE WHEN {$diasExpr} BETWEEN 61 AND 90 THEN saldo ELSE 0 END) AS vencido_61_90,
+                SUM(CASE WHEN {$diasExpr} > 90 THEN saldo ELSE 0 END) AS vencido_mas_90,
                 COUNT(*) AS documentos_con_saldo
             FROM (
                 SELECT fecha_vencimiento, (mto_imp_venta - monto_pagado) AS saldo FROM invoices
-                WHERE tenant_id = ? AND sunat_status = 'aceptado' AND deleted_at IS NULL
+                WHERE tenant_id = ? AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso') AND deleted_at IS NULL
                     AND payment_status IN ('pendiente', 'parcial') AND fecha_vencimiento IS NOT NULL
                 UNION ALL
                 SELECT fecha_vencimiento, (mto_imp_venta - monto_pagado) FROM boletas
-                WHERE tenant_id = ? AND sunat_status = 'aceptado' AND deleted_at IS NULL
+                WHERE tenant_id = ? AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso') AND deleted_at IS NULL
                     AND payment_status IN ('pendiente', 'parcial') AND fecha_vencimiento IS NOT NULL
             ) d
         ", [$hoy, $hoy, $hoy, $hoy, $hoy, $tid, $tid]);
@@ -351,14 +357,14 @@ class DashboardController extends Controller
                    ROUND(SUM(mto_imp_venta - monto_pagado), 2) AS saldo
             FROM (
                 SELECT client_num_doc, client_razon_social, mto_imp_venta, monto_pagado FROM invoices
-                WHERE tenant_id = ? AND sunat_status = 'aceptado' AND deleted_at IS NULL
+                WHERE tenant_id = ? AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso') AND deleted_at IS NULL
                     AND payment_status IN ('pendiente', 'parcial')
                 UNION ALL
                 SELECT client_num_doc, client_razon_social, mto_imp_venta, monto_pagado FROM boletas
-                WHERE tenant_id = ? AND sunat_status = 'aceptado' AND deleted_at IS NULL
+                WHERE tenant_id = ? AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso') AND deleted_at IS NULL
                     AND payment_status IN ('pendiente', 'parcial')
             ) d GROUP BY client_num_doc, client_razon_social
-            HAVING saldo > 0 ORDER BY saldo DESC LIMIT 10
+            HAVING SUM(mto_imp_venta - monto_pagado) > 0 ORDER BY saldo DESC LIMIT 10
         ", [$tid, $tid]);
 
         return $this->success([
@@ -440,10 +446,10 @@ class DashboardController extends Controller
             FROM sucursales s
             LEFT JOIN (
                 SELECT 'factura' AS tipo, cod_local, mto_imp_venta AS monto FROM invoices
-                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status = 'aceptado'
+                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso')
                 UNION ALL
                 SELECT 'boleta', cod_local, mto_imp_venta FROM boletas
-                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status = 'aceptado'
+                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso')
             ) d ON d.cod_local = s.cod_local
             WHERE s.tenant_id = ?
             GROUP BY s.cod_local, s.nombre
@@ -482,10 +488,10 @@ class DashboardController extends Controller
                    COALESCE(SUM(mto_igv), 0) AS igv
             FROM (
                 SELECT tipo_moneda, mto_imp_venta, mto_igv FROM invoices
-                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status = 'aceptado'
+                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso')
                 UNION ALL
                 SELECT tipo_moneda, mto_imp_venta, mto_igv FROM boletas
-                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status = 'aceptado'
+                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso')
             ) d GROUP BY tipo_moneda ORDER BY total DESC
         ", [$tid, $startDate, $endDate, $tid, $startDate, $endDate]);
 
@@ -516,10 +522,10 @@ class DashboardController extends Controller
                    ROUND(SUM(mto_imp_venta), 2) AS total
             FROM (
                 SELECT client_num_doc, client_razon_social, client_tipo_doc, mto_imp_venta FROM invoices
-                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status = 'aceptado'
+                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso')
                 UNION ALL
                 SELECT client_num_doc, client_razon_social, client_tipo_doc, mto_imp_venta FROM boletas
-                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status = 'aceptado'
+                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso')
             ) d GROUP BY client_num_doc, client_razon_social, client_tipo_doc
             ORDER BY total DESC LIMIT 20
         ", [$tid, $startDate, $endDate, $tid, $startDate, $endDate]);
@@ -536,9 +542,10 @@ class DashboardController extends Controller
         ", [$tid, $startDate, $endDate, $tid, $startDate, $endDate]);
 
         // Clientes nuevos: registrados en el periodo
+        // $startDate y $endDate ya vienen con hora completa de resolvePeriod()
         $nuevos = DB::table('clients')
             ->where('tenant_id', $tid)
-            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->whereBetween('created_at', [$startDate, $endDate])
             ->count();
 
         $totalRegistrados = DB::table('clients')->where('tenant_id', $tid)->count();
@@ -719,12 +726,12 @@ class DashboardController extends Controller
         $vencenPronto = DB::select("
             SELECT COUNT(*) AS cnt, COALESCE(SUM(mto_imp_venta - monto_pagado), 0) AS monto FROM (
                 SELECT mto_imp_venta, monto_pagado FROM invoices
-                WHERE tenant_id = ? AND sunat_status = 'aceptado' AND deleted_at IS NULL
+                WHERE tenant_id = ? AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso') AND deleted_at IS NULL
                     AND payment_status IN ('pendiente', 'parcial')
                     AND fecha_vencimiento BETWEEN ? AND ?
                 UNION ALL
                 SELECT mto_imp_venta, monto_pagado FROM boletas
-                WHERE tenant_id = ? AND sunat_status = 'aceptado' AND deleted_at IS NULL
+                WHERE tenant_id = ? AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso') AND deleted_at IS NULL
                     AND payment_status IN ('pendiente', 'parcial')
                     AND fecha_vencimiento BETWEEN ? AND ?
             ) v
@@ -734,12 +741,12 @@ class DashboardController extends Controller
         $vencidos = DB::select("
             SELECT COUNT(*) AS cnt, COALESCE(SUM(mto_imp_venta - monto_pagado), 0) AS monto FROM (
                 SELECT mto_imp_venta, monto_pagado FROM invoices
-                WHERE tenant_id = ? AND sunat_status = 'aceptado' AND deleted_at IS NULL
+                WHERE tenant_id = ? AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso') AND deleted_at IS NULL
                     AND payment_status IN ('pendiente', 'parcial')
                     AND fecha_vencimiento < ?
                 UNION ALL
                 SELECT mto_imp_venta, monto_pagado FROM boletas
-                WHERE tenant_id = ? AND sunat_status = 'aceptado' AND deleted_at IS NULL
+                WHERE tenant_id = ? AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso') AND deleted_at IS NULL
                     AND payment_status IN ('pendiente', 'parcial')
                     AND fecha_vencimiento < ?
             ) v
@@ -802,6 +809,10 @@ class DashboardController extends Controller
 
     private function kpiRango(int $tid, string $desde, string $hasta): array
     {
+        // Normalizar rango a datetime completo (fecha_emision es datetime)
+        if (strlen($desde) === 10) $desde .= ' 00:00:00';
+        if (strlen($hasta) === 10) $hasta .= ' 23:59:59';
+
         $row = DB::select("
             SELECT COUNT(*) AS docs,
                    COALESCE(SUM(mto_imp_venta), 0) AS ventas,
@@ -810,10 +821,10 @@ class DashboardController extends Controller
                    COALESCE(SUM(mto_icbper), 0) AS icbper
             FROM (
                 SELECT mto_imp_venta, mto_igv, mto_oper_gratuitas, mto_icbper FROM invoices
-                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status = 'aceptado'
+                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso')
                 UNION ALL
                 SELECT mto_imp_venta, mto_igv, mto_oper_gratuitas, mto_icbper FROM boletas
-                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status = 'aceptado'
+                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso')
             ) d
         ", [$tid, $desde, $hasta, $tid, $desde, $hasta]);
 
@@ -833,13 +844,23 @@ class DashboardController extends Controller
 
     private function ventasPorMes(int $tid, string $desde, string $hasta): array
     {
+        // Normalizar rango a datetime completo
+        if (strlen($desde) === 10) $desde .= ' 00:00:00';
+        if (strlen($hasta) === 10) $hasta .= ' 23:59:59';
+
+        // Compatibilidad MySQL / PostgreSQL para extraer año-mes
+        $driver = DB::connection()->getDriverName();
+        $ymExpr = $driver === 'pgsql'
+            ? "to_char(fecha_emision, 'YYYY-MM')"
+            : "DATE_FORMAT(fecha_emision, '%Y-%m')";
+
         $rows = DB::select("
-            SELECT DATE_FORMAT(fecha_emision, '%Y-%m') AS ym, SUM(mto_imp_venta) AS total FROM (
-                SELECT fecha_emision, mto_imp_venta FROM invoices
-                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status = 'aceptado'
+            SELECT ym, SUM(mto_imp_venta) AS total FROM (
+                SELECT {$ymExpr} AS ym, mto_imp_venta FROM invoices
+                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso')
                 UNION ALL
-                SELECT fecha_emision, mto_imp_venta FROM boletas
-                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status = 'aceptado'
+                SELECT {$ymExpr} AS ym, mto_imp_venta FROM boletas
+                WHERE tenant_id = ? AND fecha_emision BETWEEN ? AND ? AND deleted_at IS NULL AND sunat_status NOT IN ('anulado', 'rechazado', 'anulacion_en_proceso')
             ) d GROUP BY ym
         ", [$tid, $desde, $hasta, $tid, $desde, $hasta]);
 
