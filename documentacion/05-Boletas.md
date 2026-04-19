@@ -158,9 +158,9 @@
 
 ```json
 {
-  "success": true,
-  "message": "Boleta creada y encolada para envío a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Boleta creada y encolada para envío a SUNAT.",
+  "datos": {
     "id": 345,
     "tipo_documento": "03",
     "serie": "B001",

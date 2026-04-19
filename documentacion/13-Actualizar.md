@@ -121,7 +121,7 @@ PUT /api/v1/facturas/45
 
 ```json
 {
-  "message": "Factura actualizada y reenviada a SUNAT.",
+  "mensaje": "Factura actualizada y reenviada a SUNAT.",
   "sunat_status": "pendiente"
 }
 ```
@@ -196,7 +196,7 @@ PUT /api/v1/facturas/40
 
 ```json
 {
-  "message": "No se puede editar una factura aceptada por SUNAT."
+  "mensaje": "No se puede editar una factura aceptada por SUNAT."
 }
 ```
 

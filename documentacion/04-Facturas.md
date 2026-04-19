@@ -326,9 +326,9 @@ Si `forma_pago=Credito`, las cuotas son obligatorias:
 
 ```json
 {
-  "success": true,
-  "message": "Factura creada y encolada para envío a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Factura creada y encolada para envío a SUNAT.",
+  "datos": {
     "id": 123,
     "tipo_documento": "01",
     "serie": "F001",
@@ -395,9 +395,9 @@ curl "https://tu-api.com/api/v1/facturas?estado=aceptado&desde=2026-04-01&hasta=
 
 ```json
 {
-  "success": true,
-  "data": {
-    "data": [/* facturas */],
+  "estado": "exito",
+  "datos": {
+    "datos": [/* facturas */],
     "paginacion": {
       "pagina_actual": 1,
       "ultima_pagina": 8,
@@ -471,8 +471,8 @@ curl -X PUT https://tu-api.com/api/v1/facturas/123 \
 
 ```json
 {
-  "success": false,
-  "message": "No se puede editar una factura aceptada por SUNAT."
+  "estado": "error",
+  "mensaje": "No se puede editar una factura aceptada por SUNAT."
 }
 ```
 
@@ -549,8 +549,8 @@ Resetea `sunat_status → pendiente` y encola el job.
 **Error si ya está aceptada:**
 ```json
 {
-  "success": false,
-  "message": "Esta factura ya fue aceptada por SUNAT."
+  "estado": "error",
+  "mensaje": "Esta factura ya fue aceptada por SUNAT."
 }
 ```
 

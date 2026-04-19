@@ -206,9 +206,9 @@ Luego emite una **nueva factura** con el RUC correcto.
 
 ```json
 {
-  "success": true,
-  "message": "Nota de crédito creada y encolada para envío a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Nota de crédito creada y encolada para envío a SUNAT.",
+  "datos": {
     "id": 67,
     "tipo_documento": "07",
     "serie": "FC01",

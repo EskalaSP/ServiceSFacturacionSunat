@@ -52,8 +52,8 @@ curl "https://tu-api.com/api/v1/panel?mes=202604" \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "periodo": {
       "mes": "202604",
       "desde": "2026-04-01",
@@ -103,8 +103,8 @@ curl https://tu-api.com/api/v1/panel/indicadores \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "hoy": { "cantidad": 8, "monto": 3200.00 },
     "ayer": { "cantidad": 10, "monto": 4100.00 },
     "semana_actual": { "cantidad": 45, "monto": 22500.00 },
@@ -136,8 +136,8 @@ curl https://tu-api.com/api/v1/panel/estado-sunat \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "por_tipo": {
       "01_facturas": { "pendiente": 2, "enviado": 5, "aceptado": 120, "rechazado": 3, "anulado": 1 },
       "03_boletas":  { "pendiente": 8, "enviado": 12, "aceptado": 450, "rechazado": 1, "anulado": 5 },
@@ -184,8 +184,8 @@ curl https://tu-api.com/api/v1/panel/cobranzas \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "resumen": {
       "pagado": { "cantidad": 150, "monto": 85000.00 },
       "parcial": { "cantidad": 12, "monto": 15000.00, "cobrado": 8000, "pendiente": 7000 },
@@ -224,8 +224,8 @@ curl https://tu-api.com/api/v1/panel/ventas-mensuales \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "meses": [
       {
         "mes": "202505", "label": "May 2025",
@@ -254,8 +254,8 @@ curl https://tu-api.com/api/v1/panel/por-sucursal \
 
 ```json
 {
-  "success": true,
-  "data": [
+  "estado": "exito",
+  "datos": [
     {
       "sucursal_id": 1,
       "nombre": "Sede Principal",
@@ -289,8 +289,8 @@ curl https://tu-api.com/api/v1/panel/por-moneda \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "PEN": { "cantidad": 265, "monto": 85000.00, "igv": 12960.00 },
     "USD": { "cantidad": 10, "monto": 3500.00, "igv": 534.00 },
     "EUR": { "cantidad": 0, "monto": 0, "igv": 0 }
@@ -311,8 +311,8 @@ curl https://tu-api.com/api/v1/panel/clientes \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "top_20": [
       { "num_doc": "20555666777", "razon_social": "ACME SAC", "cantidad_docs": 12, "monto_total": 35000 }
     ],
@@ -341,8 +341,8 @@ curl https://tu-api.com/api/v1/panel/productos \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "top_por_venta": [
       { "codigo": "P001", "descripcion": "LAPTOP HP PAVILION 15", "cantidad_vendida": 15, "monto_total": 44250 }
     ],
@@ -370,8 +370,8 @@ curl https://tu-api.com/api/v1/panel/documentos-recientes \
 
 ```json
 {
-  "success": true,
-  "data": [
+  "estado": "exito",
+  "datos": [
     {
       "tipo_documento": "01",
       "tipo_descripcion": "Factura",
@@ -402,8 +402,8 @@ curl https://tu-api.com/api/v1/panel/alertas \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "rechazados_7_dias": {
       "cantidad": 3,
       "docs": [

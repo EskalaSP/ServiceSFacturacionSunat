@@ -239,9 +239,9 @@ La GRE (Guía Remisión Electrónica) Remitente es emitida por el **remitente de
 
 ```json
 {
-  "success": true,
-  "message": "Guía creada y encolada para envío a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Guía creada y encolada para envío a SUNAT.",
+  "datos": {
     "id": 88,
     "tipo_documento": "09",
     "serie": "T001",
@@ -294,8 +294,8 @@ curl -X PUT https://tu-api.com/api/v1/guias-remision/88 \
 **Error si ya aceptada:**
 ```json
 {
-  "success": false,
-  "message": "Solo guías pendientes o rechazadas pueden editarse."
+  "estado": "error",
+  "mensaje": "Solo guías pendientes o rechazadas pueden editarse."
 }
 ```
 
@@ -333,8 +333,8 @@ curl https://tu-api.com/api/v1/guias-remision/88/estado \
 **Respuesta:**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "id": 88,
     "numero_completo": "T001-88",
     "sunat_ticket": "1604394234789",

@@ -105,9 +105,9 @@ curl -X POST https://tu-api.com/api/v1/anulaciones \
 
 ```json
 {
-  "success": true,
-  "message": "Comunicación de baja creada y encolada.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Comunicación de baja creada y encolada.",
+  "datos": {
     "id": 7,
     "identificador": "RA-20260418-001",
     "fecha_generacion": "2026-04-18",
@@ -153,8 +153,8 @@ curl https://tu-api.com/api/v1/anulaciones/7/estado \
 **Respuesta:**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "id": 7,
     "sunat_ticket": "1604394234123",
     "sunat_status": "aceptado",
@@ -203,8 +203,8 @@ curl -X POST https://tu-api.com/api/v1/resumenes \
 **Respuesta:**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "id": 5,
     "identificador": "RC-20260418-001",
     "fecha_resumen": "2026-04-18",
@@ -259,8 +259,8 @@ curl https://tu-api.com/api/v1/resumenes/5/estado \
 **Respuesta:**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "id": 5,
     "identificador": "RC-20260418-001",
     "fecha_resumen": "2026-04-18",

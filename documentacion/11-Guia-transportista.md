@@ -159,9 +159,9 @@ curl -X POST https://tu-api.com/api/v1/guias-remision-transportista \
 
 ```json
 {
-  "success": true,
-  "message": "Guía de Remisión Transportista creada y encolada para envío a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Guía de Remisión Transportista creada y encolada para envío a SUNAT.",
+  "datos": {
     "numero_completo": "V001-000001",
     "tipo_documento": "31",
     "sunat_status": "enviado",
@@ -340,7 +340,7 @@ La API rechaza con HTTP **422** si:
 
 ### Datos faltantes GRT
 ```json
-{"errors": {
+{"errores": {
   "remitente": ["La Guía de Remisión Transportista requiere los datos del remitente (quien envía la carga)."],
   "doc_relacionado": ["La Guía de Remisión Transportista requiere al menos un documento relacionado (factura, boleta, DAM, GRR, etc.)."],
   "vehiculo": ["La Guía Transportista requiere datos del vehículo."],
@@ -350,21 +350,21 @@ La API rechaza con HTTP **422** si:
 
 ### Remitente = transportista
 ```json
-{"errors": {
+{"errores": {
   "remitente.num_doc": ["El remitente no puede ser el mismo que el transportista emisor (RUC del tenant)."]
 }}
 ```
 
 ### Pagador tercero sin datos
 ```json
-{"errors": {
+{"errores": {
   "datos_pagador_flete.num_doc": ["Si el pagador es tercero, debe informar su número de documento."]
 }}
 ```
 
 ### Subcontratación sin pagador
 ```json
-{"errors": {
+{"errores": {
   "datos_pagador_flete": ["Si existe transporte subcontratado, debe informar quién paga el flete (remitente/subcontratador/tercero)."]
 }}
 ```

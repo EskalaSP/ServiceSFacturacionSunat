@@ -37,9 +37,9 @@ Content-Type: application/json
 
 ```json
 {
-  "success": true,
-  "message": "Factura creada y encolada para envío a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Factura creada y encolada para envío a SUNAT.",
+  "datos": {
     "id": 123,
     "numero": "F001-1234",
     "sunat_status": "enviado",
@@ -73,9 +73,9 @@ Content-Type: application/json
 
 ```json
 {
-  "success": true,
-  "message": "Factura creada en estado pendiente. Use POST /facturas/{id}/enviar para enviarla a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Factura creada en estado pendiente. Use POST /facturas/{id}/enviar para enviarla a SUNAT.",
+  "datos": {
     "id": 124,
     "numero": "F001-1235",
     "sunat_status": "pendiente",
@@ -94,9 +94,9 @@ POST /api/v1/facturas/124/enviar
 
 ```json
 {
-  "success": true,
-  "message": "Factura enviada a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Factura enviada a SUNAT.",
+  "datos": {
     "id": 124,
     "sunat_status": "enviado",
     ...
@@ -120,8 +120,8 @@ Internamente el endpoint `/enviar` encola el job `SendDocumentToSunat`. El compr
 | Resumen Diario | `POST /api/v1/resumenes/{id}/enviar` |
 | Comunicación de Baja | `POST /api/v1/anulaciones/{id}/enviar` |
 | Reversión (RR) | `POST /api/v1/anulaciones/{id}/enviar` |
-| Retención | `POST /api/v1/retentions/{id}/enviar` |
-| Percepción | `POST /api/v1/perceptions/{id}/enviar` |
+| Retención | `POST /api/v1/retenciones/{id}/enviar` |
+| Percepción | `POST /api/v1/percepciones/{id}/enviar` |
 
 > **Nota:** los endpoints `/reenviar` ya existentes (facturas, boletas, NC, ND) siguen funcionando como **alias** de `/enviar` para retro-compatibilidad. Internamente hacen lo mismo: marcan el doc como `pendiente` y encolan el envío.
 

@@ -67,9 +67,9 @@ curl -X POST https://tu-api.com/api/v1/registro \
 **Respuesta (201):**
 ```json
 {
-  "success": true,
-  "message": "Creado exitosamente",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Creado exitosamente",
+  "datos": {
     "tenant_id": 15,
     "ruc": "20100000001",
     "razon_social": "MI EMPRESA SAC",
@@ -99,8 +99,8 @@ curl https://tu-api.com/api/v1/empresa \
 **Respuesta:**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "id": 15,
     "ruc": "20100000001",
     "razon_social": "MI EMPRESA SAC",
@@ -235,8 +235,8 @@ Lista todas las sucursales con su conteo de series.
 
 ```json
 {
-  "success": true,
-  "data": [
+  "estado": "exito",
+  "datos": [
     {
       "id": 1,
       "nombre": "Sede Principal",
@@ -405,8 +405,8 @@ curl "https://tu-api.com/api/v1/buscar-documento?tipo=6&numero=20555666777" \
 **Respuesta (encontrado local):**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "tipo_doc": "6",
     "num_doc": "20555666777",
     "razon_social": "ACME CORP SAC",
@@ -419,8 +419,8 @@ curl "https://tu-api.com/api/v1/buscar-documento?tipo=6&numero=20555666777" \
 **Respuesta (desde SUNAT/RENIEC):**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "tipo_doc": "6",
     "num_doc": "20555666777",
     "razon_social": "ACME CORP SAC",
@@ -436,25 +436,96 @@ curl "https://tu-api.com/api/v1/buscar-documento?tipo=6&numero=20555666777" \
 
 ## 9. Planes y suscripción
 
-### `GET /planes` — pública
+### `GET /planes` — pública (sin autenticación)
 
-Lista los planes disponibles.
+Lista todos los planes activos con sus límites y características.
+
+**Respuesta:**
+```json
+{
+  "estado": "exito",
+  "mensaje": "OK",
+  "datos": [
+    {
+      "slug": "free",
+      "nombre": "Gratis",
+      "precio_mensual": "0.00",
+      "precio_anual": "0.00",
+      "limites": { "documents_month": 30, "sucursales": 1, "team_members": 1 },
+      "caracteristicas": ["facturacion", "boletas", "notas"]
+    },
+    {
+      "slug": "pro",
+      "nombre": "Profesional",
+      "precio_mensual": "29.00",
+      "precio_anual": "290.00",
+      "limites": { "documents_month": 200, "sucursales": 3, "team_members": 5 },
+      "caracteristicas": ["facturacion", "compras", "crm", "inventario_avanzado"]
+    },
+    {
+      "slug": "business",
+      "nombre": "Empresarial",
+      "precio_mensual": "79.00",
+      "precio_anual": "790.00",
+      "limites": { "documents_month": -1, "sucursales": 10, "team_members": 15 },
+      "caracteristicas": ["facturacion", "finanzas", "rrhh", "whatsapp_business"]
+    }
+  ]
+}
+```
+
+> `-1` en los límites significa **ilimitado**.
 
 ### `GET /suscripcion`
 
-Estado de tu suscripción actual.
+Estado de tu suscripción actual + reporte de uso.
 
-### `POST /suscripcion`
+### `POST /suscripcion` — crear / activar
 
-Crea/upgrade suscripción.
+**Body:**
+| Campo | Tipo | Obligatorio | Descripción |
+|-------|------|-------------|-------------|
+| `plan_slug` | string | ✅ | `free` \| `pro` \| `business` |
+| `ciclo_facturacion` | string | ❌ | `monthly` (default) \| `yearly` |
+| `prueba` | boolean | ❌ | `true` activa trial de 14 días |
+| `token` | string | ❌ | Token del gateway de pagos |
+
+**Ejemplos:**
+
+```bash
+# Con trial de 14 días gratis
+curl -X POST https://tu-api.com/api/v1/suscripcion \
+  -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plan_slug": "business",
+    "ciclo_facturacion": "monthly",
+    "prueba": true
+  }'
+
+# Con pago anual directo
+curl -X POST https://tu-api.com/api/v1/suscripcion \
+  -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plan_slug": "pro",
+    "ciclo_facturacion": "yearly",
+    "token": "tok_xxx_de_tu_gateway"
+  }'
+```
 
 ### `PUT /suscripcion/cambiar-plan`
 
 ```json
-{ "plan": "business" }
+{
+  "plan_slug": "business",
+  "ciclo_facturacion": "monthly"
+}
 ```
 
 ### `PUT /suscripcion/cancelar`
+
+Sin body. Mantiene acceso hasta el final del periodo facturado.
 
 ### `GET /suscripcion/pagos`
 
@@ -466,8 +537,9 @@ Consumo del mes actual.
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "mensaje": "OK",
+  "datos": {
     "documentos_usados": 45,
     "limite_mensual": 100,
     "porcentaje": 45,

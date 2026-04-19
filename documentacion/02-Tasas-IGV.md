@@ -57,9 +57,9 @@ curl -X POST https://tu-api.com/api/v1/registro \
 
 ```json
 {
-  "success": true,
-  "message": "Creado exitosamente",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Creado exitosamente",
+  "datos": {
     "tenant_id": 5,
     "ruc": "20481234567",
     "razon_social": "RESTAURANT EL BUEN SABOR SAC",
@@ -109,9 +109,9 @@ curl -X PUT https://tu-api.com/api/v1/empresa \
 
 ```json
 {
-  "success": true,
-  "message": "Empresa actualizada.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Empresa actualizada.",
+  "datos": {
     "tax_regime": "mype_restaurantes",
     "igv_rate_override": null,
     "tasa_igv_vigente": 10.5,

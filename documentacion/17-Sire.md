@@ -103,8 +103,8 @@ curl -X POST https://tu-api.com/api/v1/registro \
 Respuesta:
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "tenant_id": 1,
     "api_key": "abc123...",
     "api_secret": "def456..."
@@ -131,8 +131,8 @@ curl -X POST https://tu-api.com/api/v1/sire/activar \
 **Respuesta OK (200):**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "sire_enabled": true,
     "ruc": "20100000001",
     "razon_social": "MI EMPRESA SAC",
@@ -145,9 +145,9 @@ curl -X POST https://tu-api.com/api/v1/sire/activar \
 **Respuesta error — credenciales inválidas (401):**
 ```json
 {
-  "success": false,
-  "message": "Credenciales SIRE rechazadas por SUNAT. Verifica que client_id/client_secret tengan seleccionada la URI \"MIGE RCE y RVIE - SIRE\" en Menú SOL, y que sol_user/sol_pass sean correctos.",
-  "errors": { "sunat_code": "unauthorized_client" }
+  "estado": "error",
+  "mensaje": "Credenciales SIRE rechazadas por SUNAT. Verifica que client_id/client_secret tengan seleccionada la URI \"MIGE RCE y RVIE - SIRE\" en Menú SOL, y que sol_user/sol_pass sean correctos.",
+  "errores": { "sunat_code": "unauthorized_client" }
 }
 ```
 
@@ -208,8 +208,8 @@ curl "https://tu-api.com/api/v1/sire/periodos?libro=rce" \
 **Respuesta (200):**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "libro": "080000",
     "libro_desc": "Registro de Compras Electrónico",
     "ejercicios": [
@@ -255,9 +255,9 @@ curl "https://tu-api.com/api/v1/sire/rce/202604/propuesta?formato=csv&cod_tipo_c
 **Respuesta (202 Accepted):**
 ```json
 {
-  "success": true,
-  "message": "Solicitud aceptada",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Solicitud aceptada",
+  "datos": {
     "num_ticket": "2026040012345678",
     "per_tributario": "202604",
     "estado": "01",
@@ -283,8 +283,8 @@ curl -X POST "https://tu-api.com/api/v1/sire/rce/202604/aceptar-propuesta" \
 **Respuesta (202):**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "num_ticket": "2026040011111111",
     "per_tributario": "202604",
     "estado": "01",
@@ -308,8 +308,8 @@ curl -X POST "https://tu-api.com/api/v1/sire/rce/202604/registrar-preliminar" \
 **Respuesta (200):**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "exitoso": true,
     "per_tributario": "202604",
     "respuesta_sunat": { "respuesta": "T" }
@@ -320,9 +320,9 @@ curl -X POST "https://tu-api.com/api/v1/sire/rce/202604/registrar-preliminar" \
 **Error 1008 (ya existe preliminar) (422):**
 ```json
 {
-  "success": false,
-  "message": "El registro electrónico ya se encuentra en el módulo de preliminar.",
-  "errors": { "sunat_code": "1008" }
+  "estado": "error",
+  "mensaje": "El registro electrónico ya se encuentra en el módulo de preliminar.",
+  "errores": { "sunat_code": "1008" }
 }
 ```
 
@@ -387,8 +387,8 @@ curl "https://tu-api.com/api/v1/sire/rce/202604/comprobantes?fase=propuesta&per_
 **Respuesta (200):**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "totales": {
       "total_comprobantes": 120,
       "suma_bi_gravada": 25000.00,
@@ -396,8 +396,8 @@ curl "https://tu-api.com/api/v1/sire/rce/202604/comprobantes?fase=propuesta&per_
       "suma_total": 29500.00
     },
     "comprobantes": {
-      "current_page": 1,
-      "data": [
+      "pagina_actual": 1,
+      "datos": [
         {
           "id": 1,
           "car_sunat": "11-202604-0001",
@@ -414,7 +414,7 @@ curl "https://tu-api.com/api/v1/sire/rce/202604/comprobantes?fase=propuesta&per_
         }
       ],
       "total": 120,
-      "per_page": 100
+      "por_pagina": 100
     }
   }
 }
@@ -448,10 +448,10 @@ curl "https://tu-api.com/api/v1/sire/tickets?per_tributario=202604&finalizado=tr
 **Respuesta:**
 ```json
 {
-  "success": true,
-  "data": {
-    "current_page": 1,
-    "data": [
+  "estado": "exito",
+  "datos": {
+    "pagina_actual": 1,
+    "datos": [
       {
         "num_ticket": "2026040012345678",
         "per_tributario": "202604",
@@ -528,8 +528,8 @@ curl -X POST "https://tu-api.com/api/v1/sire/rce/202604/reemplazar-propuesta" \
 Respuesta (202):
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "num_ticket": "2026040055555555",
     "per_tributario": "202604",
     "estado": "01",
@@ -583,8 +583,8 @@ curl -X POST "https://tu-api.com/api/v1/sire/rce/202604/ajustes-posteriores/actu
 Respuesta (202):
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "num_ticket": "2026040088888888",
     "variant": "actual",
     "archivo": "LE20100000001202604080000059000000001.zip",
@@ -648,8 +648,8 @@ Elimina comprobantes específicos del ajuste (servicios 5.20/5.23/5.26/5.29).
 Respuesta:
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "variant": "actual",
     "per_tributario": "202604",
     "eliminados": 2,
@@ -677,8 +677,8 @@ curl "https://tu-api.com/api/v1/sire/rce/202604/reconciliar" \
 **Respuesta (200):**
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "tenant_id": 1,
     "per_tributario": "202604",
     "run_at": "2026-04-18T14:30:00Z",
@@ -859,9 +859,9 @@ El API traduce los códigos 422 de SUNAT a mensajes legibles. Los más comunes:
 Respuesta genérica de error:
 ```json
 {
-  "success": false,
-  "message": "Mensaje legible en español",
-  "errors": {
+  "estado": "error",
+  "mensaje": "Mensaje legible en español",
+  "errores": {
     "sunat_code": "1007"
   }
 }

@@ -68,8 +68,8 @@ curl "https://tu-api.com/api/v1/consultar-cpe?ruc_emisor=20555666777&tipo_doc=01
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "encontrado": true,
     "estado_cp": "1",
     "estado_cp_descripcion": "ACEPTADO",
@@ -136,17 +136,17 @@ curl "https://tu-api.com/api/v1/consultar-cpe?ruc_emisor=20555666777&tipo_doc=01
 **401 — Credenciales inválidas:**
 ```json
 {
-  "success": false,
-  "message": "SUNAT rechazó las credenciales (client_id/client_secret). Verifica que las generaste desde Clave SOL → Empresas → Credenciales de API SUNAT → Consulta Integrada CPE. No hay entorno beta, solo producción.",
-  "errors": { "sunat_code": "unauthorized_client" }
+  "estado": "error",
+  "mensaje": "SUNAT rechazó las credenciales (client_id/client_secret). Verifica que las generaste desde Clave SOL → Empresas → Credenciales de API SUNAT → Consulta Integrada CPE. No hay entorno beta, solo producción.",
+  "errores": { "sunat_code": "unauthorized_client" }
 }
 ```
 
 **422 — Tenant sin credenciales:**
 ```json
 {
-  "success": false,
-  "message": "El tenant no tiene configurado client_id/client_secret para consultar SUNAT."
+  "estado": "error",
+  "mensaje": "El tenant no tiene configurado client_id/client_secret para consultar SUNAT."
 }
 ```
 
@@ -189,8 +189,8 @@ curl -X POST https://tu-api.com/api/v1/consultar-cdr \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "accepted": true,
     "code": "0",
     "description": "La Factura numero F001-123 ha sido aceptada",

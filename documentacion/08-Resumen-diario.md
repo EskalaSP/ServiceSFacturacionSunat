@@ -72,9 +72,9 @@ curl -X POST https://tu-api.com/api/v1/resumenes \
 
 ```json
 {
-  "success": true,
-  "message": "Resumen diario encolado para envío a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Resumen diario encolado para envío a SUNAT.",
+  "datos": {
     "id_resumen": 5,
     "identifier": "RC-20260418-001",
     "fecha_envio": "2026-04-18",
@@ -141,9 +141,9 @@ curl -X POST https://tu-api.com/api/v1/resumenes \
 
 ```json
 {
-  "success": true,
-  "message": "Resumen de anulación encolado para envío a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Resumen de anulación encolado para envío a SUNAT.",
+  "datos": {
     "id_resumen": 6,
     "identifier": "RC-20260418-002",
     "accion": "anulacion",
@@ -190,8 +190,8 @@ curl "https://tu-api.com/api/v1/resumenes?mes=2026-04&tipo=envio" \
 
 ```json
 {
-  "success": true,
-  "data": [
+  "estado": "exito",
+  "datos": [
     {
       "id": 5,
       "identifier": "RC-20260418-001",
@@ -228,8 +228,8 @@ curl "https://tu-api.com/api/v1/resumenes/5/estado" \
 
 ```json
 {
-  "success": true,
-  "data": {
+  "estado": "exito",
+  "datos": {
     "id_resumen": 5,
     "identifier": "RC-20260418-001",
     "ticket": "1717182000",

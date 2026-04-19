@@ -199,9 +199,9 @@ GET    /resumenes/{id}/cdr
 
 ### Retenciones / Percepciones / Reversión (11 rutas)
 ```
-POST|GET|GET /retentions[/{id}[/xml|/cdr]]
-POST|GET|GET /perceptions[/{id}[/xml|/cdr]]
-POST         /reversions
+POST|GET|GET /retenciones[/{id}[/xml|/cdr]]
+POST|GET|GET /percepciones[/{id}[/xml|/cdr]]
+POST         /reversiones
 ```
 
 ### Consultas (2 rutas)
@@ -332,9 +332,61 @@ Estados comunes en todos los documentos:
 
 ## 📦 Colección Postman
 
-- **`API SUNAT PRO V2.1 ⭐⭐⭐⭐⭐.postman_collection.json`** — colección completa con cobertura 100% de las 162 rutas (286 requests organizados en 25 folders por flujo de uso).
-- Variables requeridas: `base_url`, `api_key`, `api_secret`, `tenant_ruc`, `periodo`.
+- **`API SUNAT PRO V2.1 ✅✅✅✅✅.postman_collection.json`** — colección completa en español con cobertura 100% de las 162 rutas (240+ requests organizados en 25 folders por flujo de uso).
+- Variables requeridas: `base_url`, `api_key`, `api_secret`, `ruc_empresa`, `periodo`.
+- Todos los requests incluyen `Accept: application/json` en los headers.
 - Para regenerar: `php tools/build-postman.php`. Las secciones modulares están en `tools/postman-sections/`.
+
+## 📤 Formato de respuesta unificado (español)
+
+Todas las respuestas de la API siguen este formato:
+
+**Éxito:**
+```json
+{
+  "estado": "exito",
+  "mensaje": "OK",
+  "datos": { ... },
+  "meta": { ... }       // opcional (paginación u otros)
+}
+```
+
+**Error:**
+```json
+{
+  "estado": "error",
+  "mensaje": "Error de validación",
+  "errores": { "campo": ["mensaje"] }     // solo si aplica
+}
+```
+
+**Paginado:**
+```json
+{
+  "estado": "exito",
+  "mensaje": "OK",
+  "datos": {
+    "datos": [...],
+    "paginacion": {
+      "pagina_actual": 1,
+      "ultima_pagina": 5,
+      "por_pagina": 15,
+      "total": 67
+    }
+  }
+}
+```
+
+Los mensajes de validación también vienen en español (locale `es`):
+```json
+{
+  "estado": "error",
+  "mensaje": "Error de validación",
+  "errores": {
+    "numero_documento": ["El campo numero documento es obligatorio."]
+  }
+}
+```
 
 ## 📬 Soporte
 
@@ -342,4 +394,4 @@ Estados comunes en todos los documentos:
 - Código fuente: `app/Http/Controllers/Api/V1/`, `app/Sire/`
 - Configuración: `config/facturacion.php`, `config/sunat_catalogs.php`, `config/sire.php`
 
-✨ **Documentación v1.0** — completa y actualizada.
+✨ **Documentación v1.1** — completa, en español, alineada con el formato de respuesta `{estado, mensaje, datos}`.

@@ -199,9 +199,9 @@
 
 ```json
 {
-  "success": true,
-  "message": "Nota de débito creada y encolada para envío a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Nota de débito creada y encolada para envío a SUNAT.",
+  "datos": {
     "id": 42,
     "tipo_documento": "08",
     "serie": "FD01",

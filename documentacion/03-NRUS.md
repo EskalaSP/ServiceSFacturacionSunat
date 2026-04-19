@@ -91,9 +91,9 @@ curl -X POST https://tu-api.com/api/v1/registro \
 
 ```json
 {
-  "success": true,
-  "message": "Creado exitosamente",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Creado exitosamente",
+  "datos": {
     "tenant_id": 15,
     "ruc": "10459876543",
     "razon_social": "BODEGA DON JUAN - JUAN PEREZ",
@@ -216,9 +216,9 @@ curl -X POST https://tu-api.com/api/v1/boletas \
 **Respuesta exitosa:**
 ```json
 {
-  "success": true,
-  "message": "Boleta creada y encolada para envío a SUNAT.",
-  "data": {
+  "estado": "exito",
+  "mensaje": "Boleta creada y encolada para envío a SUNAT.",
+  "datos": {
     "numero_completo": "B001-001509",
     "tipo_operacion": "0113",
     "totales": {
