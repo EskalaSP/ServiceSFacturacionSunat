@@ -34,6 +34,9 @@
 17. [**17-Sire.md**](./17-Sire.md) — SIRE RCE completo: 25 endpoints, Postman collection
 18. [**18-Plan-implementacion-sire.md**](./18-Plan-implementacion-sire.md) — Arquitectura y plan técnico SIRE
 
+### 🚀 Despliegue
+19. [**19-Cron-hosting.md**](./19-Cron-hosting.md) — Cómo correr jobs + scheduler en hosting compartido (`cron-jobs.php`)
+
 ---
 
 ## 🚀 Quick start
