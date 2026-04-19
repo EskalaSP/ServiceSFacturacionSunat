@@ -358,6 +358,6 @@ POST /resumenes
 
 ## 🔗 Relacionados
 
-- [`Boletas.md`](./Boletas.md) — emitir boletas individuales
-- [`Anular.md`](./Anular.md) — comunicación de baja para facturas y NC/ND
-- [`Notas-credito.md`](./Notas-credito.md) — alternativa para revertir valor (sin plazo de 7 días)
+- [`05-Boletas.md`](./05-Boletas.md) — emitir boletas individuales
+- [`09-Anular.md`](./09-Anular.md) — comunicación de baja para facturas y NC/ND
+- [`06-Notas-credito.md`](./06-Notas-credito.md) — alternativa para revertir valor (sin plazo de 7 días)

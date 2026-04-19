@@ -347,6 +347,6 @@ GET /resumenes/{id}/estado → cuando aceptado, todas las boletas pasan a "acept
 
 ## 🔗 Relacionados
 
-- Ver [`Facturas.md`](./Facturas.md) — estado `sunat_status` de documentos
-- Ver [`Boletas.md`](./Boletas.md) — flujo de envío por resumen
-- Ver [`Notas-credito.md`](./Notas-credito.md) — alternativa a la anulación
+- Ver [`04-Facturas.md`](./04-Facturas.md) — estado `sunat_status` de documentos
+- Ver [`05-Boletas.md`](./05-Boletas.md) — flujo de envío por resumen
+- Ver [`06-Notas-credito.md`](./06-Notas-credito.md) — alternativa a la anulación

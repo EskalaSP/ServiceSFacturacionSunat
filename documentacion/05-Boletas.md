@@ -26,7 +26,7 @@
 
 1. **Cliente** — puede ser DNI (`tipo_doc=1`) o "sin documento" (`tipo_doc=0`)
 2. **Totales < S/ 700** — no requiere identificar al cliente obligatoriamente
-3. **Envío a SUNAT** — boletas suelen enviarse por **Resumen Diario** (ver `Anular.md` sección resúmenes) — aunque también se admiten envíos individuales
+3. **Envío a SUNAT** — boletas suelen enviarse por **Resumen Diario** (ver `09-Anular.md` sección resúmenes) — aunque también se admiten envíos individuales
 4. **Serie** — prefijo `B`
 
 ---
@@ -107,7 +107,7 @@
 
 ### Items y tributos
 
-**Idénticos a factura** (ver `Facturas.md` sección Items). Todos los catálogos aplican: Cat. 07 (afectación IGV), Cat. 08 (ISC), Cat. 53 (descuentos), Cat. 54 (detracciones), etc.
+**Idénticos a factura** (ver `04-Facturas.md` sección Items). Todos los catálogos aplican: Cat. 07 (afectación IGV), Cat. 08 (ISC), Cat. 53 (descuentos), Cat. 54 (detracciones), etc.
 
 ### Ejemplo con múltiples métodos de pago (pago mixto)
 
@@ -294,7 +294,7 @@ curl -X DELETE https://tu-api.com/api/v1/boletas/345/pagos/99 \
 4. GET /resumenes/{id}/estado                        → verificar
 ```
 
-Ver [Anular.md](./Anular.md) sección resúmenes.
+Ver [09-Anular.md](./09-Anular.md) sección resúmenes.
 
 ---
 
@@ -313,6 +313,6 @@ Ver [Anular.md](./Anular.md) sección resúmenes.
 
 ## 🔗 Relacionados
 
-- **Anular boleta aceptada:** usar Nota de Crédito → [`Notas-credito.md`](./Notas-credito.md)
-- **Envío masivo:** usar Resumen Diario → [`Anular.md`](./Anular.md)
+- **Anular boleta aceptada:** usar Nota de Crédito → [`06-Notas-credito.md`](./06-Notas-credito.md)
+- **Envío masivo:** usar Resumen Diario → [`09-Anular.md`](./09-Anular.md)
 - **Actualizar cliente en boleta rechazada:** `PUT /boletas/{id}` (automáticamente reenvía)

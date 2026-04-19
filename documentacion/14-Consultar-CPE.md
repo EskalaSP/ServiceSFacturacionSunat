@@ -266,6 +266,6 @@ for (const factura of misFacturasDelMesPasado) {
 
 ## 🔗 Relacionados
 
-- Ver [`Configuracion.md`](./Configuracion.md) — cómo configurar `client_id`/`client_secret`
-- Ver [`Facturas.md`](./Facturas.md) — estado local vs estado SUNAT
-- Ver [`Sire.md`](./Sire.md) — análisis masivo de compras RCE (módulo diferente)
+- Ver [`01-Configuracion.md`](./01-Configuracion.md) — cómo configurar `client_id`/`client_secret`
+- Ver [`04-Facturas.md`](./04-Facturas.md) — estado local vs estado SUNAT
+- Ver [`17-Sire.md`](./17-Sire.md) — análisis masivo de compras RCE (módulo diferente)

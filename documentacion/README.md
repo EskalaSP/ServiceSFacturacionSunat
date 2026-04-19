@@ -4,35 +4,35 @@
 
 ## 🗺️ Navegación
 
-### 🏗️ Configuración inicial
-- [**Configuracion.md**](./Configuracion.md) — Registro de empresa, tenant, sucursales, series, clientes, certificado, logo, suscripciones
+> Léelos en orden — los archivos están numerados según el flujo de uso.
 
-### 📄 Documentos SUNAT
-- [**Facturas.md**](./Facturas.md) — Facturas (Tipo 01) — CRUD + XML/CDR/PDF + pagos
-- [**Boletas.md**](./Boletas.md) — Boletas de venta (Tipo 03)
-- [**Notas-credito.md**](./Notas-credito.md) — Notas de crédito (Tipo 07) — anular/devolver/descontar
-- [**Notas-debito.md**](./Notas-debito.md) — Notas de débito (Tipo 08) — intereses/penalidades/cargos
-- [**Anular.md**](./Anular.md) — Comunicaciones de Baja (Facturas/NC/ND/Retención/Percepción)
-- [**Resumen-diario.md**](./Resumen-diario.md) — Resumen Diario de Boletas (envío en lote + anulación)
-- [**Guia-remision-RM.md**](./Guia-remision-RM.md) — Guías de remisión remitente (Tipo 09)
-- [**Guia-transportista.md**](./Guia-transportista.md) — Guías de remisión transportista (Tipo 31) — GRE REST OAuth2
+### 🏗️ Setup inicial (configura tu empresa antes de emitir)
+1. [**01-Configuracion.md**](./01-Configuracion.md) — Registro de empresa, tenant, sucursales, series, clientes, certificado, logo, suscripciones
+2. [**02-Tasas-IGV.md**](./02-Tasas-IGV.md) — Configurar régimen tributario (general 18%, MYPE restaurantes, override manual)
+3. [**03-NRUS.md**](./03-NRUS.md) — Guía completa NRUS: registro, operación real, ejemplos, errores comunes
 
-### 🧾 Régimenes tributarios
-- [**Tasas-IGV.md**](./Tasas-IGV.md) — Configurar régimen (general 18%, MYPE restaurantes, override manual)
-- [**NRUS.md**](./NRUS.md) — Guía completa NRUS: registro, operación real, ejemplos, errores comunes
+### 📄 Comprobantes SUNAT (emisión)
+4. [**04-Facturas.md**](./04-Facturas.md) — Facturas (Tipo 01) — CRUD + XML/CDR/PDF + pagos
+5. [**05-Boletas.md**](./05-Boletas.md) — Boletas de venta (Tipo 03)
+6. [**06-Notas-credito.md**](./06-Notas-credito.md) — Notas de crédito (Tipo 07) — anular/devolver/descontar
+7. [**07-Notas-debito.md**](./07-Notas-debito.md) — Notas de débito (Tipo 08) — intereses/penalidades/cargos
+8. [**08-Resumen-diario.md**](./08-Resumen-diario.md) — Resumen Diario de Boletas (envío en lote + anulación)
+9. [**09-Anular.md**](./09-Anular.md) — Comunicaciones de Baja (Facturas/NC/ND/Retención/Percepción)
+10. [**10-Guia-remision-RM.md**](./10-Guia-remision-RM.md) — Guías de remisión remitente (Tipo 09)
+11. [**11-Guia-transportista.md**](./11-Guia-transportista.md) — Guías de remisión transportista (Tipo 31) — GRE REST OAuth2
 
-### 🔍 Consultas y análisis
-- [**Consultar-CPE.md**](./Consultar-CPE.md) — Consulta integrada de comprobantes en SUNAT
-- [**Panel-de-control.md**](./Panel-de-control.md) — Dashboard: KPIs, gráficos, aging, alertas, reportes
+### ⚙️ Operaciones (ciclo de vida)
+12. [**12-Envio-manual.md**](./12-Envio-manual.md) — Envío manual a SUNAT (`enviar_automatico=false` + `POST /xxx/{id}/enviar`)
+13. [**13-Actualizar.md**](./13-Actualizar.md) — Cómo actualizar documentos rechazados/pendientes
+14. [**14-Consultar-CPE.md**](./14-Consultar-CPE.md) — Consulta integrada de comprobantes en SUNAT
+
+### 📊 Análisis y reportes
+15. [**15-Panel-de-control.md**](./15-Panel-de-control.md) — Dashboard: KPIs, gráficos, aging, alertas, reportes
+16. [**16-Dashboard.md**](./16-Dashboard.md) — Dashboard (versión anterior, ver `15-Panel-de-control.md`)
 
 ### 🏦 Módulo SIRE (Registro de Compras)
-- [**Sire.md**](./Sire.md) — SIRE RCE completo: 25 endpoints, Postman collection
-- [**plan-implementacion-sire.md**](./plan-implementacion-sire.md) — Arquitectura y plan técnico SIRE
-
-### 📖 Guías rápidas
-- [**Actualizar.md**](./Actualizar.md) — Cómo actualizar documentos rechazados/pendientes
-- [**Envio-manual.md**](./Envio-manual.md) — Envío manual a SUNAT (`enviar_automatico=false` + `POST /xxx/{id}/enviar`)
-- [**Dashboard.md**](./Dashboard.md) — Dashboard (versión anterior, ver `Panel-de-control.md`)
+17. [**17-Sire.md**](./17-Sire.md) — SIRE RCE completo: 25 endpoints, Postman collection
+18. [**18-Plan-implementacion-sire.md**](./18-Plan-implementacion-sire.md) — Arquitectura y plan técnico SIRE
 
 ---
 
@@ -237,7 +237,7 @@ POST|GET|DELETE          /notas-venta/{id}/pagos[/{paymentId}]
 ```
 
 ### SIRE (25 rutas)
-Ver [`Sire.md`](./Sire.md) — módulo completo con RCE + tickets + uploads TUS + reconciliación.
+Ver [`17-Sire.md`](./17-Sire.md) — módulo completo con RCE + tickets + uploads TUS + reconciliación.
 
 ---
 
@@ -288,18 +288,22 @@ Estados comunes en todos los documentos:
 
 | Necesito... | Ir a |
 |-------------|------|
-| Registrar mi empresa | [Configuracion.md#1-registro-de-empresa](./Configuracion.md#1-registro-de-empresa) |
-| Emitir factura | [Facturas.md#1-post-facturas](./Facturas.md#1-post-facturas--crear-factura) |
-| Emitir boleta | [Boletas.md#1-post-boletas](./Boletas.md#1-post-boletas--crear-boleta) |
-| Anular una factura aceptada | [Anular.md#1-anulaciones](./Anular.md#1-anulaciones-comunicaciones-de-baja) |
-| Anular una boleta | [Anular.md#5-resúmenes-diarios-boletas](./Anular.md#5-resúmenes-diarios-boletas) |
-| Devolver una compra | [Notas-credito.md](./Notas-credito.md#ejemplo--devolución-parcial-cod_motivo06) |
-| Cobrar intereses mora | [Notas-debito.md](./Notas-debito.md#ejemplo--intereses-por-mora) |
-| Emitir guía de transporte | [Guia-remision-RM.md](./Guia-remision-RM.md#1-post-guias-remision--crear) |
-| Verificar factura de proveedor | [Consultar-CPE.md#caso-1](./Consultar-CPE.md#caso-1--verificar-proveedor-antes-de-pagar) |
-| Ver KPIs del negocio | [Panel-de-control.md](./Panel-de-control.md) |
-| Cargar compras a SUNAT SIRE | [Sire.md](./Sire.md) |
-| Corregir factura rechazada | [Actualizar.md](./Actualizar.md) |
+| Registrar mi empresa | [01-Configuracion.md#1-registro-de-empresa](./01-Configuracion.md#1-registro-de-empresa) |
+| Configurar mi régimen tributario | [02-Tasas-IGV.md](./02-Tasas-IGV.md) |
+| Operar como NRUS | [03-NRUS.md](./03-NRUS.md) |
+| Emitir factura | [04-Facturas.md#1-post-facturas](./04-Facturas.md#1-post-facturas--crear-factura) |
+| Emitir boleta | [05-Boletas.md#1-post-boletas](./05-Boletas.md#1-post-boletas--crear-boleta) |
+| Devolver una compra | [06-Notas-credito.md](./06-Notas-credito.md#ejemplo--devolución-parcial-cod_motivo06) |
+| Cobrar intereses mora | [07-Notas-debito.md](./07-Notas-debito.md#ejemplo--intereses-por-mora) |
+| Anular una boleta | [08-Resumen-diario.md](./08-Resumen-diario.md) |
+| Anular una factura aceptada | [09-Anular.md#1-anulaciones](./09-Anular.md#1-anulaciones-comunicaciones-de-baja) |
+| Emitir guía de transporte (remitente) | [10-Guia-remision-RM.md](./10-Guia-remision-RM.md#1-post-guias-remision--crear) |
+| Emitir guía de transporte (transportista) | [11-Guia-transportista.md](./11-Guia-transportista.md) |
+| Enviar comprobantes manualmente | [12-Envio-manual.md](./12-Envio-manual.md) |
+| Corregir factura rechazada | [13-Actualizar.md](./13-Actualizar.md) |
+| Verificar factura de proveedor | [14-Consultar-CPE.md#caso-1](./14-Consultar-CPE.md#caso-1--verificar-proveedor-antes-de-pagar) |
+| Ver KPIs del negocio | [15-Panel-de-control.md](./15-Panel-de-control.md) |
+| Cargar compras a SUNAT SIRE | [17-Sire.md](./17-Sire.md) |
 
 ---
 
@@ -322,9 +326,15 @@ Estados comunes en todos los documentos:
 
 ---
 
+## 📦 Colección Postman
+
+- **`API SUNAT PRO V2.1 ⭐⭐⭐⭐⭐.postman_collection.json`** — colección completa con cobertura 100% de las 162 rutas (286 requests organizados en 25 folders por flujo de uso).
+- Variables requeridas: `base_url`, `api_key`, `api_secret`, `tenant_ruc`, `periodo`.
+- Para regenerar: `php tools/build-postman.php`. Las secciones modulares están en `tools/postman-sections/`.
+
 ## 📬 Soporte
 
-- Para el módulo SIRE, revisar también [`plan-implementacion-sire.md`](./plan-implementacion-sire.md)
+- Para el módulo SIRE, revisar también [`18-Plan-implementacion-sire.md`](./18-Plan-implementacion-sire.md)
 - Código fuente: `app/Http/Controllers/Api/V1/`, `app/Sire/`
 - Configuración: `config/facturacion.php`, `config/sunat_catalogs.php`, `config/sire.php`
 

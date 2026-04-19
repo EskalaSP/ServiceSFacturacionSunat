@@ -395,7 +395,7 @@ curl -X POST https://tu-api.com/api/v1/resumenes \
   -d '{"fecha_resumen":"2026-04-18"}'
 ```
 
-SUNAT recibe todas las boletas pendientes del día en una sola transacción. Ver [`Resumen-diario.md`](./Resumen-diario.md) para detalles.
+SUNAT recibe todas las boletas pendientes del día en una sola transacción. Ver [`08-Resumen-diario.md`](./08-Resumen-diario.md) para detalles.
 
 ---
 
@@ -555,10 +555,10 @@ Realicé pruebas reales contra SUNAT beta con el tenant `20161515648`:
 
 ## 10. Referencias cruzadas
 
-- Para otros regímenes (general, MYPE restaurantes): [`Tasas-IGV.md`](./Tasas-IGV.md)
-- Envío de boletas en lote al cierre del día: [`Resumen-diario.md`](./Resumen-diario.md)
-- Configurar series y sucursales: [`Configuracion.md`](./Configuracion.md)
-- Anular documentos: [`Anular.md`](./Anular.md), [`Notas-credito.md`](./Notas-credito.md)
+- Para otros regímenes (general, MYPE restaurantes): [`02-Tasas-IGV.md`](./02-Tasas-IGV.md)
+- Envío de boletas en lote al cierre del día: [`08-Resumen-diario.md`](./08-Resumen-diario.md)
+- Configurar series y sucursales: [`01-Configuracion.md`](./01-Configuracion.md)
+- Anular documentos: [`09-Anular.md`](./09-Anular.md), [`06-Notas-credito.md`](./06-Notas-credito.md)
 
 ## 11. Archivos técnicos de la implementación
 

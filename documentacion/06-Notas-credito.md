@@ -96,7 +96,7 @@
 
 ### Items
 
-**Mismos campos que factura** (ver `Facturas.md`). Los items representan lo que se está **revertiendo** (devolviendo, anulando, descontando). Los montos siempre se expresan en positivo.
+**Mismos campos que factura** (ver `04-Facturas.md`). Los items representan lo que se está **revertiendo** (devolviendo, anulando, descontando). Los montos siempre se expresan en positivo.
 
 ### Ejemplo — Anulación total (cod_motivo=01)
 

@@ -611,10 +611,10 @@ Anula un pago específico.
 
 ```
 # Si la factura está ACEPTADA y quieres anularla:
-1. POST /anulaciones               → comunicación de baja (ver Anular.md)
+1. POST /anulaciones               → comunicación de baja (ver 09-Anular.md)
 
 # Si quieres revertir el valor:
-1. POST /notas-credito             → nota de crédito por anulación (ver Notas-credito.md)
+1. POST /notas-credito             → nota de crédito por anulación (ver 06-Notas-credito.md)
 ```
 
 ---

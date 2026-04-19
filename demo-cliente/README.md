@@ -198,13 +198,13 @@ npm run preview   # ver el build localmente
 - **API completa:** ver `../documentacion/` en el proyecto principal
 - **Colección Postman:** `../API SUNAT PRO V2 ⭐⭐⭐⭐⭐.postman_collection.json`
 - **Documentación por tipo:**
-  - [`Configuracion.md`](../documentacion/Configuracion.md)
-  - [`Facturas.md`](../documentacion/Facturas.md)
-  - [`Boletas.md`](../documentacion/Boletas.md)
-  - [`Notas-credito.md`](../documentacion/Notas-credito.md)
-  - [`Notas-debito.md`](../documentacion/Notas-debito.md)
-  - [`Guia-remision-RM.md`](../documentacion/Guia-remision-RM.md)
-  - [`Panel-de-control.md`](../documentacion/Panel-de-control.md)
+  - [`01-Configuracion.md`](../documentacion/01-Configuracion.md)
+  - [`04-Facturas.md`](../documentacion/04-Facturas.md)
+  - [`05-Boletas.md`](../documentacion/05-Boletas.md)
+  - [`06-Notas-credito.md`](../documentacion/06-Notas-credito.md)
+  - [`07-Notas-debito.md`](../documentacion/07-Notas-debito.md)
+  - [`10-Guia-remision-RM.md`](../documentacion/10-Guia-remision-RM.md)
+  - [`15-Panel-de-control.md`](../documentacion/15-Panel-de-control.md)
 
 ---
 

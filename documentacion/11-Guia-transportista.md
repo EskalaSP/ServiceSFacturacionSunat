@@ -2,7 +2,7 @@
 
 La **Guía de Remisión Transportista** es el documento electrónico que emite la **empresa de transporte** cuando traslada mercadería por encargo de un remitente (con o sin contrato de transporte).
 
-Es distinta a la [**Guía de Remisión Remitente (GRR)**](./Guia-remision-RM.md), que emite el propio remitente cuando traslada sus propios bienes (o contrata un transporte público que se reporta en la misma GRR).
+Es distinta a la [**Guía de Remisión Remitente (GRR)**](./10-Guia-remision-RM.md), que emite el propio remitente cuando traslada sus propios bienes (o contrata un transporte público que se reporta en la misma GRR).
 
 ---
 

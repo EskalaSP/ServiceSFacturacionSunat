@@ -510,6 +510,6 @@ fetch('/panel/por-sucursal', { headers }).then(renderRanking);
 
 ## 🔗 Relacionados
 
-- Indicadores financieros profundos → [`Facturas.md`](./Facturas.md) + agregaciones manuales
-- Análisis de compras (RCE) → [`Sire.md`](./Sire.md) módulo SIRE
-- Consultas CPE puntuales → [`Consultar-CPE.md`](./Consultar-CPE.md)
+- Indicadores financieros profundos → [`04-Facturas.md`](./04-Facturas.md) + agregaciones manuales
+- Análisis de compras (RCE) → [`17-Sire.md`](./17-Sire.md) módulo SIRE
+- Consultas CPE puntuales → [`14-Consultar-CPE.md`](./14-Consultar-CPE.md)

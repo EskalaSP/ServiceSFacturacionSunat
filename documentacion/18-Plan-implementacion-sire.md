@@ -681,7 +681,7 @@ public $middleware = [new RateLimited('sunat-sire')];
 
 ## 8. Documentación al terminar cada fase
 
-Cada fase completa agrega a `documentacion/Sire.md`:
+Cada fase completa agrega a `documentacion/17-Sire.md`:
 - Endpoints expuestos (método, URL, params, ejemplo)
 - Códigos de error mapeados
 - Flujo de uso típico con ejemplos JSON

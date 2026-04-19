@@ -8,7 +8,7 @@ Esta API soporta la **tasa estándar de 18%** (régimen general) y la **tasa red
 |----------------------------|------------------------------------------------------------------|-----------------------------|
 | `general` (default)        | Todas las empresas no acogidas al régimen especial               | **18%** (16% IGV + 2% IPM)  |
 | `mype_restaurantes`        | MYPE de sector restaurantes/hoteles/alojamientos turísticos      | Variable — ver schedule     |
-| `nrus`                     | Pequeños contribuyentes con cuota mensual fija (S/20 o S/50)     | **0%** — ver [NRUS.md](./NRUS.md) |
+| `nrus`                     | Pequeños contribuyentes con cuota mensual fija (S/20 o S/50)     | **0%** — ver [03-NRUS.md](./03-NRUS.md) |
 
 ### Schedule tasa reducida MYPE Restaurantes (Ley 31556 ampliada)
 
