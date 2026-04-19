@@ -36,6 +36,7 @@
 
 ### 🚀 Despliegue
 19. [**19-Cron-hosting.md**](./19-Cron-hosting.md) — Cómo correr jobs + scheduler en hosting compartido (`cron-jobs.php`)
+20. [**20-Despliegue-VPS.md**](./20-Despliegue-VPS.md) — Guía completa: VPS Ubuntu 24 (Hostinger) + MySQL + Nginx + SSL + Supervisor + cron
 
 ---
 
