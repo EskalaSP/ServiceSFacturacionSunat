@@ -25,13 +25,16 @@ class BoletaController extends Controller
     {
         $tenant = $request->get('tenant');
         $soloRegistro = $request->boolean('solo_registro', false);
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         try {
-            $boleta = $action->execute($tenant, $request->validated(), $soloRegistro);
+            $boleta = $action->execute($tenant, $request->validated(), $soloRegistro, $enviarAuto);
 
-            $message = $soloRegistro
-                ? 'Boleta registrada. Pendiente de envío vía resumen diario.'
-                : 'Boleta creada y encolada para envío a SUNAT.';
+            $message = match (true) {
+                $soloRegistro    => 'Boleta registrada. Pendiente de envío vía resumen diario.',
+                ! $enviarAuto    => 'Boleta creada en estado pendiente. Use POST /boletas/{id}/enviar para enviarla a SUNAT.',
+                default          => 'Boleta creada y encolada para envío a SUNAT.',
+            };
 
             return $this->created(new BoletaResource($boleta), $message);
         } catch (\Throwable $e) {
@@ -197,6 +200,11 @@ class BoletaController extends Controller
 
     public function resend(Request $request, int $id): JsonResponse
     {
+        return $this->enviar($request, $id);
+    }
+
+    public function enviar(Request $request, int $id): JsonResponse
+    {
         $tenant = $request->get('tenant');
         $boleta = Boleta::forTenant($tenant->id)->findOrFail($id);
 
@@ -211,10 +219,11 @@ class BoletaController extends Controller
         ]);
 
         SendDocumentToSunat::dispatch(Boleta::class, $boleta->id);
+        $boleta->update(['sunat_status' => 'enviado']);
 
         return $this->success(
             new BoletaResource($boleta->fresh()),
-            'Boleta reenviada a SUNAT.'
+            'Boleta enviada a SUNAT.'
         );
     }
 

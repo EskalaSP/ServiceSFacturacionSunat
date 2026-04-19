@@ -22,9 +22,9 @@ class CreateCreditNoteAction
         private ClientResolverService $clientResolver,
     ) {}
 
-    public function execute(Tenant $tenant, array $data): CreditNote
+    public function execute(Tenant $tenant, array $data, bool $enviarAutomatico = true): CreditNote
     {
-        return DB::transaction(function () use ($tenant, $data) {
+        return DB::transaction(function () use ($tenant, $data, $enviarAutomatico) {
             $serie = Serie::where('tenant_id', $tenant->id)
                 ->where('tipo_documento', '07')
                 ->where('serie', $data['serie'])
@@ -96,8 +96,10 @@ class CreateCreditNoteAction
             Cache::forget("tenant:{$tenant->id}:sunat_count:" . now()->format('Y-m'));
             app(PlanService::class)->incrementUsage($tenant, 'documents');
 
-            SendDocumentToSunat::dispatch(CreditNote::class, $creditNote->id);
-            $creditNote->update(['sunat_status' => 'enviado']);
+            if ($enviarAutomatico) {
+                SendDocumentToSunat::dispatch(CreditNote::class, $creditNote->id);
+                $creditNote->update(['sunat_status' => 'enviado']);
+            }
 
             return $creditNote->fresh(['items', 'client']);
         });

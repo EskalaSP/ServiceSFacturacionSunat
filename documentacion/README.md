@@ -31,6 +31,7 @@
 
 ### 📖 Guías rápidas
 - [**Actualizar.md**](./Actualizar.md) — Cómo actualizar documentos rechazados/pendientes
+- [**Envio-manual.md**](./Envio-manual.md) — Envío manual a SUNAT (`enviar_automatico=false` + `POST /xxx/{id}/enviar`)
 - [**Dashboard.md**](./Dashboard.md) — Dashboard (versión anterior, ver `Panel-de-control.md`)
 
 ---

@@ -23,11 +23,16 @@ class CreditNoteController extends Controller
     public function store(StoreCreditNoteRequest $request, CreateCreditNoteAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         try {
-            $creditNote = $action->execute($tenant, $request->validated());
+            $creditNote = $action->execute($tenant, $request->validated(), $enviarAuto);
 
-            return $this->created(new CreditNoteResource($creditNote), 'Nota de crédito creada y encolada para envío a SUNAT.');
+            $msg = $enviarAuto
+                ? 'Nota de crédito creada y encolada para envío a SUNAT.'
+                : 'Nota de crédito creada en estado pendiente. Use POST /notas-credito/{id}/enviar para enviarla a SUNAT.';
+
+            return $this->created(new CreditNoteResource($creditNote), $msg);
         } catch (\Throwable $e) {
             return $this->error('Error al crear nota de crédito: ' . $e->getMessage(), 500);
         }
@@ -181,6 +186,11 @@ class CreditNoteController extends Controller
 
     public function resend(Request $request, int $id): JsonResponse
     {
+        return $this->enviar($request, $id);
+    }
+
+    public function enviar(Request $request, int $id): JsonResponse
+    {
         $tenant = $request->get('tenant');
         $creditNote = CreditNote::forTenant($tenant->id)->findOrFail($id);
 
@@ -195,10 +205,11 @@ class CreditNoteController extends Controller
         ]);
 
         SendDocumentToSunat::dispatch(CreditNote::class, $creditNote->id);
+        $creditNote->update(['sunat_status' => 'enviado']);
 
         return $this->success(
             new CreditNoteResource($creditNote->fresh()),
-            'Nota de crédito reenviada a SUNAT.'
+            'Nota de crédito enviada a SUNAT.'
         );
     }
 

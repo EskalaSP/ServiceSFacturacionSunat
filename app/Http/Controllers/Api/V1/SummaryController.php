@@ -73,6 +73,7 @@ class SummaryController extends Controller
     {
         $tenant = $request->get('tenant');
         $fechaResumen = Carbon::parse($request->input('fecha_resumen'));
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         $hoy = Carbon::today('America/Lima');
         $limiteAnterior = $hoy->copy()->subDays(7);
@@ -178,14 +179,19 @@ class SummaryController extends Controller
                     ->update(['sunat_status' => 'anulacion_en_proceso']);
             }
 
-            SendSummaryToSunat::dispatch($summary->id);
-            $summary->update(['sunat_status' => 'enviado']);
+            if ($enviarAuto) {
+                SendSummaryToSunat::dispatch($summary->id);
+                $summary->update(['sunat_status' => 'enviado']);
+            }
+
+            $messageBase = $isAnulacion ? 'Resumen de anulación' : 'Resumen diario';
+            $message = $enviarAuto
+                ? "{$messageBase} encolado para envío a SUNAT."
+                : "{$messageBase} creado en estado pendiente. Use POST /resumenes/{id}/enviar para enviarlo a SUNAT.";
 
             return response()->json([
                 'success' => true,
-                'message' => $isAnulacion
-                    ? 'Resumen de anulación encolado para envío a SUNAT.'
-                    : 'Resumen diario encolado para envío a SUNAT.',
+                'message' => $message,
                 'data' => [
                     'id_resumen' => $summary->id,
                     'identifier' => $identifier,
@@ -194,7 +200,7 @@ class SummaryController extends Controller
                     'correlativo' => $correlativo,
                     'accion' => $isAnulacion ? 'anulacion' : 'envio',
                     'total_documentos' => $boletas->count(),
-                    'estado_sunat' => 'enviado',
+                    'estado_sunat' => $enviarAuto ? 'enviado' : 'pendiente',
                     'documentos' => $boletas->map(fn (Boleta $doc) => [
                         'id' => $doc->id,
                         'numero' => $doc->numero_completo,
@@ -206,6 +212,36 @@ class SummaryController extends Controller
         } catch (\Throwable $e) {
             return $this->error('Error al crear resumen: ' . $e->getMessage(), 500);
         }
+    }
+
+    public function enviar(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $summary = Summary::where('tenant_id', $tenant->id)->findOrFail($id);
+
+        if (in_array($summary->sunat_status, ['aceptado'], true)) {
+            return $this->error('Este resumen ya fue aceptado por SUNAT.', 422);
+        }
+
+        $summary->update([
+            'sunat_status' => 'pendiente',
+            'sunat_code' => null,
+            'sunat_description' => null,
+        ]);
+
+        SendSummaryToSunat::dispatch($summary->id);
+        $summary->update(['sunat_status' => 'enviado']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Resumen enviado a SUNAT.',
+            'data' => [
+                'id_resumen' => $summary->id,
+                'identifier' => $summary->identifier,
+                'estado_sunat' => 'enviado',
+                'consulta_estado' => url("/api/v1/resumenes/{$summary->id}/estado"),
+            ],
+        ]);
     }
 
     public function checkStatus(Request $request, int $id): JsonResponse

@@ -24,9 +24,9 @@ class CreateBoletaAction
         private RegisterPaymentAction $paymentAction,
     ) {}
 
-    public function execute(Tenant $tenant, array $data, bool $soloRegistro = false): Boleta
+    public function execute(Tenant $tenant, array $data, bool $soloRegistro = false, bool $enviarAutomatico = true): Boleta
     {
-        return DB::transaction(function () use ($tenant, $data, $soloRegistro) {
+        return DB::transaction(function () use ($tenant, $data, $soloRegistro, $enviarAutomatico) {
             $serie = Serie::where('tenant_id', $tenant->id)
                 ->where('tipo_documento', '03')
                 ->where('serie', $data['serie'])
@@ -111,10 +111,11 @@ class CreateBoletaAction
 
             if ($soloRegistro) {
                 // Pendiente para resumen diario
-            } else {
+            } elseif ($enviarAutomatico) {
                 SendDocumentToSunat::dispatch(Boleta::class, $boleta->id);
                 $boleta->update(['sunat_status' => 'enviado']);
             }
+            // else: stays 'pendiente' for manual send via POST /boletas/{id}/enviar
 
             if (! empty($data['pagos'])) {
                 $this->paymentAction->execute($boleta, $data['pagos']);

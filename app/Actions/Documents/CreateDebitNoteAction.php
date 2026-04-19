@@ -22,9 +22,9 @@ class CreateDebitNoteAction
         private ClientResolverService $clientResolver,
     ) {}
 
-    public function execute(Tenant $tenant, array $data): DebitNote
+    public function execute(Tenant $tenant, array $data, bool $enviarAutomatico = true): DebitNote
     {
-        return DB::transaction(function () use ($tenant, $data) {
+        return DB::transaction(function () use ($tenant, $data, $enviarAutomatico) {
             $serie = Serie::where('tenant_id', $tenant->id)
                 ->where('tipo_documento', '08')
                 ->where('serie', $data['serie'])
@@ -96,8 +96,10 @@ class CreateDebitNoteAction
             Cache::forget("tenant:{$tenant->id}:sunat_count:" . now()->format('Y-m'));
             app(PlanService::class)->incrementUsage($tenant, 'documents');
 
-            SendDocumentToSunat::dispatch(DebitNote::class, $debitNote->id);
-            $debitNote->update(['sunat_status' => 'enviado']);
+            if ($enviarAutomatico) {
+                SendDocumentToSunat::dispatch(DebitNote::class, $debitNote->id);
+                $debitNote->update(['sunat_status' => 'enviado']);
+            }
 
             return $debitNote->fresh(['items', 'client']);
         });

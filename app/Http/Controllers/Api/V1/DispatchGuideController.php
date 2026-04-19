@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\StoreDispatchGuideRequest;
 use App\Http\Resources\Api\V1\DispatchGuideResource;
 use App\Http\Traits\ApiResponse;
 use App\Http\Traits\CachesPdf;
+use App\Jobs\SendDispatchGuideToSunat;
 use App\Models\DispatchGuide;
 use App\Services\Greenter\GreenterService;
 use App\Services\Pdf\PdfFormatConfig;
@@ -24,11 +25,16 @@ class DispatchGuideController extends Controller
     public function store(StoreDispatchGuideRequest $request, CreateDispatchGuideAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         try {
-            $guide = $action->execute($tenant, $request->validated());
+            $guide = $action->execute($tenant, $request->validated(), $enviarAuto);
 
-            return $this->created(new DispatchGuideResource($guide), 'Guía de remisión creada y encolada para envío a SUNAT.');
+            $msg = $enviarAuto
+                ? 'Guía de remisión creada y encolada para envío a SUNAT.'
+                : 'Guía de remisión creada en estado pendiente. Use POST /guias-remision/{id}/enviar para enviarla a SUNAT.';
+
+            return $this->created(new DispatchGuideResource($guide), $msg);
         } catch (\Throwable $e) {
             return $this->error('Error al crear guía: '.$e->getMessage(), 500);
         }
@@ -43,14 +49,43 @@ class DispatchGuideController extends Controller
         $tenant = $request->get('tenant');
         $data = $request->validated();
         $data['tipo_documento'] = '31'; // forzar GRT
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         try {
-            $guide = $action->execute($tenant, $data);
+            $guide = $action->execute($tenant, $data, $enviarAuto);
 
-            return $this->created(new DispatchGuideResource($guide), 'Guía de Remisión Transportista creada y encolada para envío a SUNAT.');
+            $msg = $enviarAuto
+                ? 'Guía de Remisión Transportista creada y encolada para envío a SUNAT.'
+                : 'Guía de Remisión Transportista creada en estado pendiente. Use POST /guias-remision/{id}/enviar para enviarla a SUNAT.';
+
+            return $this->created(new DispatchGuideResource($guide), $msg);
         } catch (\Throwable $e) {
             return $this->error('Error al crear guía transportista: '.$e->getMessage(), 500);
         }
+    }
+
+    public function enviar(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $guide = DispatchGuide::forTenant($tenant->id)->findOrFail($id);
+
+        if ($guide->sunat_status === 'aceptado') {
+            return $this->error('Esta guía de remisión ya fue aceptada por SUNAT.', 422);
+        }
+
+        $guide->update([
+            'sunat_status' => 'pendiente',
+            'sunat_code' => null,
+            'sunat_description' => null,
+        ]);
+
+        SendDispatchGuideToSunat::dispatch($guide->id);
+        $guide->update(['sunat_status' => 'enviado']);
+
+        return $this->success(
+            new DispatchGuideResource($guide->fresh()),
+            'Guía de remisión enviada a SUNAT.'
+        );
     }
 
     public function index(Request $request): JsonResponse

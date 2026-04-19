@@ -44,6 +44,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('facturas/{id}/cdr', [InvoiceController::class, 'cdr']);
     Route::get('facturas/{id}/pdf', [InvoiceController::class, 'pdf']);
     Route::post('facturas/{id}/reenviar', [InvoiceController::class, 'resend']);
+    Route::post('facturas/{id}/enviar', [InvoiceController::class, 'enviar']);
     Route::post('facturas/{id}/pagos', [PaymentController::class, 'store'])->defaults('docType', 'facturas');
     Route::get('facturas/{id}/pagos', [PaymentController::class, 'index'])->defaults('docType', 'facturas');
     Route::delete('facturas/{id}/pagos/{paymentId}', [PaymentController::class, 'destroy'])->defaults('docType', 'facturas');
@@ -58,6 +59,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('boletas/{id}/cdr', [BoletaController::class, 'cdr']);
     Route::get('boletas/{id}/pdf', [BoletaController::class, 'pdf']);
     Route::post('boletas/{id}/reenviar', [BoletaController::class, 'resend']);
+    Route::post('boletas/{id}/enviar', [BoletaController::class, 'enviar']);
     Route::post('boletas/{id}/pagos', [PaymentController::class, 'store'])->defaults('docType', 'boletas');
     Route::get('boletas/{id}/pagos', [PaymentController::class, 'index'])->defaults('docType', 'boletas');
     Route::delete('boletas/{id}/pagos/{paymentId}', [PaymentController::class, 'destroy'])->defaults('docType', 'boletas');
@@ -71,6 +73,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('notas-credito/{id}/pdf', [CreditNoteController::class, 'pdf']);
     Route::put('notas-credito/{id}', [CreditNoteController::class, 'update']);
     Route::post('notas-credito/{id}/reenviar', [CreditNoteController::class, 'resend']);
+    Route::post('notas-credito/{id}/enviar', [CreditNoteController::class, 'enviar']);
 
     // Notas de Débito (08)
     Route::post('notas-debito', [DebitNoteController::class, 'store'])->middleware('check.limit:sunat');
@@ -81,6 +84,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('notas-debito/{id}/pdf', [DebitNoteController::class, 'pdf']);
     Route::put('notas-debito/{id}', [DebitNoteController::class, 'update']);
     Route::post('notas-debito/{id}/reenviar', [DebitNoteController::class, 'resend']);
+    Route::post('notas-debito/{id}/enviar', [DebitNoteController::class, 'enviar']);
 
     // Guías de remisión (GRR - tipo 09 por default, GRT - tipo 31 vía payload.tipo_documento='31')
     Route::post('guias-remision', [DispatchGuideController::class, 'store'])->middleware('check.limit:sunat');
@@ -90,6 +94,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('guias-remision/{id}/pdf', [DispatchGuideController::class, 'pdf']);
     Route::get('guias-remision/{id}/xml', [DispatchGuideController::class, 'xml']);
     Route::get('guias-remision/{id}/estado', [DispatchGuideController::class, 'checkStatus']);
+    Route::post('guias-remision/{id}/enviar', [DispatchGuideController::class, 'enviar']);
 
     // Guía de Remisión Transportista (atajo — forza tipo_documento='31' en el payload)
     Route::post('guias-remision-transportista', [DispatchGuideController::class, 'storeTransportista'])->middleware('check.limit:sunat');
@@ -100,12 +105,14 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('resumenes/{id}/estado', [SummaryController::class, 'checkStatus']);
     Route::get('resumenes/{id}/xml', [SummaryController::class, 'xml']);
     Route::get('resumenes/{id}/cdr', [SummaryController::class, 'cdr']);
+    Route::post('resumenes/{id}/enviar', [SummaryController::class, 'enviar']);
 
     // Comunicaciones de baja
     Route::post('anulaciones', [VoidedController::class, 'store'])->middleware('check.limit:sunat');
     Route::get('anulaciones', [VoidedController::class, 'index']);
     Route::get('anulaciones/{id}', [VoidedController::class, 'show']);
     Route::get('anulaciones/{id}/estado', [VoidedController::class, 'checkStatus']);
+    Route::post('anulaciones/{id}/enviar', [VoidedController::class, 'enviar']);
 
     // Retenciones (20)
     Route::post('retentions', [RetentionController::class, 'store'])->middleware('check.limit:sunat');
@@ -113,6 +120,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('retentions/{id}', [RetentionController::class, 'show']);
     Route::get('retentions/{id}/xml', [RetentionController::class, 'xml']);
     Route::get('retentions/{id}/cdr', [RetentionController::class, 'cdr']);
+    Route::post('retentions/{id}/enviar', [RetentionController::class, 'enviar']);
 
     // Percepciones (40)
     Route::post('perceptions', [PerceptionController::class, 'store'])->middleware('check.limit:sunat');
@@ -120,6 +128,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('perceptions/{id}', [PerceptionController::class, 'show']);
     Route::get('perceptions/{id}/xml', [PerceptionController::class, 'xml']);
     Route::get('perceptions/{id}/cdr', [PerceptionController::class, 'cdr']);
+    Route::post('perceptions/{id}/enviar', [PerceptionController::class, 'enviar']);
 
     // Reversión (RR) — Anulación de retenciones y percepciones
     Route::post('reversions', [ReversionController::class, 'store'])->middleware('check.limit:sunat');

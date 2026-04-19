@@ -16,9 +16,9 @@ class CreateRetentionAction
 {
     use Concerns\ResolvesEmisionDateTime;
 
-    public function execute(Tenant $tenant, array $data): Retention
+    public function execute(Tenant $tenant, array $data, bool $enviarAutomatico = true): Retention
     {
-        return DB::transaction(function () use ($tenant, $data) {
+        return DB::transaction(function () use ($tenant, $data, $enviarAutomatico) {
             $serie = Serie::where('tenant_id', $tenant->id)
                 ->where('tipo_documento', '20')
                 ->where('serie', $data['serie'])
@@ -81,8 +81,10 @@ class CreateRetentionAction
             Cache::forget("tenant:{$tenant->id}:sunat_count:" . now()->format('Y-m'));
             app(PlanService::class)->incrementUsage($tenant, 'documents');
 
-            SendRetentionToSunat::dispatch($retention->id);
-            $retention->update(['sunat_status' => 'enviado']);
+            if ($enviarAutomatico) {
+                SendRetentionToSunat::dispatch($retention->id);
+                $retention->update(['sunat_status' => 'enviado']);
+            }
 
             return $retention->fresh('items');
         });

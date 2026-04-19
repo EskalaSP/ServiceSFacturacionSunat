@@ -24,6 +24,7 @@ class VoidedController extends Controller
     public function store(StoreVoidedRequest $request): JsonResponse
     {
         $tenant = $request->get('tenant');
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         try {
             $validated = $request->validated();
@@ -62,19 +63,25 @@ class VoidedController extends Controller
 
             $this->markDocumentsAsProcessing($tenant->id, $validated['detalles']);
 
-            SendVoidedToSunat::dispatch($voided->id);
-            $voided->update(['sunat_status' => 'enviado']);
+            if ($enviarAuto) {
+                SendVoidedToSunat::dispatch($voided->id);
+                $voided->update(['sunat_status' => 'enviado']);
+            }
+
+            $message = $enviarAuto
+                ? 'Comunicación de baja encolada para envío a SUNAT.'
+                : 'Comunicación de baja creada en estado pendiente. Use POST /anulaciones/{id}/enviar para enviarla a SUNAT.';
 
             return response()->json([
                 'success' => true,
-                'message' => 'Comunicación de baja encolada para envío a SUNAT.',
+                'message' => $message,
                 'data' => [
                     'id_anulacion' => $voided->id,
                     'identifier' => $identifier,
                     'correlativo' => $correlativo,
                     'fecha_comunicacion' => $fechaCom,
                     'total_documentos' => count($validated['detalles']),
-                    'estado_sunat' => 'enviado',
+                    'estado_sunat' => $enviarAuto ? 'enviado' : 'pendiente',
                     'consulta_estado' => url("/api/v1/anulaciones/{$voided->id}/estado"),
                 ],
             ], 201);
@@ -206,6 +213,42 @@ class VoidedController extends Controller
     public function checkStatus(Request $request, int $id): JsonResponse
     {
         return $this->show($request, $id);
+    }
+
+    public function enviar(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $voided = VoidedDocument::where('tenant_id', $tenant->id)->findOrFail($id);
+
+        if ($voided->sunat_status === 'aceptado') {
+            return $this->error('Esta comunicación de baja ya fue aceptada por SUNAT.', 422);
+        }
+
+        // Detectar si es Reversion (RR-) o Voided/Anulación (RA-) por el identifier
+        $isReversion = str_starts_with((string) $voided->identifier, 'RR-');
+
+        $voided->update([
+            'sunat_status' => 'pendiente',
+            'sunat_code' => null,
+            'sunat_description' => null,
+        ]);
+
+        if ($isReversion) {
+            \App\Jobs\SendReversionToSunat::dispatch($voided->id);
+        } else {
+            SendVoidedToSunat::dispatch($voided->id);
+        }
+        $voided->update(['sunat_status' => 'enviado']);
+
+        return response()->json([
+            'success' => true,
+            'message' => $isReversion ? 'Reversión enviada a SUNAT.' : 'Comunicación de baja enviada a SUNAT.',
+            'data' => [
+                'id_anulacion' => $voided->id,
+                'identifier' => $voided->identifier,
+                'estado_sunat' => 'enviado',
+            ],
+        ]);
     }
 
     public function show(Request $request, int $id): JsonResponse

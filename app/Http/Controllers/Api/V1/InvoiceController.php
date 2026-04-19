@@ -24,11 +24,16 @@ class InvoiceController extends Controller
     public function store(StoreInvoiceRequest $request, CreateInvoiceAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         try {
-            $invoice = $action->execute($tenant, $request->validated());
+            $invoice = $action->execute($tenant, $request->validated(), $enviarAuto);
 
-            return $this->created(new InvoiceResource($invoice), 'Factura creada y encolada para envío a SUNAT.');
+            $msg = $enviarAuto
+                ? 'Factura creada y encolada para envío a SUNAT.'
+                : 'Factura creada en estado pendiente. Use POST /facturas/{id}/enviar para enviarla a SUNAT.';
+
+            return $this->created(new InvoiceResource($invoice), $msg);
         } catch (\Throwable $e) {
             return $this->error('Error al crear factura: ' . $e->getMessage(), 500);
         }
@@ -179,6 +184,11 @@ class InvoiceController extends Controller
 
     public function resend(Request $request, int $id): JsonResponse
     {
+        return $this->enviar($request, $id);
+    }
+
+    public function enviar(Request $request, int $id): JsonResponse
+    {
         $tenant = $request->get('tenant');
         $invoice = Invoice::forTenant($tenant->id)->findOrFail($id);
 
@@ -193,10 +203,11 @@ class InvoiceController extends Controller
         ]);
 
         SendDocumentToSunat::dispatch(Invoice::class, $invoice->id);
+        $invoice->update(['sunat_status' => 'enviado']);
 
         return $this->success(
             new InvoiceResource($invoice->fresh()),
-            'Factura reenviada a SUNAT.'
+            'Factura enviada a SUNAT.'
         );
     }
 

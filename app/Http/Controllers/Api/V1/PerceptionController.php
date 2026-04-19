@@ -8,6 +8,7 @@ use App\Actions\Documents\CreatePerceptionAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StorePerceptionRequest;
 use App\Http\Traits\ApiResponse;
+use App\Jobs\SendPerceptionToSunat;
 use App\Models\Perception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,18 +21,47 @@ class PerceptionController extends Controller
     public function store(StorePerceptionRequest $request, CreatePerceptionAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         try {
-            $perception = $action->execute($tenant, $request->validated());
+            $perception = $action->execute($tenant, $request->validated(), $enviarAuto);
+
+            $msg = $enviarAuto
+                ? 'Percepción creada y encolada para envío a SUNAT.'
+                : 'Percepción creada en estado pendiente. Use POST /perceptions/{id}/enviar para enviarla a SUNAT.';
 
             return response()->json([
                 'success' => true,
-                'message' => 'Percepción creada y encolada para envío a SUNAT.',
+                'message' => $msg,
                 'data' => $this->formatPerception($perception),
             ], 201);
         } catch (\Throwable $e) {
             return $this->error('Error al crear percepción: ' . $e->getMessage(), 500);
         }
+    }
+
+    public function enviar(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $perception = Perception::forTenant($tenant->id)->findOrFail($id);
+
+        if ($perception->sunat_status === 'aceptado') {
+            return $this->error('Esta percepción ya fue aceptada por SUNAT.', 422);
+        }
+
+        $perception->update([
+            'sunat_status' => 'pendiente',
+            'sunat_code' => null,
+            'sunat_description' => null,
+        ]);
+
+        SendPerceptionToSunat::dispatch($perception->id);
+        $perception->update(['sunat_status' => 'enviado']);
+
+        return $this->success(
+            $this->formatPerception($perception->fresh()),
+            'Percepción enviada a SUNAT.'
+        );
     }
 
     public function index(Request $request): JsonResponse

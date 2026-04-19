@@ -23,11 +23,16 @@ class DebitNoteController extends Controller
     public function store(StoreDebitNoteRequest $request, CreateDebitNoteAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         try {
-            $debitNote = $action->execute($tenant, $request->validated());
+            $debitNote = $action->execute($tenant, $request->validated(), $enviarAuto);
 
-            return $this->created(new DebitNoteResource($debitNote), 'Nota de débito creada y encolada para envío a SUNAT.');
+            $msg = $enviarAuto
+                ? 'Nota de débito creada y encolada para envío a SUNAT.'
+                : 'Nota de débito creada en estado pendiente. Use POST /notas-debito/{id}/enviar para enviarla a SUNAT.';
+
+            return $this->created(new DebitNoteResource($debitNote), $msg);
         } catch (\Throwable $e) {
             return $this->error('Error al crear nota de débito: ' . $e->getMessage(), 500);
         }
@@ -181,6 +186,11 @@ class DebitNoteController extends Controller
 
     public function resend(Request $request, int $id): JsonResponse
     {
+        return $this->enviar($request, $id);
+    }
+
+    public function enviar(Request $request, int $id): JsonResponse
+    {
         $tenant = $request->get('tenant');
         $debitNote = DebitNote::forTenant($tenant->id)->findOrFail($id);
 
@@ -195,10 +205,11 @@ class DebitNoteController extends Controller
         ]);
 
         SendDocumentToSunat::dispatch(DebitNote::class, $debitNote->id);
+        $debitNote->update(['sunat_status' => 'enviado']);
 
         return $this->success(
             new DebitNoteResource($debitNote->fresh()),
-            'Nota de débito reenviada a SUNAT.'
+            'Nota de débito enviada a SUNAT.'
         );
     }
 

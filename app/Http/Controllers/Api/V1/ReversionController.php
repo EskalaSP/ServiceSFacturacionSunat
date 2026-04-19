@@ -36,6 +36,7 @@ class ReversionController extends Controller
         $tenant = $request->get('tenant');
         $validated = $request->all();
         $fechaCom = $validated['fecha_comunicacion'] ?? now()->format('Y-m-d');
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         // Validate documents exist and are accepted
         $errors = $this->validateDetalles($tenant->id, $validated['detalles']);
@@ -70,19 +71,25 @@ class ReversionController extends Controller
             // Mark documents as in annulment process
             $this->markDocumentsAsProcessing($tenant->id, $validated['detalles']);
 
-            SendReversionToSunat::dispatch($voided->id);
-            $voided->update(['sunat_status' => 'enviado']);
+            if ($enviarAuto) {
+                SendReversionToSunat::dispatch($voided->id);
+                $voided->update(['sunat_status' => 'enviado']);
+            }
+
+            $message = $enviarAuto
+                ? 'Reversión encolada para envío a SUNAT.'
+                : 'Reversión creada en estado pendiente. Use POST /anulaciones/{id}/enviar para enviarla a SUNAT.';
 
             return response()->json([
                 'success' => true,
-                'message' => 'Reversión encolada para envío a SUNAT.',
+                'message' => $message,
                 'data' => [
                     'voided_id' => $voided->id,
                     'identifier' => $identifier,
                     'correlativo' => $correlativo,
                     'fecha_comunicacion' => $fechaCom,
                     'total_documentos' => count($validated['detalles']),
-                    'sunat_status' => 'enviado',
+                    'sunat_status' => $enviarAuto ? 'enviado' : 'pendiente',
                     'consulta_estado' => url("/api/v1/voided/{$voided->id}/status"),
                 ],
             ], 201);

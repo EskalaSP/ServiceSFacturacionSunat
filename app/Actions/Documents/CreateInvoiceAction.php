@@ -24,9 +24,9 @@ class CreateInvoiceAction
         private RegisterPaymentAction $paymentAction,
     ) {}
 
-    public function execute(Tenant $tenant, array $data): Invoice
+    public function execute(Tenant $tenant, array $data, bool $enviarAutomatico = true): Invoice
     {
-        return DB::transaction(function () use ($tenant, $data) {
+        return DB::transaction(function () use ($tenant, $data, $enviarAutomatico) {
             $serie = Serie::where('tenant_id', $tenant->id)
                 ->where('tipo_documento', '01')
                 ->where('serie', $data['serie'])
@@ -108,8 +108,10 @@ class CreateInvoiceAction
             Cache::forget("tenant:{$tenant->id}:sunat_count:" . now()->format('Y-m'));
             app(PlanService::class)->incrementUsage($tenant, 'documents');
 
-            SendDocumentToSunat::dispatch(Invoice::class, $invoice->id);
-            $invoice->update(['sunat_status' => 'enviado']);
+            if ($enviarAutomatico) {
+                SendDocumentToSunat::dispatch(Invoice::class, $invoice->id);
+                $invoice->update(['sunat_status' => 'enviado']);
+            }
 
             if (! empty($data['pagos'])) {
                 $this->paymentAction->execute($invoice, $data['pagos']);

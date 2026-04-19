@@ -12,9 +12,9 @@ class CreateDispatchGuideAction
 {
     use Concerns\ResolvesEmisionDateTime;
 
-    public function execute(Tenant $tenant, array $data): DispatchGuide
+    public function execute(Tenant $tenant, array $data, bool $enviarAutomatico = true): DispatchGuide
     {
-        return DB::transaction(function () use ($tenant, $data) {
+        return DB::transaction(function () use ($tenant, $data, $enviarAutomatico) {
             // tipo_documento: '09' (GRR) default o '31' (GRT)
             $tipoDocumento = $data['tipo_documento'] ?? '09';
 
@@ -71,8 +71,10 @@ class CreateDispatchGuideAction
                 'sunat_status' => 'pendiente',
             ]);
 
-            SendDispatchGuideToSunat::dispatch($guide->id);
-            $guide->update(['sunat_status' => 'enviado']);
+            if ($enviarAutomatico) {
+                SendDispatchGuideToSunat::dispatch($guide->id);
+                $guide->update(['sunat_status' => 'enviado']);
+            }
 
             return $guide->fresh();
         });

@@ -8,6 +8,7 @@ use App\Actions\Documents\CreateRetentionAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreRetentionRequest;
 use App\Http\Traits\ApiResponse;
+use App\Jobs\SendRetentionToSunat;
 use App\Models\Retention;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,18 +21,47 @@ class RetentionController extends Controller
     public function store(StoreRetentionRequest $request, CreateRetentionAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
+        $enviarAuto = $request->boolean('enviar_automatico', true);
 
         try {
-            $retention = $action->execute($tenant, $request->validated());
+            $retention = $action->execute($tenant, $request->validated(), $enviarAuto);
+
+            $msg = $enviarAuto
+                ? 'Retención creada y encolada para envío a SUNAT.'
+                : 'Retención creada en estado pendiente. Use POST /retentions/{id}/enviar para enviarla a SUNAT.';
 
             return response()->json([
                 'success' => true,
-                'message' => 'Retención creada y encolada para envío a SUNAT.',
+                'message' => $msg,
                 'data' => $this->formatRetention($retention),
             ], 201);
         } catch (\Throwable $e) {
             return $this->error('Error al crear retención: ' . $e->getMessage(), 500);
         }
+    }
+
+    public function enviar(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $retention = Retention::forTenant($tenant->id)->findOrFail($id);
+
+        if ($retention->sunat_status === 'aceptado') {
+            return $this->error('Esta retención ya fue aceptada por SUNAT.', 422);
+        }
+
+        $retention->update([
+            'sunat_status' => 'pendiente',
+            'sunat_code' => null,
+            'sunat_description' => null,
+        ]);
+
+        SendRetentionToSunat::dispatch($retention->id);
+        $retention->update(['sunat_status' => 'enviado']);
+
+        return $this->success(
+            $this->formatRetention($retention->fresh()),
+            'Retención enviada a SUNAT.'
+        );
     }
 
     public function index(Request $request): JsonResponse

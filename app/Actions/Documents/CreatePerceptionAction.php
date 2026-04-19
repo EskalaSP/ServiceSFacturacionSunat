@@ -16,9 +16,9 @@ class CreatePerceptionAction
 {
     use Concerns\ResolvesEmisionDateTime;
 
-    public function execute(Tenant $tenant, array $data): Perception
+    public function execute(Tenant $tenant, array $data, bool $enviarAutomatico = true): Perception
     {
-        return DB::transaction(function () use ($tenant, $data) {
+        return DB::transaction(function () use ($tenant, $data, $enviarAutomatico) {
             $serie = Serie::where('tenant_id', $tenant->id)
                 ->where('tipo_documento', '40')
                 ->where('serie', $data['serie'])
@@ -79,8 +79,10 @@ class CreatePerceptionAction
             Cache::forget("tenant:{$tenant->id}:sunat_count:" . now()->format('Y-m'));
             app(PlanService::class)->incrementUsage($tenant, 'documents');
 
-            SendPerceptionToSunat::dispatch($perception->id);
-            $perception->update(['sunat_status' => 'enviado']);
+            if ($enviarAutomatico) {
+                SendPerceptionToSunat::dispatch($perception->id);
+                $perception->update(['sunat_status' => 'enviado']);
+            }
 
             return $perception->fresh('items');
         });
