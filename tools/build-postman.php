@@ -211,8 +211,8 @@ $setupItems = [
     ], 'Reemplaza el certificado .pfx. Útil al renovar el cert anual.'),
 
     // Buscar documento (RUC/DNI)
-    reqSimple('Buscar RUC / DNI', 'GET', 'buscar-documento?tipo_doc=6&num_doc=20512345678',
-        'Consulta local + SUNAT/RENIEC. Si existe en BD lo devuelve; si no, llama a SUNAT/RENIEC y lo guarda.'),
+    reqSimple('Buscar RUC / DNI', 'GET', 'buscar-documento?tipo=6&numero=20512345678',
+        'Consulta local + SUNAT/RENIEC. Si existe en BD lo devuelve; si no, llama a SUNAT/RENIEC y lo guarda. Params: tipo (1=DNI, 4=CE, 6=RUC, 7=Pasaporte) + numero.'),
 ];
 
 // ============================================================================
