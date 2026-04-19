@@ -64,4 +64,87 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(function ($request, $e) {
             return $request->is('api/*') || $request->expectsJson();
         });
+
+        // Formato español unificado para todas las excepciones en rutas /api/*.
+        // Sobrescribe el default de Laravel ({"message": "Server Error"}) con
+        // nuestro wrapper {"estado": "error", "mensaje": "...", ...}.
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null; // Dejar que Laravel renderice normal (HTML)
+            }
+
+            // ValidationException: mantener 422 con 'errores'
+            if ($e instanceof \Illuminate\Validation\ValidationException) {
+                return response()->json([
+                    'estado' => 'error',
+                    'mensaje' => 'Error de validación',
+                    'errores' => $e->errors(),
+                ], 422);
+            }
+
+            // ModelNotFoundException / NotFoundHttpException → 404
+            if ($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException
+                || $e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+                return response()->json([
+                    'estado' => 'error',
+                    'mensaje' => 'Recurso no encontrado.',
+                ], 404);
+            }
+
+            // AuthenticationException → 401
+            if ($e instanceof \Illuminate\Auth\AuthenticationException) {
+                return response()->json([
+                    'estado' => 'error',
+                    'mensaje' => 'No autenticado.',
+                ], 401);
+            }
+
+            // AuthorizationException → 403
+            if ($e instanceof \Illuminate\Auth\Access\AuthorizationException) {
+                return response()->json([
+                    'estado' => 'error',
+                    'mensaje' => 'No autorizado.',
+                ], 403);
+            }
+
+            // MethodNotAllowedHttpException → 405
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException) {
+                return response()->json([
+                    'estado' => 'error',
+                    'mensaje' => 'Método HTTP no permitido para esta ruta.',
+                ], 405);
+            }
+
+            // ThrottleRequestsException → 429
+            if ($e instanceof \Illuminate\Http\Exceptions\ThrottleRequestsException) {
+                return response()->json([
+                    'estado' => 'error',
+                    'mensaje' => 'Demasiadas solicitudes. Intenta de nuevo más tarde.',
+                ], 429);
+            }
+
+            // HttpException genérico (abort(403), abort(404) con mensaje, etc.)
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                $status = $e->getStatusCode();
+                return response()->json([
+                    'estado' => 'error',
+                    'mensaje' => $e->getMessage() ?: 'Error.',
+                ], $status);
+            }
+
+            // Fallback: 500 Internal Server Error
+            $response = [
+                'estado' => 'error',
+                'mensaje' => 'Error interno del servidor.',
+            ];
+
+            // En debug: incluir detalles del error
+            if (config('app.debug')) {
+                $response['excepcion'] = get_class($e);
+                $response['detalle'] = $e->getMessage();
+                $response['archivo'] = $e->getFile() . ':' . $e->getLine();
+            }
+
+            return response()->json($response, 500);
+        });
     })->create();
