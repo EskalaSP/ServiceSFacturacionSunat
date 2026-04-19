@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -94,17 +95,23 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        // Schema::disableForeignKeyConstraints() es portable: en MySQL hace
+        // SET FOREIGN_KEY_CHECKS=0; en PostgreSQL setea session_replication_role.
+        Schema::disableForeignKeyConstraints();
 
-        DB::table('invoice_items')->truncate();
-        DB::table('invoices')->truncate();
-        DB::table('boleta_items')->truncate();
-        DB::table('boletas')->truncate();
-        DB::table('credit_note_items')->truncate();
-        DB::table('credit_notes')->truncate();
-        DB::table('debit_note_items')->truncate();
-        DB::table('debit_notes')->truncate();
+        $tables = [
+            'invoice_items', 'invoices',
+            'boleta_items', 'boletas',
+            'credit_note_items', 'credit_notes',
+            'debit_note_items', 'debit_notes',
+        ];
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        foreach ($tables as $table) {
+            if (Schema::hasTable($table)) {
+                DB::table($table)->truncate();
+            }
+        }
+
+        Schema::enableForeignKeyConstraints();
     }
 };
