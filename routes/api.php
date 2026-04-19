@@ -115,23 +115,23 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::post('anulaciones/{id}/enviar', [VoidedController::class, 'enviar']);
 
     // Retenciones (20)
-    Route::post('retentions', [RetentionController::class, 'store'])->middleware('check.limit:sunat');
-    Route::get('retentions', [RetentionController::class, 'index']);
-    Route::get('retentions/{id}', [RetentionController::class, 'show']);
-    Route::get('retentions/{id}/xml', [RetentionController::class, 'xml']);
-    Route::get('retentions/{id}/cdr', [RetentionController::class, 'cdr']);
-    Route::post('retentions/{id}/enviar', [RetentionController::class, 'enviar']);
+    Route::post('retenciones', [RetentionController::class, 'store'])->middleware('check.limit:sunat');
+    Route::get('retenciones', [RetentionController::class, 'index']);
+    Route::get('retenciones/{id}', [RetentionController::class, 'show']);
+    Route::get('retenciones/{id}/xml', [RetentionController::class, 'xml']);
+    Route::get('retenciones/{id}/cdr', [RetentionController::class, 'cdr']);
+    Route::post('retenciones/{id}/enviar', [RetentionController::class, 'enviar']);
 
     // Percepciones (40)
-    Route::post('perceptions', [PerceptionController::class, 'store'])->middleware('check.limit:sunat');
-    Route::get('perceptions', [PerceptionController::class, 'index']);
-    Route::get('perceptions/{id}', [PerceptionController::class, 'show']);
-    Route::get('perceptions/{id}/xml', [PerceptionController::class, 'xml']);
-    Route::get('perceptions/{id}/cdr', [PerceptionController::class, 'cdr']);
-    Route::post('perceptions/{id}/enviar', [PerceptionController::class, 'enviar']);
+    Route::post('percepciones', [PerceptionController::class, 'store'])->middleware('check.limit:sunat');
+    Route::get('percepciones', [PerceptionController::class, 'index']);
+    Route::get('percepciones/{id}', [PerceptionController::class, 'show']);
+    Route::get('percepciones/{id}/xml', [PerceptionController::class, 'xml']);
+    Route::get('percepciones/{id}/cdr', [PerceptionController::class, 'cdr']);
+    Route::post('percepciones/{id}/enviar', [PerceptionController::class, 'enviar']);
 
     // Reversión (RR) — Anulación de retenciones y percepciones
-    Route::post('reversions', [ReversionController::class, 'store'])->middleware('check.limit:sunat');
+    Route::post('reversiones', [ReversionController::class, 'store'])->middleware('check.limit:sunat');
 
     // Consultar CDR en SUNAT
     Route::post('consultar-cdr', [ConsultController::class, 'cdrStatus']);

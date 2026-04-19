@@ -14,8 +14,8 @@
 
 declare(strict_types=1);
 
-const COLLECTION_BASE = __DIR__ . '/../API SUNAT PRO V2 ⭐⭐⭐⭐⭐.postman_collection.json';
-const COLLECTION_OUT  = __DIR__ . '/../API SUNAT PRO V2.1 ⭐⭐⭐⭐⭐.postman_collection.json';
+const COLLECTION_BASE = __DIR__ . '/../API SUNAT PRO V2.1 ✅✅✅✅✅.postman_collection.json';
+const COLLECTION_OUT  = __DIR__ . '/../API SUNAT PRO V2.1 ✅✅✅✅✅.postman_collection.json';
 
 // ============================================================================
 // HELPERS
@@ -23,6 +23,7 @@ const COLLECTION_OUT  = __DIR__ . '/../API SUNAT PRO V2.1 ⭐⭐⭐⭐⭐.postma
 
 function headerJson(): array {
     return [
+        ['key' => 'Accept', 'value' => 'application/json', 'type' => 'text'],
         ['key' => 'Content-Type', 'value' => 'application/json', 'type' => 'text'],
         ['key' => 'X-Api-Key', 'value' => '{{api_key}}', 'type' => 'text'],
         ['key' => 'X-Api-Secret', 'value' => '{{api_secret}}', 'type' => 'text'],
@@ -31,6 +32,7 @@ function headerJson(): array {
 
 function headerAuth(): array {
     return [
+        ['key' => 'Accept', 'value' => 'application/json', 'type' => 'text'],
         ['key' => 'X-Api-Key', 'value' => '{{api_key}}', 'type' => 'text'],
         ['key' => 'X-Api-Secret', 'value' => '{{api_secret}}', 'type' => 'text'],
     ];
@@ -141,29 +143,16 @@ function findExistingFolder(array $existing, string $nameSubstring): ?array {
 }
 
 // ============================================================================
-// CARGAR COLECCIÓN BASE + FIXES de bugs detectados
+// COLECCIÓN BASE (opcional — si no existe, arrancamos desde cero)
 // ============================================================================
 
-function fixOriginalUrls(array $item): array {
-    if (isset($item['item'])) {
-        $item['item'] = array_map('fixOriginalUrls', $item['item']);
-        return $item;
+$existing = ['item' => []];
+if (file_exists(COLLECTION_BASE)) {
+    $loaded = json_decode(file_get_contents(COLLECTION_BASE), true);
+    if (is_array($loaded)) {
+        $existing = $loaded;
     }
-    $url = $item['request']['url']['raw'] ?? '';
-    $name = $item['name'] ?? '';
-    // Bug: "Boleta con ICBPER" tiene URL /documentos en lugar de /boletas
-    if ($name === 'Boleta con ICBPER' && str_contains($url, '/documentos')) {
-        $item['request']['url'] = buildUrl('boletas');
-    }
-    // Bug: trailing slash en /notas-credito/
-    if (preg_match('#/notas-credito/$#', $url)) {
-        $item['request']['url'] = buildUrl('notas-credito');
-    }
-    return $item;
 }
-
-$existing = json_decode(file_get_contents(COLLECTION_BASE), true);
-$existing['item'] = array_map('fixOriginalUrls', $existing['item']);
 
 // ============================================================================
 // SECCIÓN 01 — SETUP / CONFIGURACIÓN INICIAL
@@ -277,28 +266,27 @@ $seriesItems = [
 // ============================================================================
 
 $clientesItems = [
-    reqJson('Crear cliente', 'POST', 'clientes', [
-        'tipo_doc' => '6',
-        'num_doc' => '20512345678',
+    reqJson('Crear cliente (RUC)', 'POST', 'clientes', [
+        'tipo_documento' => '6',
+        'numero_documento' => '20512345678',
         'razon_social' => 'EMPRESA DEMO SAC',
         'nombre_comercial' => 'DEMO',
         'direccion' => 'AV. AREQUIPA 1234, LIMA',
-        'ubigeo' => '150101',
         'email' => 'contacto@demo.pe',
         'telefono' => '+51 999 111 222',
-    ], 'Cat. 06 tipo_doc: 0=Otros, 1=DNI, 4=Carnet ext., 6=RUC, 7=Pasaporte, A=Cédula diplomática.'),
+    ], 'Cat. 06 tipo_documento: 0=Otros, 1=DNI, 4=Carnet ext., 6=RUC, 7=Pasaporte, A=Cédula diplomática.'),
 
     reqJson('Crear cliente persona natural (DNI)', 'POST', 'clientes', [
-        'tipo_doc' => '1',
-        'num_doc' => '12345678',
+        'tipo_documento' => '1',
+        'numero_documento' => '12345678',
         'razon_social' => 'JUAN PEREZ LOPEZ',
         'direccion' => 'JR. AYACUCHO 456, LIMA',
         'email' => 'juan@gmail.com',
     ]),
 
     reqSimple('Listar clientes', 'GET', 'clientes'),
-    reqSimple('Buscar cliente por num_doc', 'GET', 'clientes?num_doc=20512345678'),
-    reqSimple('Ver cliente {id}', 'GET', 'clientes/1'),
+    reqSimple('Buscar cliente por nombre/documento', 'GET', 'clientes?buscar=demo'),
+    reqSimple('Ver cliente por id', 'GET', 'clientes/1'),
     reqJson('Actualizar cliente', 'PUT', 'clientes/1', [
         'razon_social' => 'EMPRESA DEMO SAC ACTUALIZADA',
         'email' => 'nuevo@demo.pe',
@@ -343,16 +331,26 @@ $regimenItems = [
 
 $suscripcionItems = [
     reqSimple('Ver suscripción actual', 'GET', 'suscripcion'),
-    reqJson('Crear / activar suscripción', 'POST', 'suscripcion', [
-        'plan_codigo' => 'business',
-        'metodo_pago' => 'transferencia',
+
+    reqJson('Crear / activar suscripción (con trial de 14 días)', 'POST', 'suscripcion', [
+        'plan_slug' => 'business',
+        'ciclo_facturacion' => 'monthly',
+        'prueba' => true,
+    ], 'plan_slug: free | pro | business. ciclo_facturacion: monthly | yearly. prueba=true activa trial 14 días gratis.'),
+
+    reqJson('Crear suscripción pagada', 'POST', 'suscripcion', [
+        'plan_slug' => 'pro',
+        'ciclo_facturacion' => 'yearly',
+        'token' => 'tok_xxx_del_gateway_de_pagos',
     ]),
+
     reqJson('Cambiar de plan', 'PUT', 'suscripcion/cambiar-plan', [
-        'plan_codigo' => 'enterprise',
+        'plan_slug' => 'business',
+        'ciclo_facturacion' => 'monthly',
     ]),
-    reqJson('Cancelar suscripción', 'PUT', 'suscripcion/cancelar', [
-        'motivo' => 'Cambio de proveedor',
-    ]),
+
+    reqJson('Cancelar suscripción', 'PUT', 'suscripcion/cancelar', []),
+
     reqSimple('Historial de pagos', 'GET', 'suscripcion/pagos'),
     reqSimple('Uso del mes (límites del plan)', 'GET', 'suscripcion/uso',
         'Contadores: documentos emitidos vs límite del plan.'),
@@ -379,8 +377,8 @@ $suscripcion = folder('03. Suscripción y planes', $suscripcionItems);
 $collection = [
     'info' => [
         '_postman_id' => '697a279b-e275-41bc-ad44-5e3e948ff26f',
-        'name' => 'API SUNAT PRO V2.1 ⭐⭐⭐⭐⭐',
-        'description' => "Colección completa para API-PRO de facturación electrónica SUNAT Perú.\n\nCobertura: TODAS las rutas de v1, ~200 ejemplos realistas, agrupado por flujo de uso.\n\n**Variables de entorno requeridas:**\n- `base_url` → http://api-pro.test/api/v1(local) o tu URL de producción\n- `api_key` → X-Api-Key del tenant\n- `api_secret` → X-Api-Secret del tenant\n\nReferencia: documentacion/README.md",
+        'name' => 'API SUNAT PRO V2.1 ✅✅✅✅✅',
+        'description' => "Colección completa en español para API SUNAT PRO — facturación electrónica Perú.\n\n**Cobertura**: todas las rutas /api/v1 con ejemplos realistas, agrupado por flujo de uso.\n\n**Formato de respuestas**:\n```json\n{\n  \"estado\": \"exito\" | \"error\",\n  \"mensaje\": \"texto\",\n  \"datos\": {...} | [...],\n  \"meta\": {...}         (paginación — opcional),\n  \"errores\": {...}      (detalles de validación — solo en errores)\n}\n```\n\n**Variables de entorno requeridas**:\n- `base_url` → `https://api.kodevo.es/sunat-api/api/v1` (producción) o `http://api-pro.test/api/v1` (local)\n- `api_key` → X-Api-Key de la empresa\n- `api_secret` → X-Api-Secret de la empresa\n\n**Documentación completa**: `documentacion/README.md`",
         'schema' => 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
         '_exporter_id' => '20633485',
     ],
@@ -394,10 +392,10 @@ $collection = [
         // ↓ aquí se inyectan dinámicamente todas las demás secciones
     ],
     'variable' => [
-        ['key' => 'base_url', 'value' => 'http://api-pro.test/api/v1', 'type' => 'string'],
+        ['key' => 'base_url', 'value' => 'https://api.kodevo.es/sunat-api/api/v1', 'type' => 'string'],
         ['key' => 'api_key', 'value' => '', 'type' => 'string'],
         ['key' => 'api_secret', 'value' => '', 'type' => 'string'],
-        ['key' => 'tenant_ruc', 'value' => '20100000001', 'type' => 'string'],
+        ['key' => 'ruc_empresa', 'value' => '20100000001', 'type' => 'string'],
         ['key' => 'periodo', 'value' => '202604', 'type' => 'string'],
         ['key' => 'num_ticket', 'value' => '', 'type' => 'string'],
     ],

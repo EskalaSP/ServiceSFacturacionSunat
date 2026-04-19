@@ -72,7 +72,7 @@ class DebitNoteController extends Controller
         $debitNotes = $query->paginate($request->integer('por_pagina', 15));
 
         return $this->success([
-            'data' => DebitNoteResource::collection($debitNotes),
+            'datos' => DebitNoteResource::collection($debitNotes),
             'paginacion' => [
                 'pagina_actual' => $debitNotes->currentPage(),
                 'ultima_pagina' => $debitNotes->lastPage(),

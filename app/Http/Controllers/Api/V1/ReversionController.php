@@ -42,9 +42,9 @@ class ReversionController extends Controller
         $errors = $this->validateDetalles($tenant->id, $validated['detalles']);
         if (! empty($errors)) {
             return response()->json([
-                'success' => false,
-                'message' => 'No se puede anular: ' . implode(' ', $errors),
-                'errors' => $errors,
+                'estado' => 'error',
+                'mensaje' => 'No se puede anular: ' . implode(' ', $errors),
+                'errores' => $errors,
             ], 422);
         }
 
@@ -81,9 +81,9 @@ class ReversionController extends Controller
                 : 'Reversión creada en estado pendiente. Use POST /anulaciones/{id}/enviar para enviarla a SUNAT.';
 
             return response()->json([
-                'success' => true,
-                'message' => $message,
-                'data' => [
+                'estado' => 'exito',
+                'mensaje' => $message,
+                'datos' => [
                     'voided_id' => $voided->id,
                     'identifier' => $identifier,
                     'correlativo' => $correlativo,

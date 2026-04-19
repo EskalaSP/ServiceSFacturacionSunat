@@ -31,9 +31,9 @@ class PerceptionController extends Controller
                 : 'Percepción creada en estado pendiente. Use POST /perceptions/{id}/enviar para enviarla a SUNAT.';
 
             return response()->json([
-                'success' => true,
-                'message' => $msg,
-                'data' => $this->formatPerception($perception),
+                'estado' => 'exito',
+                'mensaje' => $msg,
+                'datos' => $this->formatPerception($perception),
             ], 201);
         } catch (\Throwable $e) {
             return $this->error('Error al crear percepción: ' . $e->getMessage(), 500);
@@ -92,12 +92,12 @@ class PerceptionController extends Controller
         $perceptions = $query->paginate($request->integer('per_page', 15));
 
         return $this->success([
-            'data' => $perceptions->map(fn (Perception $p) => $this->formatPerception($p)),
-            'pagination' => [
+            'datos' => $perceptions->map(fn (Perception $p) => $this->formatPerception($p)),
+            'paginacion' => [
                 'total' => $perceptions->total(),
-                'current_page' => $perceptions->currentPage(),
-                'last_page' => $perceptions->lastPage(),
-                'per_page' => $perceptions->perPage(),
+                'pagina_actual' => $perceptions->currentPage(),
+                'ultima_pagina' => $perceptions->lastPage(),
+                'por_pagina' => $perceptions->perPage(),
             ],
         ]);
     }

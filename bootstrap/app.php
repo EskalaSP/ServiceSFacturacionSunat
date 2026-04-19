@@ -3,6 +3,7 @@
 use App\Http\Middleware\CheckDocumentLimit;
 use App\Http\Middleware\CheckPlanLimit;
 use App\Http\Middleware\EnsureSireEnabled;
+use App\Http\Middleware\ForceJsonAccept;
 use App\Http\Middleware\UsageWarningHeader;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -42,12 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Sin esto, si el cliente no manda "Accept: application/json" y hay un error
         // de validación (422) o 404, Laravel redirige/renderiza HTML en vez de devolver
         // JSON con los detalles del error.
-        $middleware->prepend(function ($request, $next) {
-            if ($request->is('api/*')) {
-                $request->headers->set('Accept', 'application/json');
-            }
-            return $next($request);
-        });
+        $middleware->prepend(ForceJsonAccept::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Devolver JSON para cualquier excepción en rutas /api/*

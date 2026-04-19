@@ -72,7 +72,7 @@ class CreditNoteController extends Controller
         $creditNotes = $query->paginate($request->integer('por_pagina', 15));
 
         return $this->success([
-            'data' => CreditNoteResource::collection($creditNotes),
+            'datos' => CreditNoteResource::collection($creditNotes),
             'paginacion' => [
                 'pagina_actual' => $creditNotes->currentPage(),
                 'ultima_pagina' => $creditNotes->lastPage(),

@@ -36,9 +36,9 @@ class VoidedController extends Controller
             $errors = $this->validateDetalles($tenant->id, $validated['detalles']);
             if (! empty($errors)) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede anular: '.implode(' ', $errors),
-                    'errors' => $errors,
+                    'estado' => 'error',
+                    'mensaje' => 'No se puede anular: '.implode(' ', $errors),
+                    'errores' => $errors,
                 ], 422);
             }
 
@@ -73,9 +73,9 @@ class VoidedController extends Controller
                 : 'Comunicación de baja creada en estado pendiente. Use POST /anulaciones/{id}/enviar para enviarla a SUNAT.';
 
             return response()->json([
-                'success' => true,
-                'message' => $message,
-                'data' => [
+                'estado' => 'exito',
+                'mensaje' => $message,
+                'datos' => [
                     'id_anulacion' => $voided->id,
                     'identifier' => $identifier,
                     'correlativo' => $correlativo,
@@ -241,9 +241,9 @@ class VoidedController extends Controller
         $voided->update(['sunat_status' => 'enviado']);
 
         return response()->json([
-            'success' => true,
-            'message' => $isReversion ? 'Reversión enviada a SUNAT.' : 'Comunicación de baja enviada a SUNAT.',
-            'data' => [
+            'estado' => 'exito',
+            'mensaje' => $isReversion ? 'Reversión enviada a SUNAT.' : 'Comunicación de baja enviada a SUNAT.',
+            'datos' => [
                 'id_anulacion' => $voided->id,
                 'identifier' => $voided->identifier,
                 'estado_sunat' => 'enviado',
@@ -258,8 +258,8 @@ class VoidedController extends Controller
         $voided = VoidedDocument::where('tenant_id', $tenant->id)->findOrFail($id);
 
         return response()->json([
-            'success' => true,
-            'data' => [
+            'estado' => 'exito',
+            'datos' => [
                 'id_anulacion' => $voided->id,
                 'identifier' => $voided->identifier,
                 'correlativo' => $voided->correlativo,
@@ -297,13 +297,13 @@ class VoidedController extends Controller
         $anulaciones = $query->orderByDesc('id')->paginate((int) $request->input('per_page', 15));
 
         return response()->json([
-            'success' => true,
-            'data' => $anulaciones->items(),
+            'estado' => 'exito',
+            'datos' => $anulaciones->items(),
             'meta' => [
-                'current_page' => $anulaciones->currentPage(),
-                'per_page' => $anulaciones->perPage(),
+                'pagina_actual' => $anulaciones->currentPage(),
+                'por_pagina' => $anulaciones->perPage(),
                 'total' => $anulaciones->total(),
-                'last_page' => $anulaciones->lastPage(),
+                'ultima_pagina' => $anulaciones->lastPage(),
             ],
         ]);
     }

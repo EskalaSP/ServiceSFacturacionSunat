@@ -12,7 +12,7 @@ class PlanSeeder extends Seeder
         $plans = [
             [
                 'slug' => 'free',
-                'name' => 'Free',
+                'name' => 'Gratis',
                 'price_monthly' => 0,
                 'price_yearly' => 0,
                 'sort_order' => 0,
@@ -46,7 +46,7 @@ class PlanSeeder extends Seeder
             ],
             [
                 'slug' => 'pro',
-                'name' => 'Pro',
+                'name' => 'Profesional',
                 'price_monthly' => 29.00,
                 'price_yearly' => 290.00,
                 'sort_order' => 1,
@@ -90,7 +90,7 @@ class PlanSeeder extends Seeder
             ],
             [
                 'slug' => 'business',
-                'name' => 'Business',
+                'name' => 'Empresarial',
                 'price_monthly' => 79.00,
                 'price_yearly' => 790.00,
                 'sort_order' => 2,

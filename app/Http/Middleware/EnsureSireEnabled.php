@@ -23,16 +23,16 @@ class EnsureSireEnabled
 
         if (! $tenant) {
             return response()->json([
-                'success' => false,
-                'message' => 'Tenant no resuelto.',
+                'estado' => 'error',
+                'mensaje' => 'Empresa no resuelta.',
             ], 401);
         }
 
         if (! $tenant->sire_enabled) {
             return response()->json([
-                'success'    => false,
-                'message'    => 'SIRE no está activado para este tenant. Llama primero a POST /v1/sire/activar con credenciales válidas.',
-                'error_code' => 'sire_not_enabled',
+                'estado'     => 'error',
+                'mensaje'    => 'SIRE no está activado para esta empresa. Llama primero a POST /v1/sire/activar con credenciales válidas.',
+                'codigo_error' => 'sire_no_activado',
             ], 403);
         }
 

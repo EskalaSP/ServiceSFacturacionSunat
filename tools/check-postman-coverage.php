@@ -2,7 +2,7 @@
 
 // Inventario y verificación de cobertura: rutas API vs colección Postman.
 
-$collFile = __DIR__ . '/../API SUNAT PRO V2.1 ⭐⭐⭐⭐⭐.postman_collection.json';
+$collFile = __DIR__ . '/../API SUNAT PRO V2.1 ✅✅✅✅✅.postman_collection.json';
 $coll = json_decode(file_get_contents($collFile), true);
 
 // 1) Inventario por folder

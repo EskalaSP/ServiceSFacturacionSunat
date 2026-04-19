@@ -30,7 +30,7 @@ class ClientController extends Controller
         $clients = $query->paginate($request->integer('por_pagina', 15));
 
         return $this->success([
-            'data' => ClientResource::collection($clients),
+            'datos' => ClientResource::collection($clients),
             'paginacion' => [
                 'pagina_actual' => $clients->currentPage(),
                 'ultima_pagina' => $clients->lastPage(),

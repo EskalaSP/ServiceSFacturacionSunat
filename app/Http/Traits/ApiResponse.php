@@ -4,33 +4,51 @@ namespace App\Http\Traits;
 
 use Illuminate\Http\JsonResponse;
 
+/**
+ * Formato unificado de respuestas de la API en español.
+ *
+ * Estructura estándar:
+ *   {
+ *     "estado":  "exito" | "error",
+ *     "mensaje": "texto humano",
+ *     "datos":   {} | [] | null,
+ *     "meta":    {}        (paginación/cursor/otros - opcional),
+ *     "errores": {}        (solo cuando estado=error con detalles - opcional)
+ *   }
+ */
 trait ApiResponse
 {
-    protected function success(mixed $data = null, string $message = 'OK', int $code = 200): JsonResponse
+    protected function success(mixed $datos = null, string $mensaje = 'OK', int $codigo = 200, ?array $meta = null): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => $message,
-            'data' => $data,
-        ], $code);
-    }
-
-    protected function created(mixed $data = null, string $message = 'Creado exitosamente'): JsonResponse
-    {
-        return $this->success($data, $message, 201);
-    }
-
-    protected function error(string $message = 'Error', int $code = 400, mixed $errors = null): JsonResponse
-    {
-        $response = [
-            'success' => false,
-            'message' => $message,
+        $cuerpo = [
+            'estado' => 'exito',
+            'mensaje' => $mensaje,
+            'datos' => $datos,
         ];
 
-        if ($errors) {
-            $response['errors'] = $errors;
+        if ($meta !== null) {
+            $cuerpo['meta'] = $meta;
         }
 
-        return response()->json($response, $code);
+        return response()->json($cuerpo, $codigo);
+    }
+
+    protected function created(mixed $datos = null, string $mensaje = 'Creado exitosamente'): JsonResponse
+    {
+        return $this->success($datos, $mensaje, 201);
+    }
+
+    protected function error(string $mensaje = 'Error', int $codigo = 400, mixed $errores = null): JsonResponse
+    {
+        $cuerpo = [
+            'estado' => 'error',
+            'mensaje' => $mensaje,
+        ];
+
+        if ($errores) {
+            $cuerpo['errores'] = $errores;
+        }
+
+        return response()->json($cuerpo, $codigo);
     }
 }

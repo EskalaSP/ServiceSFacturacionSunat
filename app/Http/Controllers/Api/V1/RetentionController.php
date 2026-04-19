@@ -31,9 +31,9 @@ class RetentionController extends Controller
                 : 'Retención creada en estado pendiente. Use POST /retentions/{id}/enviar para enviarla a SUNAT.';
 
             return response()->json([
-                'success' => true,
-                'message' => $msg,
-                'data' => $this->formatRetention($retention),
+                'estado' => 'exito',
+                'mensaje' => $msg,
+                'datos' => $this->formatRetention($retention),
             ], 201);
         } catch (\Throwable $e) {
             return $this->error('Error al crear retención: ' . $e->getMessage(), 500);
@@ -92,12 +92,12 @@ class RetentionController extends Controller
         $retentions = $query->paginate($request->integer('per_page', 15));
 
         return $this->success([
-            'data' => $retentions->map(fn (Retention $r) => $this->formatRetention($r)),
-            'pagination' => [
+            'datos' => $retentions->map(fn (Retention $r) => $this->formatRetention($r)),
+            'paginacion' => [
                 'total' => $retentions->total(),
-                'current_page' => $retentions->currentPage(),
-                'last_page' => $retentions->lastPage(),
-                'per_page' => $retentions->perPage(),
+                'pagina_actual' => $retentions->currentPage(),
+                'ultima_pagina' => $retentions->lastPage(),
+                'por_pagina' => $retentions->perPage(),
             ],
         ]);
     }

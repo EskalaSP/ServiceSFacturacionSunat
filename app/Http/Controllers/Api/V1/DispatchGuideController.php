@@ -97,7 +97,7 @@ class DispatchGuideController extends Controller
             ->paginate($request->integer('por_pagina', 15));
 
         return $this->success([
-            'data' => DispatchGuideResource::collection($guides),
+            'datos' => DispatchGuideResource::collection($guides),
             'paginacion' => [
                 'pagina_actual' => $guides->currentPage(),
                 'ultima_pagina' => $guides->lastPage(),

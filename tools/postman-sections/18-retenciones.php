@@ -7,7 +7,7 @@
 declare(strict_types=1);
 
 $items = [
-    reqJson('Crear retención (régimen general 3%)', 'POST', 'retentions', [
+    reqJson('Crear retención (régimen general 3%)', 'POST', 'retenciones', [
         'serie' => 'R001',
         'fecha_emision' => '2026-04-19',
         'cod_local' => '0000',
@@ -34,7 +34,7 @@ $items = [
         ]],
     ], 'Cat. 23 régimen: 01=Tasa Especial 3%. La API calcula imp_retenido si no se envía.'),
 
-    reqJson('Crear retención múltiples documentos', 'POST', 'retentions', [
+    reqJson('Crear retención múltiples documentos', 'POST', 'retenciones', [
         'serie' => 'R001',
         'fecha_emision' => '2026-04-19',
         'cod_local' => '0000',
@@ -59,7 +59,7 @@ $items = [
         ],
     ]),
 
-    reqJson('Retención envío manual', 'POST', 'retentions', [
+    reqJson('Retención envío manual', 'POST', 'retenciones', [
         'serie' => 'R001',
         'fecha_emision' => '2026-04-19',
         'cod_local' => '0000',
@@ -74,12 +74,12 @@ $items = [
         'enviar_automatico' => false,
     ]),
 
-    reqSimple('Listar retenciones', 'GET', 'retentions?per_page=15'),
-    reqSimple('Filtrar retenciones por proveedor', 'GET', 'retentions?proveedor_num_doc=20987654321'),
-    reqSimple('Ver retención por ID', 'GET', 'retentions/1'),
-    reqSimple('Descargar XML', 'GET', 'retentions/1/xml'),
-    reqSimple('Descargar CDR', 'GET', 'retentions/1/cdr'),
-    reqSimple('Enviar a SUNAT (manual)', 'POST', 'retentions/1/enviar'),
+    reqSimple('Listar retenciones', 'GET', 'retenciones?per_page=15'),
+    reqSimple('Filtrar retenciones por proveedor', 'GET', 'retenciones?proveedor_num_doc=20987654321'),
+    reqSimple('Ver retención por ID', 'GET', 'retenciones/1'),
+    reqSimple('Descargar XML', 'GET', 'retenciones/1/xml'),
+    reqSimple('Descargar CDR', 'GET', 'retenciones/1/cdr'),
+    reqSimple('Enviar a SUNAT (manual)', 'POST', 'retenciones/1/enviar'),
 ];
 
 return [

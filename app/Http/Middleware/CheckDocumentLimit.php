@@ -107,14 +107,14 @@ class CheckDocumentLimit
         }
 
         return response()->json([
-            'success' => false,
-            'message' => $message,
-            'error_code' => 'usage_limit_reached',
+            'estado' => 'error',
+            'mensaje' => $message,
+            'codigo_error' => 'limite_alcanzado',
             'plan_actual' => $plan->slug,
-            'limit_key' => $limitKey,
-            'current' => $count,
-            'limit' => $limit,
-            'upgrade' => $nextPlan,
+            'recurso' => $limitKey,
+            'actual' => $count,
+            'limite' => $limit,
+            'mejora_plan' => $nextPlan,
         ], 429);
     }
 }

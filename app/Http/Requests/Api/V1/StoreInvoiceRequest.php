@@ -176,9 +176,9 @@ class StoreInvoiceRequest extends FormRequest
     protected function failedValidation(Validator $validator): void
     {
         throw new HttpResponseException(response()->json([
-            'success' => false,
-            'message' => 'Error de validación',
-            'errors' => $validator->errors(),
+            'estado' => 'error',
+            'mensaje' => 'Error de validación',
+            'errores' => $validator->errors(),
         ], 422));
     }
 }

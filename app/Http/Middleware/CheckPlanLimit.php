@@ -82,11 +82,11 @@ class CheckPlanLimit
             $price = $upgrade['price'] ?? 39;
 
             return response()->json([
-                'success' => false,
-                'message' => "Desbloquea {$label} por S/{$price} al mes.",
-                'error_code' => 'feature_not_available',
-                'feature' => $feature,
-                'upgrade' => $upgrade,
+                'estado' => 'error',
+                'mensaje' => "Desbloquea {$label} por S/{$price} al mes.",
+                'codigo_error' => 'caracteristica_no_disponible',
+                'caracteristica' => $feature,
+                'mejora_plan' => $upgrade,
             ], 403);
         }
 
@@ -104,13 +104,13 @@ class CheckPlanLimit
             $price = $upgrade['price'] ?? 39;
 
             return response()->json([
-                'success' => false,
-                'message' => "Has alcanzado el límite de {$label}. Más por S/{$price}/mes.",
-                'error_code' => 'usage_limit_reached',
-                'limit_key' => $limitKey,
-                'current' => $check['current'],
-                'limit' => $check['limit'],
-                'upgrade' => $upgrade,
+                'estado' => 'error',
+                'mensaje' => "Has alcanzado el límite de {$label}. Más por S/{$price}/mes.",
+                'codigo_error' => 'limite_alcanzado',
+                'recurso' => $limitKey,
+                'actual' => $check['current'],
+                'limite' => $check['limit'],
+                'mejora_plan' => $upgrade,
             ], 429);
         }
 

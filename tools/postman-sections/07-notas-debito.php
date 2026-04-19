@@ -6,7 +6,8 @@
 
 declare(strict_types=1);
 
-$existing = json_decode(file_get_contents(__DIR__ . '/../../API SUNAT PRO V2 ⭐⭐⭐⭐⭐.postman_collection.json'), true);
+$baseFile = __DIR__ . '/../../API SUNAT PRO V2.1 ✅✅✅✅✅.postman_collection.json';
+$existing = file_exists($baseFile) ? (json_decode(file_get_contents($baseFile), true) ?: ['item' => []]) : ['item' => []];
 
 $ndOriginal = null;
 foreach ($existing['item'] as $f) {

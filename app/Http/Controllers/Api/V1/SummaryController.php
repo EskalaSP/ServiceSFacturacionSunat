@@ -40,8 +40,8 @@ class SummaryController extends Controller
             ->paginate($request->query('por_pagina', 15));
 
         return response()->json([
-            'success' => true,
-            'data' => $summaries->map(fn (Summary $s) => [
+            'estado' => 'exito',
+            'datos' => $summaries->map(fn (Summary $s) => [
                 'id' => $s->id,
                 'identifier' => $s->identifier,
                 'tipo' => $s->tipo,
@@ -138,9 +138,9 @@ class SummaryController extends Controller
 
                 if (! empty($anulErrors)) {
                     return response()->json([
-                        'success' => false,
-                        'message' => 'No se puede anular: '.implode(' ', $anulErrors),
-                        'errors' => $anulErrors,
+                        'estado' => 'error',
+                        'mensaje' => 'No se puede anular: '.implode(' ', $anulErrors),
+                        'errores' => $anulErrors,
                     ], 422);
                 }
             } else {
@@ -190,9 +190,9 @@ class SummaryController extends Controller
                 : "{$messageBase} creado en estado pendiente. Use POST /resumenes/{id}/enviar para enviarlo a SUNAT.";
 
             return response()->json([
-                'success' => true,
-                'message' => $message,
-                'data' => [
+                'estado' => 'exito',
+                'mensaje' => $message,
+                'datos' => [
                     'id_resumen' => $summary->id,
                     'identifier' => $identifier,
                     'fecha_envio' => $fechaEnvio,
@@ -233,9 +233,9 @@ class SummaryController extends Controller
         $summary->update(['sunat_status' => 'enviado']);
 
         return response()->json([
-            'success' => true,
-            'message' => 'Resumen enviado a SUNAT.',
-            'data' => [
+            'estado' => 'exito',
+            'mensaje' => 'Resumen enviado a SUNAT.',
+            'datos' => [
                 'id_resumen' => $summary->id,
                 'identifier' => $summary->identifier,
                 'estado_sunat' => 'enviado',
@@ -254,8 +254,8 @@ class SummaryController extends Controller
             ->get(['id', 'serie', 'correlativo', 'mto_imp_venta', 'sunat_status', 'sunat_code', 'sunat_description']);
 
         return response()->json([
-            'success' => true,
-            'data' => [
+            'estado' => 'exito',
+            'datos' => [
                 'id_resumen' => $summary->id,
                 'identifier' => $summary->identifier,
                 'ticket' => $summary->ticket,

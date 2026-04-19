@@ -35,7 +35,7 @@ class SireTicketController extends Controller
             'estado'         => 'sometimes|string|size:2',
             'cod_proceso'    => 'sometimes|string|max:10',
             'finalizado'     => 'sometimes|boolean',
-            'per_page'       => 'sometimes|integer|min:1|max:100',
+            'por_pagina' => 'sometimes|integer|min:1|max:100',
         ]);
 
         $query = SireTicket::query()

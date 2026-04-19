@@ -28,7 +28,7 @@ class CreateSummaryAction
 
         if ($result['success'] && ! empty($result['ticket'])) {
             return [
-                'success' => true,
+                'estado' => 'exito',
                 'identifier' => $identifier,
                 'ticket' => $result['ticket'],
                 'xml_path' => $xmlPath,
@@ -36,9 +36,9 @@ class CreateSummaryAction
         }
 
         return [
-            'success' => false,
+            'estado' => 'error',
             'identifier' => $identifier,
-            'error_code' => $result['error_code'] ?? null,
+            'codigo_error' => $result['error_code'] ?? null,
             'error_message' => $result['error_message'] ?? 'Error al enviar resumen',
             'xml_path' => $xmlPath,
         ];

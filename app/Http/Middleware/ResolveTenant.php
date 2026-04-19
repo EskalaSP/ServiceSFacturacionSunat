@@ -17,8 +17,8 @@ class ResolveTenant
 
         if (! $apiKey || ! $apiSecret) {
             return response()->json([
-                'success' => false,
-                'message' => 'API Key y API Secret son requeridos.',
+                'estado' => 'error',
+                'mensaje' => 'Las cabeceras X-Api-Key y X-Api-Secret son requeridas.',
             ], 401);
         }
 
@@ -28,15 +28,15 @@ class ResolveTenant
 
         if (! $tenant || ! hash_equals($tenant->api_secret, $apiSecret)) {
             return response()->json([
-                'success' => false,
-                'message' => 'Credenciales de API inválidas.',
+                'estado' => 'error',
+                'mensaje' => 'Credenciales de API inválidas.',
             ], 401);
         }
 
         if (! $tenant->is_active) {
             return response()->json([
-                'success' => false,
-                'message' => 'Tenant desactivado. Contacte al administrador.',
+                'estado' => 'error',
+                'mensaje' => 'Empresa desactivada. Contacte al administrador.',
             ], 403);
         }
 

@@ -27,7 +27,7 @@ class SireComprobanteController extends Controller
             'cod_tipo_cdp'           => 'sometimes|string|size:2',
             'num_doc_proveedor'      => 'sometimes|string',
             'incluido'               => 'sometimes|boolean',
-            'per_page'               => 'sometimes|integer|min:1|max:200',
+            'por_pagina' => 'sometimes|integer|min:1|max:200',
             'sort_by'                => 'sometimes|in:fec_emision,mto_total,razon_social_proveedor',
             'sort_dir'               => 'sometimes|in:asc,desc',
         ]);

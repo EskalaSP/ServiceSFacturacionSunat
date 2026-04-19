@@ -51,7 +51,7 @@ class PaymentController extends Controller
         $document->refresh();
 
         return response()->json([
-            'message' => 'Pagos registrados correctamente',
+            'mensaje' => 'Pagos registrados correctamente',
             'estado_pago' => $document->payment_status,
             'monto_pagado' => (float) $document->monto_pagado,
             'pagos' => $document->payments->map(fn ($p) => $this->formatPayment($p)),
@@ -63,7 +63,7 @@ class PaymentController extends Controller
         $document = $this->resolveDocument($this->detectDocType($request), (int) $id);
 
         return response()->json([
-            'data' => $document->payments->map(fn ($p) => $this->formatPayment($p)),
+            'datos' => $document->payments->map(fn ($p) => $this->formatPayment($p)),
             'estado_pago' => $document->payment_status,
             'monto_pagado' => (float) $document->monto_pagado,
             'total_documento' => (float) $document->mto_imp_venta,
@@ -82,7 +82,7 @@ class PaymentController extends Controller
         $document->refresh();
 
         return response()->json([
-            'message' => 'Pago eliminado correctamente',
+            'mensaje' => 'Pago eliminado correctamente',
             'estado_pago' => $document->payment_status,
             'monto_pagado' => (float) $document->monto_pagado,
         ]);

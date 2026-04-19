@@ -70,7 +70,7 @@ class BoletaController extends Controller
         $boletas = $query->paginate($perPage);
 
         return $this->success([
-            'data' => BoletaResource::collection($boletas),
+            'datos' => BoletaResource::collection($boletas),
             'paginacion' => [
                 'pagina_actual' => $boletas->currentPage(),
                 'ultima_pagina' => $boletas->lastPage(),

@@ -7,7 +7,7 @@
 declare(strict_types=1);
 
 $items = [
-    reqJson('Crear percepción 1% (venta interna)', 'POST', 'perceptions', [
+    reqJson('Crear percepción 1% (venta interna)', 'POST', 'percepciones', [
         'serie' => 'P001',
         'fecha_emision' => '2026-04-19',
         'cod_local' => '0000',
@@ -34,7 +34,7 @@ $items = [
         ]],
     ], 'Cat. 22 régimen: 01=Venta interna. Tasas: 0.5% entre agentes percepción, 1% bienes consumo masivo, 2% combustible.'),
 
-    reqJson('Crear percepción 2% (combustible)', 'POST', 'perceptions', [
+    reqJson('Crear percepción 2% (combustible)', 'POST', 'percepciones', [
         'serie' => 'P001',
         'fecha_emision' => '2026-04-19',
         'cod_local' => '0000',
@@ -49,7 +49,7 @@ $items = [
         ]],
     ], 'Régimen 02 = Combustible. Tasa 2%.'),
 
-    reqJson('Percepción envío manual', 'POST', 'perceptions', [
+    reqJson('Percepción envío manual', 'POST', 'percepciones', [
         'serie' => 'P001',
         'fecha_emision' => '2026-04-19',
         'cod_local' => '0000',
@@ -64,12 +64,12 @@ $items = [
         'enviar_automatico' => false,
     ]),
 
-    reqSimple('Listar percepciones', 'GET', 'perceptions?per_page=15'),
-    reqSimple('Filtrar percepciones por cliente', 'GET', 'perceptions?cliente_num_doc=20987654321'),
-    reqSimple('Ver percepción por ID', 'GET', 'perceptions/1'),
-    reqSimple('Descargar XML', 'GET', 'perceptions/1/xml'),
-    reqSimple('Descargar CDR', 'GET', 'perceptions/1/cdr'),
-    reqSimple('Enviar a SUNAT (manual)', 'POST', 'perceptions/1/enviar'),
+    reqSimple('Listar percepciones', 'GET', 'percepciones?per_page=15'),
+    reqSimple('Filtrar percepciones por cliente', 'GET', 'percepciones?cliente_num_doc=20987654321'),
+    reqSimple('Ver percepción por ID', 'GET', 'percepciones/1'),
+    reqSimple('Descargar XML', 'GET', 'percepciones/1/xml'),
+    reqSimple('Descargar CDR', 'GET', 'percepciones/1/cdr'),
+    reqSimple('Enviar a SUNAT (manual)', 'POST', 'percepciones/1/enviar'),
 ];
 
 return [

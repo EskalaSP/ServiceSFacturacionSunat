@@ -26,8 +26,8 @@ class LogApiRequest
         } else {
             $decoded = json_decode($responseContent, true);
             $responseBody = [
-                'success' => $decoded['success'] ?? null,
-                'message' => $decoded['message'] ?? null,
+                'estado' => $decoded['estado'] ?? null,
+                'mensaje' => $decoded['mensaje'] ?? null,
                 '_truncated' => true,
                 '_size' => strlen($responseContent),
             ];

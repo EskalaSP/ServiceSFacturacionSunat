@@ -20,8 +20,8 @@ $items = [
     reqSimple('POST /resumenes/{id}/enviar', 'POST', 'resumenes/1/enviar'),
     reqSimple('POST /anulaciones/{id}/enviar', 'POST', 'anulaciones/1/enviar',
         'Funciona para Comunicación de Baja (RA) y Reversión (RR) — detecta automáticamente cuál es por el identifier.'),
-    reqSimple('POST /retentions/{id}/enviar', 'POST', 'retentions/1/enviar'),
-    reqSimple('POST /perceptions/{id}/enviar', 'POST', 'perceptions/1/enviar'),
+    reqSimple('POST /retenciones/{id}/enviar', 'POST', 'retenciones/1/enviar'),
+    reqSimple('POST /percepciones/{id}/enviar', 'POST', 'percepciones/1/enviar'),
 ];
 
 return [

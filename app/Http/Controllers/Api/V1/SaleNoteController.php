@@ -74,7 +74,7 @@ class SaleNoteController extends Controller
         $docs = $query->paginate($request->integer('por_pagina', 15));
 
         return $this->success([
-            'data' => InternalDocumentResource::collection($docs),
+            'datos' => InternalDocumentResource::collection($docs),
             'paginacion' => [
                 'pagina_actual' => $docs->currentPage(),
                 'ultima_pagina' => $docs->lastPage(),

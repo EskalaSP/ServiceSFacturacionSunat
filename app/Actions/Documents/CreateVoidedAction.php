@@ -15,16 +15,16 @@ class CreateVoidedAction
 
         if ($result['success'] && ! empty($result['ticket'])) {
             return [
-                'success' => true,
+                'estado' => 'exito',
                 'ticket' => $result['ticket'],
                 'xml' => $result['xml'],
-                'message' => 'Comunicación de baja enviada. Use el ticket para consultar el estado.',
+                'mensaje' => 'Comunicación de baja enviada. Use el ticket para consultar el estado.',
             ];
         }
 
         return [
-            'success' => false,
-            'error_code' => $result['error_code'] ?? null,
+            'estado' => 'error',
+            'codigo_error' => $result['error_code'] ?? null,
             'error_message' => $result['error_message'] ?? 'Error al enviar comunicación de baja',
         ];
     }

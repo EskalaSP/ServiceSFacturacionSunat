@@ -7,7 +7,7 @@
 declare(strict_types=1);
 
 $items = [
-    reqJson('Reversión de retención', 'POST', 'reversions', [
+    reqJson('Reversión de retención', 'POST', 'reversiones', [
         'fecha_generacion' => '2026-04-19',
         'fecha_comunicacion' => '2026-04-19',
         'detalles' => [
@@ -15,14 +15,14 @@ $items = [
         ],
     ], 'Anula retenciones aceptadas. Solo tipo_documento 20 (retención) o 40 (percepción).'),
 
-    reqJson('Reversión de percepción', 'POST', 'reversions', [
+    reqJson('Reversión de percepción', 'POST', 'reversiones', [
         'fecha_generacion' => '2026-04-19',
         'detalles' => [
             ['tipo_documento' => '40', 'serie' => 'P001', 'correlativo' => '1', 'motivo' => 'Cliente solicita anulación'],
         ],
     ]),
 
-    reqJson('Reversión múltiple', 'POST', 'reversions', [
+    reqJson('Reversión múltiple', 'POST', 'reversiones', [
         'fecha_generacion' => '2026-04-19',
         'detalles' => [
             ['tipo_documento' => '20', 'serie' => 'R001', 'correlativo' => '5', 'motivo' => 'Error monto'],
@@ -30,7 +30,7 @@ $items = [
         ],
     ]),
 
-    reqJson('Reversión envío manual', 'POST', 'reversions', [
+    reqJson('Reversión envío manual', 'POST', 'reversiones', [
         'fecha_generacion' => '2026-04-19',
         'detalles' => [
             ['tipo_documento' => '20', 'serie' => 'R001', 'correlativo' => '1', 'motivo' => 'Error datos'],
