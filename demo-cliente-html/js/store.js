@@ -44,13 +44,13 @@ var App = window.App || (window.App = {});
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       return raw ? JSON.parse(raw) : {
-        base_url: 'http://localhost:8000/api/v1',
+        base_url: 'https://api.kodevo.es/sunat-api/api/v1',
         api_key: '',
         api_secret: '',
       };
     } catch (e) {
       return {
-        base_url: 'http://localhost:8000/api/v1',
+        base_url: 'https://api.kodevo.es/sunat-api/api/v1',
         api_key: '',
         api_secret: '',
       };

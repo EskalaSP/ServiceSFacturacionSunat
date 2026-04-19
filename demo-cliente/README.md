@@ -23,7 +23,7 @@ Un cliente del API puede:
 ## 📋 Requisitos
 
 - **Node.js 18+** y npm (o pnpm / yarn)
-- API SUNAT PRO corriendo (por ejemplo `http://localhost:8000`)
+- API SUNAT PRO accesible (producción: `https://api.kodevo.es/sunat-api/api/v1` — o tu URL local)
 - Credenciales `api_key` + `api_secret` de una empresa registrada
 
 ---
@@ -49,7 +49,7 @@ Abrirá automáticamente `http://localhost:5173` en tu navegador.
 
 La primera vez te redirige a **⚙️ Configuración**:
 
-1. **URL Base** — ej: `http://localhost:8000/api/v1` (tu API local)
+1. **URL Base** — default: `https://api.kodevo.es/sunat-api/api/v1` (producción) o tu URL local
 2. **X-Api-Key** — la key de tu empresa (obtenida desde `POST /registro`)
 3. **X-Api-Secret** — el secret correspondiente
 

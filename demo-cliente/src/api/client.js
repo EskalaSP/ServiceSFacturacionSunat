@@ -46,9 +46,9 @@ export function isLoggedIn() {
 export function getConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { base_url: 'http://localhost:8000/api/v1', api_key: '', api_secret: '' };
+    return raw ? JSON.parse(raw) : { base_url: 'https://api.kodevo.es/sunat-api/api/v1', api_key: '', api_secret: '' };
   } catch {
-    return { base_url: 'http://localhost:8000/api/v1', api_key: '', api_secret: '' };
+    return { base_url: 'https://api.kodevo.es/sunat-api/api/v1', api_key: '', api_secret: '' };
   }
 }
 

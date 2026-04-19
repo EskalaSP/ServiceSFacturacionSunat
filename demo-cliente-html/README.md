@@ -7,7 +7,7 @@ Misma demo que `demo-cliente/` pero en HTML y JavaScript puros. **No requiere se
 1. Abre `index.html` con doble clic — se abre en el navegador.
 2. Te lleva automáticamente a **Configuración**.
 3. Ingresa:
-   - **URL Base**: `http://localhost:8000/api/v1` (o tu dominio)
+   - **URL Base**: `https://api.kodevo.es/sunat-api/api/v1` (producción) o tu dominio
    - **X-Api-Key** y **X-Api-Secret**
 4. Click en **Probar conexión** → **Ir al Dashboard**.
 

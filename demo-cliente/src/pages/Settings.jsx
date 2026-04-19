@@ -69,9 +69,9 @@ export default function Settings() {
             className="input"
             value={config.base_url}
             onChange={(e) => setConfig({ ...config, base_url: e.target.value })}
-            placeholder="http://localhost:8000/api/v1"
+            placeholder="https://api.kodevo.es/sunat-api/api/v1"
           />
-          <p className="text-xs text-slate-500 mt-1">Ejemplo: http://localhost:8000/api/v1 o https://tu-dominio.com/api/v1</p>
+          <p className="text-xs text-slate-500 mt-1">Ejemplo: https://api.kodevo.es/sunat-api/api/v1 o tu URL propia</p>
         </div>
 
         <div>
