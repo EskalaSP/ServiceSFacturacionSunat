@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\ApiLog;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 
 class LogApiRequest
@@ -36,7 +37,7 @@ class LogApiRequest
             'tenant_id' => $request->get('tenant')?->id,
             'endpoint' => $request->path(),
             'method' => $request->method(),
-            'request_body' => $request->except(['tenant']),
+            'request_body' => $this->sanitizeRequestBody($request->except(['tenant'])),
             'response_body' => $responseBody,
             'status_code' => $response->getStatusCode(),
             'ip_address' => $request->ip(),
@@ -50,5 +51,29 @@ class LogApiRequest
         })->afterResponse();
 
         return $response;
+    }
+
+    /**
+     * Reemplaza UploadedFile con metadata serializable y oculta datos sensibles.
+     * Sin esto, multipart/form-data (logos, certificados) revienta el afterResponse().
+     */
+    private function sanitizeRequestBody(array $body): array
+    {
+        $sensitive = ['contrasena_certificado', 'sol_pass', 'password', 'api_secret'];
+
+        array_walk_recursive($body, function (&$value, $key) use ($sensitive) {
+            if ($value instanceof UploadedFile) {
+                $value = [
+                    '_file' => true,
+                    'name' => $value->getClientOriginalName(),
+                    'size' => $value->getSize(),
+                    'mime' => $value->getClientMimeType(),
+                ];
+            } elseif (in_array($key, $sensitive, true) && !empty($value)) {
+                $value = '***';
+            }
+        });
+
+        return $body;
     }
 }
