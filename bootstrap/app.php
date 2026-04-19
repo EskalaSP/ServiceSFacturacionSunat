@@ -37,7 +37,22 @@ return Application::configure(basePath: dirname(__DIR__))
             'usage.headers' => UsageWarningHeader::class,
             'sire.enabled' => EnsureSireEnabled::class,
         ]);
+
+        // Forzar respuesta JSON en todas las rutas /api/*.
+        // Sin esto, si el cliente no manda "Accept: application/json" y hay un error
+        // de validación (422) o 404, Laravel redirige/renderiza HTML en vez de devolver
+        // JSON con los detalles del error.
+        $middleware->prepend(function ($request, $next) {
+            if ($request->is('api/*')) {
+                $request->headers->set('Accept', 'application/json');
+            }
+            return $next($request);
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Devolver JSON para cualquier excepción en rutas /api/*
+        // (validation errors, 404, 500, etc.) — sin importar el header Accept.
+        $exceptions->shouldRenderJsonWhen(function ($request, $e) {
+            return $request->is('api/*') || $request->expectsJson();
+        });
     })->create();
