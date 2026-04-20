@@ -59,6 +59,20 @@ class DocumentTypeConfig
                 'items', 'totals', 'payment-info', 'bank-accounts', 'footer',
             ],
         ],
+        '20' => [
+            'titulo' => 'COMPROBANTE DE RETENCIÓN ELECTRÓNICA',
+            'sections' => [
+                'header', 'document-badge', 'emitter', 'receiver',
+                'retention-info', 'retention-items', 'retention-totals', 'footer',
+            ],
+        ],
+        '40' => [
+            'titulo' => 'COMPROBANTE DE PERCEPCIÓN ELECTRÓNICA',
+            'sections' => [
+                'header', 'document-badge', 'emitter', 'receiver',
+                'retention-info', 'retention-items', 'retention-totals', 'footer',
+            ],
+        ],
     ];
 
     public static function get(string $tipoDocumento): array

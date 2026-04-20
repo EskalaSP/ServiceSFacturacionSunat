@@ -4,6 +4,7 @@ namespace App\Services\Pdf;
 
 use App\Models\DispatchGuide;
 use App\Models\InternalDocument;
+use App\Models\Retention;
 use App\Models\Tenant;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -27,6 +28,10 @@ class DocumentDataMapper
 
         if ($document instanceof InternalDocument) {
             return $this->mapInternalDocument($document, $tenant);
+        }
+
+        if ($document instanceof Retention) {
+            return $this->mapRetention($document, $tenant);
         }
 
         return $this->mapStandardDocument($document, $tenant);
@@ -151,6 +156,68 @@ class DocumentDataMapper
         ];
 
         return $data;
+    }
+
+    private function mapRetention(Retention $retention, Tenant $tenant): array
+    {
+        $regimenes = ['01' => 'Tasa 3% (Régimen General)', '02' => 'Tasa 6% (Régimen Especial)'];
+
+        $documentos = $retention->items->map(fn ($item) => [
+            'tipo_doc'        => $item->tipo_doc,
+            'num_doc'         => $item->num_doc,
+            'fecha_emision'   => $item->fecha_emision_doc?->format('d/m/Y') ?? '',
+            'moneda'          => $item->moneda ?? 'PEN',
+            'imp_total'       => (float) $item->imp_total,
+            'fecha_retencion' => $item->fecha_retencion?->format('d/m/Y') ?? '',
+            'imp_retenido'    => (float) $item->imp_retenido,
+            'imp_pagar'       => (float) $item->imp_pagar,
+        ])->toArray();
+
+        return [
+            'tipo_documento'  => '20',
+            'titulo'          => DocumentTypeConfig::titulo('20'),
+            'serie'           => $retention->serie,
+            'correlativo'     => $retention->correlativo,
+            'numero_completo' => $retention->numero_completo,
+            'fecha_emision'   => $retention->fecha_emision?->format('d/m/Y h:i A') ?? '',
+            'tipo_moneda'     => 'PEN',
+
+            'emisor' => [
+                'ruc'             => $tenant->ruc,
+                'razon_social'    => $tenant->razon_social,
+                'nombre_comercial'=> $tenant->nombre_comercial ?? $tenant->razon_social,
+                'direccion'       => $tenant->direccion ?? '',
+                'ubigeo'          => $tenant->ubigeo ?? '',
+                'cod_local'       => '0000',
+            ],
+
+            // Para retenciones, el "receptor" es el proveedor al que se retiene
+            'receptor' => [
+                'tipo_doc'    => $retention->proveedor_tipo_doc,
+                'num_doc'     => $retention->proveedor_num_doc,
+                'razon_social'=> $retention->proveedor_razon_social,
+                'direccion'   => $retention->proveedor_direccion ?? '',
+            ],
+
+            'regimen'       => $retention->regimen,
+            'tasa'          => (float) $retention->tasa,
+            'imp_retenido'  => (float) $retention->imp_retenido,
+            'imp_pagado'    => (float) $retention->imp_pagado,
+            'regimen_label' => $regimenes[$retention->regimen] ?? "Tasa {$retention->tasa}%",
+            'documentos_retenidos' => $documentos,
+
+            'hash_cpe'          => $retention->hash_cpe ?? '',
+            'sunat_status'      => $retention->sunat_status ?? '',
+            'sunat_description' => $retention->sunat_description ?? '',
+            'observacion'       => $retention->observacion ?? null,
+            'leyenda'           => '',
+            'sections'          => DocumentTypeConfig::sections('20'),
+
+            'logo_base64'    => $this->getLogoBase64($tenant),
+            'qr_base64'      => null,
+            'moneda_simbolo' => 'S/',
+            ...$this->getBusinessConfig($tenant),
+        ];
     }
 
     private function mapDispatchGuide(DispatchGuide $guide, Tenant $tenant): array
