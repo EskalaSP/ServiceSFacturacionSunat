@@ -63,14 +63,16 @@ class DocumentTypeConfig
             'titulo' => 'COMPROBANTE DE RETENCIÓN ELECTRÓNICA',
             'sections' => [
                 'header', 'document-badge', 'emitter', 'receiver',
-                'retention-info', 'retention-items', 'retention-totals', 'footer',
+                'retention-info', 'retention-items', 'retention-totals',
+                'qr-code', 'footer',
             ],
         ],
         '40' => [
             'titulo' => 'COMPROBANTE DE PERCEPCIÓN ELECTRÓNICA',
             'sections' => [
                 'header', 'document-badge', 'emitter', 'receiver',
-                'retention-info', 'retention-items', 'retention-totals', 'footer',
+                'retention-info', 'retention-items', 'retention-totals',
+                'qr-code', 'footer',
             ],
         ],
     ];

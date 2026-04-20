@@ -1,22 +1,24 @@
-<div class="info-section" style="margin: 8px 0; padding: 6px 8px; border: 0.5px solid #ccc; border-radius: 4px;">
-    <table style="width:100%; border-collapse:collapse;">
+@if($is_ticket)
+    <div class="info-block">
+        <div class="info-line"><span class="info-label">Régimen:</span> {{ $regimen_label }}</div>
+        <div class="info-line"><span class="info-label">Tasa:</span> {{ $tasa }}%</div>
+        @if(!empty($observacion))
+        <div class="info-line"><span class="info-label">Obs.:</span> {{ $observacion }}</div>
+        @endif
+    </div>
+@else
+    <table class="info-section">
         <tr>
-            <td style="width:50%; vertical-align:top;">
-                <strong>PROVEEDOR (RETENIDO)</strong><br>
-                {{ $receptor['razon_social'] }}<br>
-                RUC: {{ $receptor['num_doc'] }}
-                @if(!empty($receptor['direccion']))
-                <br>{{ $receptor['direccion'] }}
-                @endif
-            </td>
-            <td style="width:50%; vertical-align:top; text-align:right;">
-                <strong>Régimen:</strong> {{ $regimen_label }}<br>
-                <strong>Tasa:</strong> {{ $tasa }}%<br>
-                <strong>Fecha emisión:</strong> {{ $fecha_emision }}
-            </td>
+            <td class="info-label">Régimen:</td>
+            <td>{{ $regimen_label }}</td>
+            <td class="info-label">Tasa:</td>
+            <td>{{ $tasa }}%</td>
         </tr>
+        @if(!empty($observacion))
+        <tr>
+            <td class="info-label">Observación:</td>
+            <td colspan="3">{{ $observacion }}</td>
+        </tr>
+        @endif
     </table>
-    @if(!empty($observacion))
-    <div style="margin-top:4px;"><strong>Observación:</strong> {{ $observacion }}</div>
-    @endif
-</div>
+@endif

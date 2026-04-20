@@ -44,6 +44,15 @@
             @case('qr-code')
                 @include('pdf.sections.qr_code')
                 @break
+            @case('retention-info')
+                @include('pdf.sections.retention_info')
+                @break
+            @case('retention-items')
+                @include('pdf.sections.retention_items')
+                @break
+            @case('retention-totals')
+                @include('pdf.sections.retention_totals')
+                @break
             @case('footer')
                 @include('pdf.sections.footer')
                 @break

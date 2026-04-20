@@ -1,37 +1,53 @@
-<table class="items-table" style="width:100%; border-collapse:collapse; margin: 8px 0;">
-    <thead>
-        <tr>
-            <th style="text-align:center; border:0.5px solid #666; background:#f0f0f0; padding:4px;">Tipo Doc.</th>
-            <th style="text-align:center; border:0.5px solid #666; background:#f0f0f0; padding:4px;">N° Documento</th>
-            <th style="text-align:center; border:0.5px solid #666; background:#f0f0f0; padding:4px;">Fecha Emisión</th>
-            <th style="text-align:right;  border:0.5px solid #666; background:#f0f0f0; padding:4px;">Importe Total</th>
-            <th style="text-align:center; border:0.5px solid #666; background:#f0f0f0; padding:4px;">F. Retención</th>
-            <th style="text-align:right;  border:0.5px solid #666; background:#f0f0f0; padding:4px;">Imp. Retenido</th>
-            <th style="text-align:right;  border:0.5px solid #666; background:#f0f0f0; padding:4px;">Imp. a Pagar</th>
-        </tr>
-    </thead>
-    <tbody>
-        @php
-            $tipoLabels = ['01' => 'Factura', '03' => 'Boleta', '12' => 'T. Registro'];
-        @endphp
-        @foreach($documentos_retenidos as $doc)
-        <tr>
-            <td style="text-align:center; border:0.5px solid #ccc; padding:4px;">
-                {{ $tipoLabels[$doc['tipo_doc']] ?? $doc['tipo_doc'] }}
-            </td>
-            <td style="text-align:center; border:0.5px solid #ccc; padding:4px;">{{ $doc['num_doc'] }}</td>
-            <td style="text-align:center; border:0.5px solid #ccc; padding:4px;">{{ $doc['fecha_emision'] }}</td>
-            <td style="text-align:right;  border:0.5px solid #ccc; padding:4px;">
-                {{ $doc['moneda'] === 'USD' ? '$' : 'S/' }} {{ number_format($doc['imp_total'], 2) }}
-            </td>
-            <td style="text-align:center; border:0.5px solid #ccc; padding:4px;">{{ $doc['fecha_retencion'] }}</td>
-            <td style="text-align:right;  border:0.5px solid #ccc; padding:4px;">
-                S/ {{ number_format($doc['imp_retenido'], 2) }}
-            </td>
-            <td style="text-align:right;  border:0.5px solid #ccc; padding:4px;">
-                S/ {{ number_format($doc['imp_pagar'], 2) }}
-            </td>
-        </tr>
-        @endforeach
-    </tbody>
-</table>
+@php $tipoLabels = ['01' => 'Factura', '03' => 'Boleta', '12' => 'T.Reg.']; @endphp
+
+@if($is_ticket)
+    <table class="items-table-ticket">
+        <thead>
+            <tr>
+                <th>Documento</th>
+                <th class="col-right">Retenido</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($documentos_retenidos as $doc)
+            <tr>
+                <td>
+                    <strong>{{ $tipoLabels[$doc['tipo_doc']] ?? $doc['tipo_doc'] }}: {{ $doc['num_doc'] }}</strong>
+                    <br><span class="item-qty-detail">Emit: {{ $doc['fecha_emision'] }} | Total: S/ {{ number_format($doc['imp_total'], 2) }}</span>
+                    <br><span class="item-qty-detail">F.Ret: {{ $doc['fecha_retencion'] }} | Pagar: S/ {{ number_format($doc['imp_pagar'], 2) }}</span>
+                </td>
+                <td class="col-right">S/ {{ number_format($doc['imp_retenido'], 2) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+@else
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>N° Documento</th>
+                <th>F. Emisión</th>
+                <th>Moneda</th>
+                <th>Imp. Total</th>
+                <th>F. Retención</th>
+                <th>Imp. Retenido</th>
+                <th>Imp. a Pagar</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($documentos_retenidos as $doc)
+            <tr>
+                <td class="text-center">{{ $tipoLabels[$doc['tipo_doc']] ?? $doc['tipo_doc'] }}</td>
+                <td class="text-center">{{ $doc['num_doc'] }}</td>
+                <td class="text-center">{{ $doc['fecha_emision'] }}</td>
+                <td class="text-center">{{ $doc['moneda'] }}</td>
+                <td class="text-right">{{ $doc['moneda'] === 'USD' ? '$' : 'S/' }} {{ number_format($doc['imp_total'], 2) }}</td>
+                <td class="text-center">{{ $doc['fecha_retencion'] }}</td>
+                <td class="text-right">S/ {{ number_format($doc['imp_retenido'], 2) }}</td>
+                <td class="text-right">S/ {{ number_format($doc['imp_pagar'], 2) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+@endif
