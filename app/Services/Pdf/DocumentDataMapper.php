@@ -211,10 +211,11 @@ class DocumentDataMapper
             'sunat_description' => $retention->sunat_description ?? '',
             'observacion'       => $retention->observacion ?? null,
             'leyenda'           => '',
-            'sections'          => DocumentTypeConfig::sections('20'),
+            'fecha_vencimiento' => null,
+            'tipo_operacion'    => null,
 
             'logo_base64'    => $this->getLogoBase64($tenant),
-            'qr_base64'      => null,
+            'qr_base64'      => $this->generateQrBase64($retention, $tenant),
             'moneda_simbolo' => 'S/',
             ...$this->getBusinessConfig($tenant),
         ];
@@ -446,27 +447,39 @@ class DocumentDataMapper
 
     private function generateQrBase64(Model $document, Tenant $tenant): string
     {
-        $tipoDoc = method_exists($document, 'getTipoDocumento')
-            ? $document->getTipoDocumento()
-            : '09';
-
-        $total = $document->mto_imp_venta ?? '0.00';
         $fecha = $document->fecha_emision instanceof \DateTimeInterface
             ? $document->fecha_emision->format('Y-m-d')
             : ($document->fecha_emision ?? '');
 
-        // Formato QR SUNAT: RUC|TIPO|SERIE|CORRELATIVO|IGV|TOTAL|FECHA|TIPO_DOC_RECEPTOR|NUM_DOC_RECEPTOR
-        $qrData = implode('|', [
-            $tenant->ruc,
-            $tipoDoc,
-            $document->serie,
-            $document->correlativo,
-            $document->mto_igv ?? '0.00',
-            $total,
-            $fecha,
-            $document->client_tipo_doc ?? $document->destinatario_tipo_doc ?? '',
-            $document->client_num_doc ?? $document->destinatario_num_doc ?? '',
-        ]);
+        // Retención (tipo 20) y Percepción (tipo 40) tienen campos distintos
+        if ($document instanceof Retention) {
+            $qrData = implode('|', [
+                $tenant->ruc, '20',
+                $document->serie, $document->correlativo,
+                number_format((float) $document->imp_retenido, 2, '.', ''),
+                number_format((float) $document->imp_pagado,   2, '.', ''),
+                $fecha,
+                $document->proveedor_tipo_doc ?? '',
+                $document->proveedor_num_doc  ?? '',
+            ]);
+        } else {
+            $tipoDoc = method_exists($document, 'getTipoDocumento')
+                ? $document->getTipoDocumento()
+                : '09';
+
+            // Formato QR SUNAT: RUC|TIPO|SERIE|CORRELATIVO|IGV|TOTAL|FECHA|TIPO_DOC_RECEPTOR|NUM_DOC_RECEPTOR
+            $qrData = implode('|', [
+                $tenant->ruc,
+                $tipoDoc,
+                $document->serie,
+                $document->correlativo,
+                $document->mto_igv ?? '0.00',
+                $document->mto_imp_venta ?? '0.00',
+                $fecha,
+                $document->client_tipo_doc ?? $document->destinatario_tipo_doc ?? '',
+                $document->client_num_doc  ?? $document->destinatario_num_doc  ?? '',
+            ]);
+        }
 
         // Cache by QR data string (deterministic)
         if (isset(self::$qrCache[$qrData])) {
