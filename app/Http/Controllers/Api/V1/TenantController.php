@@ -10,6 +10,7 @@ use App\Services\Storage\DocumentStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 class TenantController extends Controller
 {
@@ -134,8 +135,11 @@ class TenantController extends Controller
 
         Cache::forget("tenant:key:{$tenant->api_key}");
 
+        $logoUrl = Storage::url($logoPath) . '?v=' . now()->timestamp;
+
         return $this->success([
             'logo_path' => $logoPath,
+            'logo_url'  => $logoUrl,
         ], 'Logo actualizado.');
     }
 

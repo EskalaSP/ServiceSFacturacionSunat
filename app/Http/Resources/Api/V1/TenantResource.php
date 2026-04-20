@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class TenantResource extends JsonResource
 {
@@ -24,6 +25,9 @@ class TenantResource extends JsonResource
             'max_documentos_mes' => $this->max_documents_month,
             'documentos_este_mes' => $this->documentsThisMonth(),
             'activo' => $this->is_active,
+            'logo_url' => $this->logo_path
+                ? Storage::url($this->logo_path) . '?v=' . ($this->updated_at?->timestamp ?? time())
+                : null,
             'tiene_certificado' => ! empty($this->certificate_path),
             'telefonos' => $this->telefonos ?? [],
             'emails' => $this->emails ?? [],
