@@ -8,15 +8,18 @@ use App\Actions\Documents\CreateRetentionAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreRetentionRequest;
 use App\Http\Traits\ApiResponse;
+use App\Http\Traits\CachesPdf;
 use App\Jobs\SendRetentionToSunat;
 use App\Models\Retention;
+use App\Services\Pdf\PdfFormatConfig;
+use App\Services\Pdf\PdfGeneratorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class RetentionController extends Controller
 {
-    use ApiResponse;
+    use ApiResponse, CachesPdf;
 
     public function store(StoreRetentionRequest $request, CreateRetentionAction $action): JsonResponse
     {
@@ -137,6 +140,32 @@ class RetentionController extends Controller
         return response(Storage::disk('public')->get($retention->cdr_path), 200, [
             'Content-Type' => 'application/zip',
             'Content-Disposition' => "attachment; filename=\"R-{$retention->numero_completo}.zip\"",
+        ]);
+    }
+
+    public function pdf(Request $request, int $id): \Illuminate\Http\Response|JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $retention = Retention::with('items')->forTenant($tenant->id)->findOrFail($id);
+        $formatStr = $request->input('format', config('pdf.default_format', 'a4'));
+
+        try {
+            $format = PdfFormatConfig::from($formatStr);
+        } catch (\ValueError) {
+            return $this->error('Formato inválido. Opciones: a4, a5, ticket-80, ticket-58', 422);
+        }
+
+        $content = $this->getCachedPdfContent($retention, $formatStr);
+
+        if (! $content) {
+            $content = app(PdfGeneratorService::class)->generate($retention, $tenant, $format);
+            $this->cachePdfContent($retention, $formatStr, $content);
+        }
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "inline; filename=\"{$retention->numero_completo}.pdf\"",
+            'Cache-Control' => 'private, max-age=300',
         ]);
     }
 

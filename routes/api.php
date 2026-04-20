@@ -118,6 +118,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::post('retenciones', [RetentionController::class, 'store'])->middleware('check.limit:sunat');
     Route::get('retenciones', [RetentionController::class, 'index']);
     Route::get('retenciones/{id}', [RetentionController::class, 'show']);
+    Route::get('retenciones/{id}/pdf', [RetentionController::class, 'pdf']);
     Route::get('retenciones/{id}/xml', [RetentionController::class, 'xml']);
     Route::get('retenciones/{id}/cdr', [RetentionController::class, 'cdr']);
     Route::post('retenciones/{id}/enviar', [RetentionController::class, 'enviar']);
