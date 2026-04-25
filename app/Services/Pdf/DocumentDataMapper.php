@@ -535,19 +535,21 @@ class DocumentDataMapper
             return null;
         }
 
-        // Map API keys (cod_reg, mto, mto_base, mto_total) to display keys
         $porcentaje = (float) ($percepcion['porcentaje'] ?? 0);
-        // If stored as decimal (0.01), convert to percentage for display
-        if ($porcentaje > 0 && $porcentaje < 1) {
-            $porcentaje = $porcentaje * 100;
+        $monto      = (float) ($percepcion['mto']      ?? $percepcion['monto']  ?? 0);
+        $mto_base   = (float) ($percepcion['mto_base'] ?? $percepcion['base']   ?? 0);
+        $mto_total  = (float) ($percepcion['mto_total'] ?? 0);
+
+        if ($mto_total === 0.0) {
+            $mto_total = round($mto_base + $monto, 2);
         }
 
         return [
-            'codigo' => $percepcion['cod_reg'] ?? $percepcion['codigo'] ?? '',
+            'codigo'    => $percepcion['cod_regimen'] ?? $percepcion['cod_reg'] ?? $percepcion['codigo'] ?? '',
             'porcentaje' => $porcentaje,
-            'monto' => (float) ($percepcion['mto'] ?? $percepcion['monto'] ?? 0),
-            'mto_base' => (float) ($percepcion['mto_base'] ?? 0),
-            'mto_total' => (float) ($percepcion['mto_total'] ?? 0),
+            'monto'     => $monto,
+            'mto_base'  => $mto_base,
+            'mto_total' => $mto_total,
         ];
     }
 
