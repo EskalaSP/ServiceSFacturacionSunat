@@ -58,14 +58,15 @@ class SaasAuthController extends Controller
         // Crea o actualiza el tenant por RUC
         $tenant = Tenant::firstOrNew(['ruc' => $data['ruc']]);
 
-        $tenant->user_id  = $tenant->user_id ?? $user->id;
-        $tenant->sol_user = $data['sol_user'];
-        $tenant->sol_pass = $data['sol_pass'];
+        $tenant->user_id     = $tenant->user_id ?? $user->id;
+        $tenant->sol_user    = $data['sol_user'];
+        $tenant->sol_pass    = $data['sol_pass'];
+        $tenant->razon_social = $tenant->razon_social ?? ($data['razon_social'] ?? '');
 
         if (! $tenant->exists) {
-            $tenant->environment = 'beta';
-            $tenant->plan        = 'free';
-            $tenant->is_active   = true;
+            $tenant->environment  = 'beta';
+            $tenant->plan         = 'free';
+            $tenant->is_active    = true;
         }
 
         $tenant->save();
