@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'saas_bridge_secret' => env('SAAS_BRIDGE_SECRET', ''),
+
 ];

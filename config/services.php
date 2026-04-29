@@ -42,4 +42,8 @@ return [
 
     'internal_token' => env('INTERNAL_TOKEN'),
 
+    'apis_net_pe' => [
+        'token' => env('APIS_NET_PE_TOKEN'),
+    ],
+
 ];

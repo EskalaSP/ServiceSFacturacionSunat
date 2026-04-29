@@ -57,6 +57,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // de validación (422) o 404, Laravel redirige/renderiza HTML en vez de devolver
         // JSON con los detalles del error.
         $middleware->prepend(ForceJsonAccept::class);
+
+        // CORS — permite peticiones desde Zaresk (u otros orígenes configurados)
+        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Devolver JSON para cualquier excepción en rutas /api/*

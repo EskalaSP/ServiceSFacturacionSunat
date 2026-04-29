@@ -263,3 +263,30 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('suscripcion/pagos', [SubscriptionController::class, 'payments']);
     Route::get('suscripcion/uso', [SubscriptionController::class, 'usage']);
 });
+
+// ── API Bridge para el SaaS principal ───────────────────────────────────────
+// Protegido con X-Bridge-Key (SAAS_BRIDGE_SECRET).
+Route::post('bridge/auth',      [\App\Http\Controllers\Auth\SaasAuthController::class, 'generateToken']);
+Route::post('bridge/provision', [\App\Http\Controllers\Auth\SaasAuthController::class, 'provision']);
+
+// Alias simplificados sobre los endpoints V1 existentes.
+// Usan la misma autenticación X-Api-Key + X-Api-Secret.
+Route::prefix('sunat')->middleware(['resolve.tenant', 'throttle:api'])->group(function () {
+
+    // Configuración
+    Route::get('configuracion',  [\App\Http\Controllers\Api\V1\TenantController::class, 'show']);
+    Route::post('configuracion', [\App\Http\Controllers\Api\V1\TenantController::class, 'update']);
+
+    // Comprobantes (facturas + boletas unificados)
+    Route::get('facturas',               [\App\Http\Controllers\Api\V1\InvoiceController::class, 'index']);
+    Route::post('facturas',              [\App\Http\Controllers\Api\V1\InvoiceController::class, 'store']);
+    Route::get('facturas/{id}/pdf',      [\App\Http\Controllers\Api\V1\InvoiceController::class, 'pdf']);
+    Route::get('facturas/{id}/xml',      [\App\Http\Controllers\Api\V1\InvoiceController::class, 'xml']);
+    Route::post('facturas/{id}/anular',  [\App\Http\Controllers\Api\V1\VoidedController::class, 'store']);
+
+    Route::get('boletas',                [\App\Http\Controllers\Api\V1\BoletaController::class, 'index']);
+    Route::post('boletas',               [\App\Http\Controllers\Api\V1\BoletaController::class, 'store']);
+    Route::get('boletas/{id}/pdf',       [\App\Http\Controllers\Api\V1\BoletaController::class, 'pdf']);
+    Route::get('boletas/{id}/xml',       [\App\Http\Controllers\Api\V1\BoletaController::class, 'xml']);
+    Route::post('boletas/{id}/anular',   [\App\Http\Controllers\Api\V1\VoidedController::class, 'store']);
+});

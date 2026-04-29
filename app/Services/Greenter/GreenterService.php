@@ -36,11 +36,7 @@ class GreenterService
 
         $see->setService($endpoint);
 
-        $certificate = $this->tenant->getCertificateContent();
-        if (! $certificate) {
-            throw new \RuntimeException('Certificado digital no encontrado para el tenant ' . $this->tenant->ruc);
-        }
-        $see->setCertificate($certificate);
+        $see->setCertificate($this->resolveCertificatePem());
 
         $see->setClaveSOL(
             $this->tenant->ruc,
@@ -73,11 +69,6 @@ class GreenterService
             'cpe' => config("facturacion.sunat.{$env}.guias_cpe"),
         ]);
 
-        $certificate = $this->tenant->getCertificateContent();
-        if (! $certificate) {
-            throw new \RuntimeException('Certificado digital no encontrado para el tenant ' . $this->tenant->ruc);
-        }
-
         $api->setBuilderOptions([
             'strict_variables' => true,
             'optimizations' => 0,
@@ -85,20 +76,15 @@ class GreenterService
             'cache' => false,
         ]);
 
-        // Credenciales OAuth2 GRE (requeridas para guías de remisión)
-        $clientId = $this->tenant->client_id;
-        $clientSecret = $this->tenant->client_secret;
-
-        // En beta, usar credenciales de prueba de SUNAT si no están configuradas
-        if ($env === 'beta' && (! $clientId || ! $clientSecret)) {
-            $clientId = config('facturacion.sunat.beta.gre_client_id');
-            $clientSecret = config('facturacion.sunat.beta.gre_client_secret');
-        }
+        // Credenciales OAuth2 GRE (requeridas para guías de remisión).
+        // Prioridad: per-tenant → global de config (SaaS: todos comparten la misma app SUNAT)
+        $clientId     = $this->tenant->client_id     ?: config("facturacion.sunat.{$env}.gre_client_id");
+        $clientSecret = $this->tenant->client_secret ?: config("facturacion.sunat.{$env}.gre_client_secret");
 
         if (! $clientId || ! $clientSecret) {
             throw new \RuntimeException(
-                'Credenciales GRE (client_id/client_secret) no configuradas para el tenant ' . $this->tenant->ruc
-                . '. Regístrelas en SUNAT → Clave SOL → Servicios en línea → API SUNAT.'
+                'Credenciales GRE (client_id/client_secret) no configuradas. '
+                . 'Agrega SUNAT_GRE_CLIENT_ID y SUNAT_GRE_CLIENT_SECRET en .env'
             );
         }
 
@@ -110,7 +96,7 @@ class GreenterService
             $this->tenant->sol_pass
         );
 
-        $api->setCertificate($certificate);
+        $api->setCertificate($this->resolveCertificatePem());
 
         return $api;
     }
@@ -159,12 +145,8 @@ class GreenterService
         $unsignedXml = $this->injectDespatchPartyGrt($unsignedXml, $data['remitente'] ?? null);
 
         // 3. Firmar
-        $cert = $this->tenant->getCertificateContent();
-        if (! $cert) {
-            throw new \RuntimeException('Certificado no encontrado para ' . $this->tenant->ruc);
-        }
         $signer = new \Greenter\Xml\Signed\SignedXml();
-        $signer->setCertificate($cert);
+        $signer->setCertificate($this->resolveCertificatePem());
         $signedXml = $signer->signXml($unsignedXml);
 
         // 4. Enviar
@@ -404,5 +386,80 @@ class GreenterService
         }
 
         return $this->createSee();
+    }
+
+    /**
+     * Devuelve el certificado en formato PEM para firmar XMLs.
+     * Prioridad: (1) Certificado PSE global (.env CERTIFICATE_PATH)
+     *            (2) Certificado individual del tenant
+     * Convierte automáticamente de .p12/.pfx a PEM si es necesario.
+     */
+    private function resolveCertificatePem(): string
+    {
+        // 0. Base64 en env var (ideal para Railway/cloud sin volúmenes de archivos)
+        $pemB64 = config('facturacion.certificate.pem_b64', '');
+        if (! empty($pemB64)) {
+            $content = base64_decode($pemB64, strict: true);
+            if ($content !== false && ! empty($content)) {
+                return $this->toPem($content);
+            }
+        }
+
+        // 1. Certificado PSE global como archivo (desarrollo local y servidores con storage)
+        $psePath = config('facturacion.certificate.path', '');
+        if (! empty($psePath)) {
+            $fullPath = str_starts_with($psePath, '/') || str_contains($psePath, ':')
+                ? $psePath
+                : base_path($psePath);
+
+            if (file_exists($fullPath)) {
+                $content = file_get_contents($fullPath);
+                return $this->toPem($content);
+            }
+        }
+
+        // 2. Certificado individual del tenant
+        $tenantCert = $this->tenant->getCertificateContent();
+        if ($tenantCert) {
+            return $this->toPem($tenantCert);
+        }
+
+        throw new \RuntimeException(
+            'Certificado digital no encontrado. '
+            . 'Configure CERTIFICATE_PEM_B64 (Railway) o CERTIFICATE_PATH en .env.'
+        );
+    }
+
+    /**
+     * Convierte contenido de certificado a PEM si es un archivo .p12/.pfx binario.
+     * Si ya está en PEM (empieza con -----) lo devuelve sin cambios.
+     */
+    private function toPem(string $content): string
+    {
+        if (str_starts_with(ltrim($content), '-----')) {
+            return $content;
+        }
+
+        $certs = [];
+        $password = (string) config('facturacion.certificate.password', '');
+
+        // Intentar con la contraseña configurada, luego con el RUC PSE, luego vacío
+        $attempts = array_unique([$password, (string) config('facturacion.certificate.pse_ruc', ''), '']);
+
+        foreach ($attempts as $pass) {
+            if (@openssl_pkcs12_read($content, $certs, $pass) && ! empty($certs['pkey'])) {
+                break;
+            }
+        }
+
+        if (empty($certs) || empty($certs['pkey']) || empty($certs['cert'])) {
+            $error = openssl_error_string() ?: 'Error desconocido';
+            throw new \RuntimeException(
+                "No se pudo leer el certificado .p12. Verifica CERTIFICATE_PASSWORD en .env. OpenSSL: {$error}"
+            );
+        }
+
+        // SignedXml::setCertificate() espera: clave privada PEM + certificado PEM concatenados
+        return $certs['pkey'] . $certs['cert'];
     }
 }

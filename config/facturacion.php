@@ -33,8 +33,18 @@ return [
             'retention' => 'https://e-factura.sunat.gob.pe/ol-ti-itemision-otroscpe-gem/billService',
             'guias_auth' => 'https://api-cpe.sunat.gob.pe/v1',
             'guias_cpe' => 'https://api-cpe.sunat.gob.pe/v1',
+            'gre_client_id' => env('SUNAT_GRE_CLIENT_ID', ''),
+            'gre_client_secret' => env('SUNAT_GRE_CLIENT_SECRET', ''),
             'consulta_cdr' => 'https://e-factura.sunat.gob.pe/ol-it-wsconscpegem/billConsultService',
         ],
+    ],
+
+    'certificate' => [
+        'path'         => env('CERTIFICATE_PATH', ''),
+        'password'     => env('CERTIFICATE_PASSWORD', ''),
+        'pem_b64'      => env('CERTIFICATE_PEM_B64', ''),
+        'pse_ruc'      => env('SUNAT_RUC_PSE', ''),
+        'pse_razon_social' => env('SUNAT_RAZON_SOCIAL_PSE', ''),
     ],
 
     'lookup' => [
