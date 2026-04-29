@@ -12,8 +12,8 @@ class DocumentLookupService
 
     public function __construct()
     {
-        $this->baseUrl = config('facturacion.lookup.base_url');
-        $this->token = config('facturacion.lookup.token');
+        $this->baseUrl = rtrim(config('facturacion.lookup.base_url'), '/');
+        $this->token   = config('facturacion.lookup.token');
     }
 
     public function lookup(string $tipo, string $numero): ?array
@@ -30,27 +30,36 @@ class DocumentLookupService
     private function lookupRuc(string $ruc): ?array
     {
         try {
+            // api.json.pe: GET /api/v2/ruc?numero={ruc}  Authorization: Bearer {token}
             $response = Http::timeout(8)
                 ->withToken($this->token)
-                ->post("{$this->baseUrl}/ruc", ['ruc' => $ruc]);
+                ->acceptJson()
+                ->get("{$this->baseUrl}/v2/ruc", ['numero' => $ruc]);
 
             if ($response->successful()) {
-                $data = $response->json('data');
-                if (!empty($data['nombre_o_razon_social'])) {
+                $body = $response->json();
+                // Acepta respuesta envuelta en "data" o directa
+                $data = $body['data'] ?? $body;
+
+                $razonSocial = $data['razonSocial']
+                    ?? $data['nombre_o_razon_social']
+                    ?? null;
+
+                if (!empty($razonSocial)) {
                     return [
-                        'tipo_doc' => '6',
-                        'num_doc' => $ruc,
-                        'razon_social' => $data['nombre_o_razon_social'],
-                        'direccion' => $data['direccion_completa'] ?? $data['direccion'] ?? '',
-                        'estado' => $data['estado'] ?? '',
-                        'condicion' => $data['condicion'] ?? '',
-                        'ubigeo' => $data['ubigeo_sunat'] ?? '',
-                        'source' => 'sunat',
+                        'tipo_doc'     => '6',
+                        'num_doc'      => $ruc,
+                        'razon_social' => $razonSocial,
+                        'direccion'    => $data['direccion']        ?? $data['direccion_completa'] ?? '',
+                        'estado'       => $data['estado']           ?? $data['estado_contribuyente'] ?? '',
+                        'condicion'    => $data['condicion']        ?? $data['condicion_contribuyente'] ?? '',
+                        'ubigeo'       => $data['ubigeo']           ?? $data['ubigeo_sunat'] ?? '',
+                        'source'       => 'sunat',
                     ];
                 }
             }
         } catch (\Throwable) {
-            // silently fail
+            // silently fail — el controlador devuelve 404
         }
 
         return null;
@@ -59,27 +68,36 @@ class DocumentLookupService
     private function lookupDni(string $dni): ?array
     {
         try {
+            // api.json.pe: GET /api/v2/reniec?dni={dni}  Authorization: Bearer {token}
             $response = Http::timeout(8)
                 ->withToken($this->token)
-                ->post("{$this->baseUrl}/dni", ['dni' => $dni]);
+                ->acceptJson()
+                ->get("{$this->baseUrl}/v2/reniec", ['dni' => $dni]);
 
             if ($response->successful()) {
-                $data = $response->json('data');
-                if (!empty($data['nombres'])) {
+                $body = $response->json();
+                $data = $body['data'] ?? $body;
+
+                $nombres    = $data['nombres']        ?? null;
+                $apPaterno  = $data['apellidoPaterno'] ?? $data['apellido_paterno'] ?? '';
+                $apMaterno  = $data['apellidoMaterno'] ?? $data['apellido_materno'] ?? '';
+                $nombreCompleto = $data['nombreCompleto'] ?? $data['nombre_completo'] ?? null;
+
+                if (!empty($nombres) || !empty($nombreCompleto)) {
                     return [
-                        'tipo_doc' => '1',
-                        'num_doc' => $dni,
-                        'razon_social' => $data['nombre_completo'] ?? trim("{$data['apellido_paterno']} {$data['apellido_materno']} {$data['nombres']}"),
-                        'nombres' => $data['nombres'] ?? '',
-                        'apellido_paterno' => $data['apellido_paterno'] ?? '',
-                        'apellido_materno' => $data['apellido_materno'] ?? '',
-                        'direccion' => $data['direccion_completa'] ?? '',
-                        'source' => 'reniec',
+                        'tipo_doc'         => '1',
+                        'num_doc'          => $dni,
+                        'razon_social'     => $nombreCompleto ?? trim("{$apPaterno} {$apMaterno} {$nombres}"),
+                        'nombres'          => $nombres ?? '',
+                        'apellido_paterno' => $apPaterno,
+                        'apellido_materno' => $apMaterno,
+                        'direccion'        => $data['direccion'] ?? $data['direccion_completa'] ?? '',
+                        'source'           => 'reniec',
                     ];
                 }
             }
         } catch (\Throwable) {
-            // silently fail
+            // silently fail — el controlador devuelve 404
         }
 
         return null;
