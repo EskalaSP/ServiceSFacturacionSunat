@@ -251,7 +251,7 @@ return [
         '034' => ['desc' => 'Minerales metálicos no auríferos', 'tasa' => 10],
         '035' => ['desc' => 'Bienes exonerados del IGV', 'tasa' => 1.5],
         '036' => ['desc' => 'Oro y demás minerales metálicos exonerados del IGV', 'tasa' => 1.5],
-        '037' => ['desc' => 'Demás servicios gravados con el IGV', 'tasa' => 10],
+        '037' => ['desc' => 'Demás servicios gravados con el IGV', 'tasa' => 12],
         '039' => ['desc' => 'Minerales no metálicos', 'tasa' => 10],
         '040' => ['desc' => 'Bien inmueble gravado con IGV', 'tasa' => 4],
     ],

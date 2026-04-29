@@ -48,7 +48,7 @@ return [
     ],
 
     'lookup' => [
-        'token' => env('LOOKUP_API_TOKEN', ''),
+        'token' => env('APIS_NET_PE_TOKEN', env('LOOKUP_API_TOKEN', '')),
         'base_url' => 'https://api.json.pe/api',
     ],
 
