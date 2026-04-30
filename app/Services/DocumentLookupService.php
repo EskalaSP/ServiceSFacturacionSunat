@@ -30,16 +30,16 @@ class DocumentLookupService
     private function lookupRuc(string $ruc): ?array
     {
         try {
-            // apis.net.pe: GET /v1/ruc?numero={ruc}  Authorization: Bearer {token}
+            // apis.net.pe v2: GET /v2/sunat/ruc?numero={ruc}  Authorization: Bearer {token}
             $response = Http::timeout(8)
                 ->withToken($this->token)
                 ->acceptJson()
-                ->get("{$this->baseUrl}/v1/ruc", ['numero' => $ruc]);
+                ->get("{$this->baseUrl}/v2/sunat/ruc", ['numero' => $ruc]);
 
             if ($response->successful()) {
-                $body = $response->json();
-                // Acepta respuesta envuelta en "data" o directa
-                $data = $body['data'] ?? $body;
+                $data = $response->json();
+                // v2 devuelve objeto directo; v1 lo envolvía en 'data'
+                $data = $data['data'] ?? $data;
 
                 $razonSocial = $data['razonSocial']
                     ?? $data['nombre_o_razon_social']
@@ -50,16 +50,19 @@ class DocumentLookupService
                         'tipo_doc'     => '6',
                         'num_doc'      => $ruc,
                         'razon_social' => $razonSocial,
-                        'direccion'    => $data['direccion']        ?? $data['direccion_completa'] ?? '',
-                        'estado'       => $data['estado']           ?? $data['estado_contribuyente'] ?? '',
-                        'condicion'    => $data['condicion']        ?? $data['condicion_contribuyente'] ?? '',
-                        'ubigeo'       => $data['ubigeo']           ?? $data['ubigeo_sunat'] ?? '',
+                        'direccion'    => $data['direccion']  ?? $data['direccion_completa'] ?? '',
+                        'estado'       => $data['estado']     ?? '',
+                        'condicion'    => $data['condicion']  ?? '',
                         'source'       => 'sunat',
                     ];
                 }
+
+                \Log::info("RUC {$ruc}: respuesta OK pero sin razonSocial", ['body' => $data]);
+            } else {
+                \Log::warning("RUC {$ruc}: HTTP {$response->status()}", ['body' => $response->body()]);
             }
-        } catch (\Throwable) {
-            // silently fail — el controlador devuelve 404
+        } catch (\Throwable $e) {
+            \Log::error("RUC lookup excepción para {$ruc}: " . $e->getMessage());
         }
 
         return null;
@@ -68,20 +71,20 @@ class DocumentLookupService
     private function lookupDni(string $dni): ?array
     {
         try {
-            // api.json.pe: GET /api/v2/reniec?dni={dni}  Authorization: Bearer {token}
+            // apis.net.pe v2: GET /v2/reniec/dni?numero={dni}  Authorization: Bearer {token}
             $response = Http::timeout(8)
                 ->withToken($this->token)
                 ->acceptJson()
-                ->get("{$this->baseUrl}/v2/reniec", ['dni' => $dni]);
+                ->get("{$this->baseUrl}/v2/reniec/dni", ['numero' => $dni]);
 
             if ($response->successful()) {
-                $body = $response->json();
-                $data = $body['data'] ?? $body;
+                $data = $response->json();
+                $data = $data['data'] ?? $data;
 
-                $nombres    = $data['nombres']        ?? null;
-                $apPaterno  = $data['apellidoPaterno'] ?? $data['apellido_paterno'] ?? '';
-                $apMaterno  = $data['apellidoMaterno'] ?? $data['apellido_materno'] ?? '';
-                $nombreCompleto = $data['nombreCompleto'] ?? $data['nombre_completo'] ?? null;
+                $nombres        = $data['nombres']         ?? null;
+                $apPaterno      = $data['apellidoPaterno'] ?? $data['apellido_paterno'] ?? '';
+                $apMaterno      = $data['apellidoMaterno'] ?? $data['apellido_materno'] ?? '';
+                $nombreCompleto = $data['nombreCompleto']  ?? $data['nombre_completo']  ?? null;
 
                 if (!empty($nombres) || !empty($nombreCompleto)) {
                     return [
@@ -95,9 +98,13 @@ class DocumentLookupService
                         'source'           => 'reniec',
                     ];
                 }
+
+                \Log::info("DNI {$dni}: respuesta OK pero sin nombres", ['body' => $data]);
+            } else {
+                \Log::warning("DNI {$dni}: HTTP {$response->status()}", ['body' => $response->body()]);
             }
-        } catch (\Throwable) {
-            // silently fail — el controlador devuelve 404
+        } catch (\Throwable $e) {
+            \Log::error("DNI lookup excepción para {$dni}: " . $e->getMessage());
         }
 
         return null;
