@@ -265,6 +265,34 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::get('suscripcion/uso', [SubscriptionController::class, 'usage']);
 });
 
+// ── Diagnóstico temporal (solo con APP_DEBUG=true) ───────────────────────────
+if (config('app.debug')) {
+    Route::get('debug/lookup', function (\Illuminate\Http\Request $request) {
+        $numero = $request->input('numero', '20207845044');
+        $tipo   = $request->input('tipo', '6');
+        $token  = config('facturacion.lookup.token');
+        $base   = config('facturacion.lookup.base_url');
+
+        $endpoint = $tipo === '6' ? "{$base}/v2/sunat/ruc" : "{$base}/v2/reniec/dni";
+
+        try {
+            $res = \Illuminate\Support\Facades\Http::timeout(10)
+                ->withToken($token)
+                ->acceptJson()
+                ->get($endpoint, ['numero' => $numero]);
+
+            return response()->json([
+                'token_preview' => $token ? substr($token, 0, 12) . '...' : '(vacío)',
+                'endpoint'      => $endpoint . '?numero=' . $numero,
+                'http_status'   => $res->status(),
+                'body'          => $res->json() ?? $res->body(),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    });
+}
+
 // ── API Bridge para el SaaS principal ───────────────────────────────────────
 // Protegido con X-Bridge-Key (SAAS_BRIDGE_SECRET).
 Route::post('bridge/auth',      [\App\Http\Controllers\Auth\SaasAuthController::class, 'generateToken']);
