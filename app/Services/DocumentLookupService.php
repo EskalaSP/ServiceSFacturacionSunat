@@ -20,11 +20,20 @@ class DocumentLookupService
     {
         $cacheKey = "doc_lookup:{$tipo}:{$numero}";
 
-        return Cache::remember($cacheKey, now()->addHours(24), function () use ($tipo, $numero) {
-            return $tipo === '6'
-                ? $this->lookupRuc($numero)
-                : $this->lookupDni($numero);
-        });
+        // Solo cachear resultados exitosos; nunca cachear null para que los reintentos funcionen
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
+        $result = $tipo === '6'
+            ? $this->lookupRuc($numero)
+            : $this->lookupDni($numero);
+
+        if ($result !== null) {
+            Cache::put($cacheKey, $result, now()->addHours(24));
+        }
+
+        return $result;
     }
 
     private function lookupRuc(string $ruc): ?array
