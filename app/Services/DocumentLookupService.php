@@ -39,19 +39,19 @@ class DocumentLookupService
     private function lookupRuc(string $ruc): ?array
     {
         try {
-            // apis.net.pe v2: GET /v2/sunat/ruc?numero={ruc}  Authorization: Bearer {token}
+            // apis.net.pe v1: GET /v1/ruc?numero={ruc}  Authorization: Bearer {token}
             $response = Http::timeout(8)
                 ->withToken($this->token)
                 ->acceptJson()
-                ->get("{$this->baseUrl}/v2/sunat/ruc", ['numero' => $ruc]);
+                ->get("{$this->baseUrl}/v1/ruc", ['numero' => $ruc]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                // v2 devuelve objeto directo; v1 lo envolvía en 'data'
                 $data = $data['data'] ?? $data;
 
                 $razonSocial = $data['razonSocial']
                     ?? $data['nombre_o_razon_social']
+                    ?? $data['nombre']   // campo en respuesta v1
                     ?? null;
 
                 if (!empty($razonSocial)) {
@@ -80,11 +80,11 @@ class DocumentLookupService
     private function lookupDni(string $dni): ?array
     {
         try {
-            // apis.net.pe v2: GET /v2/reniec/dni?numero={dni}  Authorization: Bearer {token}
+            // apis.net.pe v1: GET /v1/dni?numero={dni}  Authorization: Bearer {token}
             $response = Http::timeout(8)
                 ->withToken($this->token)
                 ->acceptJson()
-                ->get("{$this->baseUrl}/v2/reniec/dni", ['numero' => $dni]);
+                ->get("{$this->baseUrl}/v1/dni", ['numero' => $dni]);
 
             if ($response->successful()) {
                 $data = $response->json();
