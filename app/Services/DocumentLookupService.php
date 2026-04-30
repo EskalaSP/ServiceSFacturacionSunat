@@ -66,9 +66,9 @@ class DocumentLookupService
                     ];
                 }
 
-                \Log::info("RUC {$ruc}: respuesta OK pero sin razonSocial", ['body' => $data]);
+                \Log::error("RUC {$ruc}: respuesta OK pero sin razonSocial", ['body' => $data]);
             } else {
-                \Log::warning("RUC {$ruc}: HTTP {$response->status()}", ['body' => $response->body()]);
+                \Log::error("RUC {$ruc}: HTTP {$response->status()} desde apis.net.pe", ['body' => $response->body()]);
             }
         } catch (\Throwable $e) {
             \Log::error("RUC lookup excepción para {$ruc}: " . $e->getMessage());
@@ -108,9 +108,9 @@ class DocumentLookupService
                     ];
                 }
 
-                \Log::info("DNI {$dni}: respuesta OK pero sin nombres", ['body' => $data]);
+                \Log::error("DNI {$dni}: respuesta OK pero sin nombres", ['body' => $data]);
             } else {
-                \Log::warning("DNI {$dni}: HTTP {$response->status()}", ['body' => $response->body()]);
+                \Log::error("DNI {$dni}: HTTP {$response->status()} desde apis.net.pe", ['body' => $response->body()]);
             }
         } catch (\Throwable $e) {
             \Log::error("DNI lookup excepción para {$dni}: " . $e->getMessage());
