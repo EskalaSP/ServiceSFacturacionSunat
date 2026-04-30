@@ -193,6 +193,31 @@ class SerieController extends Controller
         return $this->success($this->formatSerie($serie->load('sucursal')), 'Serie actualizada.');
     }
 
+    /**
+     * Crea las series por defecto (F001 factura, B001 boleta) si no existen.
+     * Endpoint: POST /api/v1/series/init-defaults
+     */
+    public function initDefaults(Request $request): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+
+        $defaults = [
+            ['tipo_documento' => '01', 'serie' => 'F001'],
+            ['tipo_documento' => '03', 'serie' => 'B001'],
+        ];
+
+        $result = [];
+        foreach ($defaults as $d) {
+            $serie = Serie::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'tipo_documento' => $d['tipo_documento'], 'serie' => $d['serie']],
+                ['correlativo' => 0, 'is_active' => true]
+            );
+            $result[] = $this->formatSerie($serie->load('sucursal'));
+        }
+
+        return $this->success($result, 'Series por defecto inicializadas.');
+    }
+
     private function formatSerie(Serie $serie): array
     {
         return [

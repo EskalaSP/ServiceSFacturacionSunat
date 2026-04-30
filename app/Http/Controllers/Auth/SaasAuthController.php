@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Serie;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -70,6 +71,16 @@ class SaasAuthController extends Controller
         }
 
         $tenant->save();
+
+        // Crear series por defecto si no existen
+        Serie::firstOrCreate(
+            ['tenant_id' => $tenant->id, 'tipo_documento' => '01', 'serie' => 'F001'],
+            ['correlativo' => 0, 'is_active' => true]
+        );
+        Serie::firstOrCreate(
+            ['tenant_id' => $tenant->id, 'tipo_documento' => '03', 'serie' => 'B001'],
+            ['correlativo' => 0, 'is_active' => true]
+        );
 
         return response()->json([
             'api_key'     => $tenant->api_key,
