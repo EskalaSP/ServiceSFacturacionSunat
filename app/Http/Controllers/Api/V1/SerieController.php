@@ -197,25 +197,49 @@ class SerieController extends Controller
      * Crea las series por defecto (F001 factura, B001 boleta) si no existen.
      * Endpoint: POST /api/v1/series/init-defaults
      */
+    /**
+     * Crea o actualiza las series de factura y boleta con el correlativo indicado.
+     * Endpoint: POST /api/v1/series/init-defaults
+     * Body: { serie_factura, correlativo_factura, serie_boleta, correlativo_boleta }
+     */
     public function initDefaults(Request $request): JsonResponse
     {
+        $request->validate([
+            'serie_factura'       => 'sometimes|string|size:4|regex:/^F[A-Z0-9]{3}$/',
+            'correlativo_factura' => 'sometimes|integer|min:0',
+            'serie_boleta'        => 'sometimes|string|size:4|regex:/^B[A-Z0-9]{3}$/',
+            'correlativo_boleta'  => 'sometimes|integer|min:0',
+        ]);
+
         $tenant = $request->get('tenant');
 
         $defaults = [
-            ['tipo_documento' => '01', 'serie' => 'F001'],
-            ['tipo_documento' => '03', 'serie' => 'B001'],
+            [
+                'tipo_documento' => '01',
+                'serie'          => strtoupper($request->input('serie_factura', 'F001')),
+                'correlativo'    => $request->input('correlativo_factura', 0),
+            ],
+            [
+                'tipo_documento' => '03',
+                'serie'          => strtoupper($request->input('serie_boleta', 'B001')),
+                'correlativo'    => $request->input('correlativo_boleta', 0),
+            ],
         ];
 
         $result = [];
         foreach ($defaults as $d) {
             $serie = Serie::firstOrCreate(
                 ['tenant_id' => $tenant->id, 'tipo_documento' => $d['tipo_documento'], 'serie' => $d['serie']],
-                ['correlativo' => 0, 'is_active' => true]
+                ['correlativo' => $d['correlativo'], 'is_active' => true]
             );
-            $result[] = $this->formatSerie($serie->load('sucursal'));
+            // Si ya existía, actualizar el correlativo si se envió explícitamente
+            if (! $serie->wasRecentlyCreated && $request->has('correlativo_' . ($d['tipo_documento'] === '01' ? 'factura' : 'boleta'))) {
+                $serie->update(['correlativo' => $d['correlativo']]);
+            }
+            $result[] = $this->formatSerie($serie->fresh()->load('sucursal'));
         }
 
-        return $this->success($result, 'Series por defecto inicializadas.');
+        return $this->success($result, 'Series configuradas correctamente.');
     }
 
     private function formatSerie(Serie $serie): array
