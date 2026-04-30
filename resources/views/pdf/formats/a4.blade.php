@@ -7,32 +7,29 @@
     <style>
         @page { margin: 12mm; }
         .page-border {
-            border: 0.5px solid #000;
-            border-radius: 8px;
-            padding: 18px 20px;
-        }
-        .document-badge {
-            border: 0.5px solid #000;
-            border-radius: 8px;
-            padding: 10px 8px;
+            border: 0.5px solid #ccc;
+            padding: 16px 20px;
         }
     </style>
 </head>
 <body>
     <div class="page-border">
-    {{-- HEADER: Logo + Emisor + Badge --}}
+    {{-- HEADER: Emisor (izq) | Badge (der) --}}
     <table class="header-table">
         <tr>
-            @if(!empty($logo_base64))
-            <td class="logo-cell">
-                <img src="{{ $logo_base64 }}" alt="Logo">
-            </td>
-            @endif
             <td class="emitter-cell">
-                <div class="emitter-name">{{ $emisor['nombre_comercial'] }}</div>
+                @if(!empty($logo_base64))
+                <img src="{{ $logo_base64 }}" alt="Logo" style="max-height: 48px; max-width: 110px; display: block; margin-bottom: 5px;">
+                @endif
+                <div class="emitter-name">{{ $emisor['razon_social'] }}</div>
+                @if(!empty($emisor['nombre_comercial']) && $emisor['nombre_comercial'] !== $emisor['razon_social'])
+                <div class="emitter-comercial">{{ $emisor['nombre_comercial'] }}</div>
+                @endif
                 <div class="emitter-ruc">RUC: {{ $emisor['ruc'] }}</div>
+                @if(!empty($emisor['direccion']))
                 <div class="emitter-address">{{ $emisor['direccion'] }}</div>
-                @if($emisor['cod_local'] !== '0000')
+                @endif
+                @if(!empty($emisor['cod_local']) && $emisor['cod_local'] !== '0000')
                 <div class="emitter-address">Cod. Local: {{ $emisor['cod_local'] }}</div>
                 @endif
                 @if(!empty($telefonos))
@@ -43,11 +40,9 @@
                 @endif
             </td>
             <td class="badge-cell">
-                <div class="document-badge">
-                    <div class="badge-ruc">RUC: {{ $emisor['ruc'] }}</div>
-                    <div class="badge-title">{{ $titulo }}</div>
-                    <div class="badge-number">{{ $numero_completo }}</div>
-                </div>
+                <div class="badge-title">{{ $titulo }}</div>
+                <div class="badge-number">{{ $numero_completo }}</div>
+                <div class="badge-ruc">RUC: {{ $emisor['ruc'] }}</div>
             </td>
         </tr>
     </table>
