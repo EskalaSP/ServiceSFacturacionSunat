@@ -290,15 +290,28 @@ if (config('app.debug')) {
             $results['raw_header'] = ['status' => $r->status(), 'body' => $r->json() ?? $r->body()];
         } catch (\Throwable $e) { $results['raw_header'] = ['error' => $e->getMessage()]; }
 
-        // Formato 3: ?token={token} en query string
+        // Formato 3: ?token={token} en query string (v2)
         try {
             $r = $http->get($endpoint, ['numero' => $numero, 'token' => $token]);
-            $results['query_param'] = ['status' => $r->status(), 'body' => $r->json() ?? $r->body()];
-        } catch (\Throwable $e) { $results['query_param'] = ['error' => $e->getMessage()]; }
+            $results['query_param_v2'] = ['status' => $r->status(), 'body' => $r->json() ?? $r->body()];
+        } catch (\Throwable $e) { $results['query_param_v2'] = ['error' => $e->getMessage()]; }
+
+        // Formato 4: v1 endpoint con token como query param (era lo que funcionaba antes)
+        $endpointV1 = $tipo === '6' ? "{$base}/v1/ruc" : "{$base}/v1/dni";
+        try {
+            $r = $http->get($endpointV1, ['numero' => $numero, 'token' => $token]);
+            $results['v1_query_param'] = ['endpoint' => $endpointV1, 'status' => $r->status(), 'body' => $r->json() ?? $r->body()];
+        } catch (\Throwable $e) { $results['v1_query_param'] = ['error' => $e->getMessage()]; }
+
+        // Formato 5: v1 endpoint con Bearer
+        try {
+            $r = $http->withToken($token)->get($endpointV1, ['numero' => $numero]);
+            $results['v1_bearer'] = ['endpoint' => $endpointV1, 'status' => $r->status(), 'body' => $r->json() ?? $r->body()];
+        } catch (\Throwable $e) { $results['v1_bearer'] = ['error' => $e->getMessage()]; }
 
         return response()->json([
             'token_preview' => $token ? substr($token, 0, 12) . '...' : '(vacío)',
-            'endpoint'      => $endpoint . '?numero=' . $numero,
+            'endpoint_v2'   => $endpoint . '?numero=' . $numero,
             'results'       => $results,
         ]);
     });
