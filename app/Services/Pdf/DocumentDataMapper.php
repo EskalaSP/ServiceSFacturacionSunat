@@ -40,22 +40,25 @@ class DocumentDataMapper
     private function mapStandardDocument(Model $document, Tenant $tenant): array
     {
         $items = $document->items->map(function ($item) {
+            $valorUnitario  = (float) ($item->mto_valor_unitario ?? 0);
             $precioUnitario = (float) ($item->mto_precio_unitario ?? $item->precio_unitario ?? 0);
-            $cantidad = (float) $item->cantidad;
-            $valorVenta = (float) ($item->mto_valor_venta ?? 0);
-            $igv = (float) ($item->igv ?? 0);
-            $descuentoBase = (float) ($item->descuento ?? 0);
+            $cantidad       = (float) $item->cantidad;
+            $valorVenta     = (float) ($item->mto_valor_venta ?? 0);
+            $igv            = (float) ($item->igv ?? 0);
+            $descuentoBase  = (float) ($item->descuento ?? 0);
 
             return [
-                'codigo' => $item->codigo ?? $item->cod_producto ?? '-',
-                'descripcion' => $item->descripcion,
-                'unidad' => $item->unidad ?? $item->und_medida ?? 'NIU',
-                'cantidad' => $cantidad,
-                'precio_unitario' => $precioUnitario,
-                'igv' => $igv,
-                'importe' => $valorVenta,
-                'descuento' => $descuentoBase,
-                'total_item' => $valorVenta,
+                'codigo'          => $item->codigo ?? $item->cod_producto ?? '-',
+                'descripcion'     => $item->descripcion,
+                'unidad'          => $item->unidad ?? $item->und_medida ?? 'NIU',
+                'cantidad'        => $cantidad,
+                'valor_unitario'  => $valorUnitario,   // BASE (sin IGV) — para mostrar en PDF
+                'precio_unitario' => $precioUnitario,  // CON IGV
+                'igv'             => $igv,
+                'importe'         => $valorVenta,
+                'descuento'       => $descuentoBase,
+                'total_item'      => $valorVenta,
+                'icbper'          => (float) ($item->mto_icbper ?? 0),
             ];
         })->toArray();
 

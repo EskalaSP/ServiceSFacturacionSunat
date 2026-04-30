@@ -71,7 +71,7 @@
     @endif
     @if(!empty($percepcion))
     <tr>
-        <td class="total-label">Subtotal:</td>
+        <td class="total-label">Importe Total:</td>
         <td class="total-value">{{ $moneda_prefix }} {{ number_format($mto_imp_venta, 2) }}</td>
     </tr>
     <tr>
@@ -79,12 +79,12 @@
         <td class="total-value">{{ $moneda_prefix }} {{ number_format($percepcion['monto'], 2) }}</td>
     </tr>
     <tr class="total-final">
-        <td class="total-label">TOTAL VENTA:</td>
+        <td class="total-label">IMPORTE TOTAL:</td>
         <td class="total-value">{{ $moneda_prefix }} {{ number_format($percepcion['mto_total'], 2) }}</td>
     </tr>
     @else
     <tr class="total-final">
-        <td class="total-label">TOTAL VENTA:</td>
+        <td class="total-label">IMPORTE TOTAL:</td>
         <td class="total-value">{{ $moneda_prefix }} {{ number_format($mto_imp_venta, 2) }}</td>
     </tr>
     @endif
