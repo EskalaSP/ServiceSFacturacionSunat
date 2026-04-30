@@ -274,22 +274,33 @@ if (config('app.debug')) {
         $base   = config('facturacion.lookup.base_url');
 
         $endpoint = $tipo === '6' ? "{$base}/v2/sunat/ruc" : "{$base}/v2/reniec/dni";
+        $http = \Illuminate\Support\Facades\Http::timeout(10)->acceptJson();
 
+        $results = [];
+
+        // Formato 1: Authorization: Bearer {token}
         try {
-            $res = \Illuminate\Support\Facades\Http::timeout(10)
-                ->withToken($token)
-                ->acceptJson()
-                ->get($endpoint, ['numero' => $numero]);
+            $r = $http->withToken($token)->get($endpoint, ['numero' => $numero]);
+            $results['bearer'] = ['status' => $r->status(), 'body' => $r->json() ?? $r->body()];
+        } catch (\Throwable $e) { $results['bearer'] = ['error' => $e->getMessage()]; }
 
-            return response()->json([
-                'token_preview' => $token ? substr($token, 0, 12) . '...' : '(vacío)',
-                'endpoint'      => $endpoint . '?numero=' . $numero,
-                'http_status'   => $res->status(),
-                'body'          => $res->json() ?? $res->body(),
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
+        // Formato 2: Authorization: {token} (sin "Bearer")
+        try {
+            $r = $http->withHeaders(['Authorization' => $token])->get($endpoint, ['numero' => $numero]);
+            $results['raw_header'] = ['status' => $r->status(), 'body' => $r->json() ?? $r->body()];
+        } catch (\Throwable $e) { $results['raw_header'] = ['error' => $e->getMessage()]; }
+
+        // Formato 3: ?token={token} en query string
+        try {
+            $r = $http->get($endpoint, ['numero' => $numero, 'token' => $token]);
+            $results['query_param'] = ['status' => $r->status(), 'body' => $r->json() ?? $r->body()];
+        } catch (\Throwable $e) { $results['query_param'] = ['error' => $e->getMessage()]; }
+
+        return response()->json([
+            'token_preview' => $token ? substr($token, 0, 12) . '...' : '(vacío)',
+            'endpoint'      => $endpoint . '?numero=' . $numero,
+            'results'       => $results,
+        ]);
     });
 }
 
