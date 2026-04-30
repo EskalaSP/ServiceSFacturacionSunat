@@ -29,7 +29,11 @@ class SummaryController extends Controller
         $query = Summary::where('tenant_id', $tenant->id);
 
         if ($mes = $request->query('mes')) {
-            $query->whereRaw("DATE_FORMAT(fecha_envio, '%Y-%m') = ?", [$mes]);
+            $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+            $ymExpr = $driver === 'pgsql'
+                ? "to_char(fecha_envio, 'YYYY-MM')"
+                : "DATE_FORMAT(fecha_envio, '%Y-%m')";
+            $query->whereRaw("{$ymExpr} = ?", [$mes]);
         }
 
         if ($tipo = $request->query('tipo')) {
