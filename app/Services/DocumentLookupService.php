@@ -30,11 +30,11 @@ class DocumentLookupService
     private function lookupRuc(string $ruc): ?array
     {
         try {
-            // api.json.pe: GET /api/v2/ruc?numero={ruc}  Authorization: Bearer {token}
+            // apis.net.pe: GET /v1/ruc?numero={ruc}  Authorization: Bearer {token}
             $response = Http::timeout(8)
                 ->withToken($this->token)
                 ->acceptJson()
-                ->get("{$this->baseUrl}/v2/ruc", ['numero' => $ruc]);
+                ->get("{$this->baseUrl}/v1/ruc", ['numero' => $ruc]);
 
             if ($response->successful()) {
                 $body = $response->json();

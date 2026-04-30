@@ -49,7 +49,7 @@ return [
 
     'lookup' => [
         'token' => env('APIS_NET_PE_TOKEN', env('LOOKUP_API_TOKEN', '')),
-        'base_url' => 'https://api.json.pe/api',
+        'base_url' => 'https://api.apis.net.pe',
     ],
 
     // Plan limits are now managed via PlanService + plans DB table.
