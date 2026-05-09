@@ -148,6 +148,8 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::put('empresa', [TenantController::class, 'update']);
     Route::post('empresa/logo', [TenantController::class, 'uploadLogo']);
     Route::post('empresa/certificado', [TenantController::class, 'uploadCertificate']);
+    Route::get('empresa/credenciales', [TenantController::class, 'credenciales']);
+    Route::post('empresa/credenciales/regenerar', [TenantController::class, 'regenerarCredenciales']);
 
     // Sucursales
     Route::apiResource('sucursales', SucursalController::class);
