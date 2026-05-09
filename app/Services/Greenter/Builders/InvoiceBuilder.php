@@ -82,6 +82,28 @@ class InvoiceBuilder
         $mtoOperExportacion = (float) ($data['mto_oper_exportacion'] ?? 0);
         $mtoIgv = (float) ($data['mto_igv'] ?? 0);
 
+        // Anticipos: ajustar TaxableAmount y TaxAmount ANTES de llamar a set*() en Greenter.
+        // SUNAT 3277: TaxableAmount = Σ(líneas) - AllowanceCharge04_base
+        // La base del anticipo = totalAnticipos / (1 + igvRate) para que 3277, 3291 y 3294 cuadren.
+        $anticipoBase = 0.0;
+        $totalAnticiposBuilder = (float) ($data['total_anticipos'] ?? 0);
+        if ($totalAnticiposBuilder <= 0 && ! empty($data['anticipos'])) {
+            $totalAnticiposBuilder = (float) (array_sum(array_column($data['anticipos'], 'monto'))
+                ?: array_sum(array_column($data['anticipos'], 'total')));
+        }
+        if ($totalAnticiposBuilder > 0 && $mtoOperGravadas > 0) {
+            $igvFracAnticipo = ($this->taxRates?->defaultIgvRate($this->tenant, $this->fechaEmision) ?? 18) / 100;
+            $anticipoBase = round($totalAnticiposBuilder / (1 + $igvFracAnticipo), 2);
+            $mtoOperGravadas = round(max(0, $mtoOperGravadas - $anticipoBase), 2);
+            $mtoIgv = round($mtoOperGravadas * $igvFracAnticipo, 2);
+        }
+
+        // TaxTotal/TaxAmount must equal TaxSubtotal/TaxAmount (SUNAT 3294).
+        // When anticipos are present, use the adjusted mtoIgv (net) instead of the gross DB value.
+        $totalImpuestosHeader = $anticipoBase > 0
+            ? $mtoIgv + (float) ($data['mto_isc'] ?? 0) + (float) ($data['mto_icbper'] ?? 0) + (float) ($data['mto_ivap'] ?? 0)
+            : (float) ($data['total_impuestos'] ?? $mtoIgv);
+
         // Calcular mto_igv_gratuitas desde ítems si no está almacenado
         if (empty($data['mto_igv_gratuitas']) && ! empty($data['items'])) {
             $gratuitoGravadoCodes = ['11', '12', '13', '14', '15', '16'];
@@ -116,7 +138,7 @@ class InvoiceBuilder
         }
 
         $invoice
-            ->setTotalImpuestos((float) ($data['total_impuestos'] ?? $mtoIgv))
+            ->setTotalImpuestos($totalImpuestosHeader)
             ->setValorVenta((float) ($data['valor_venta'] ?? 0))
             ->setSubTotal((float) ($data['sub_total'] ?? 0))
             ->setMtoImpVenta((float) ($data['mto_imp_venta'] ?? 0));
@@ -232,13 +254,20 @@ class InvoiceBuilder
         if (! empty($data['anticipos'])) {
             $anticipos = [];
             foreach ($data['anticipos'] as $ant) {
+                // Acepta nro_doc_rel directo o construye desde serie+correlativo
+                $nroDocRel = $ant['nro_doc_rel']
+                    ?? (isset($ant['serie'], $ant['correlativo'])
+                        ? $ant['serie'] . '-' . $ant['correlativo']
+                        : '');
                 $anticipos[] = (new Prepayment())
-                    ->setTipoDocRel($ant['tipo_doc_rel'] ?? '02')
-                    ->setNroDocRel($ant['nro_doc_rel'])
-                    ->setTotal((float) $ant['total']);
+                    ->setTipoDocRel($ant['tipo_doc_rel'] ?? $ant['tipo_doc'] ?? '02')
+                    ->setNroDocRel($nroDocRel)
+                    ->setTotal((float) ($ant['total'] ?? $ant['monto'] ?? 0));
             }
             $invoice->setAnticipos($anticipos);
-            $totalAnticipos = (float) ($data['total_anticipos'] ?? array_sum(array_column($data['anticipos'], 'total')));
+            $totalAnticipos = (float) ($data['total_anticipos']
+                ?? array_sum(array_column($data['anticipos'], 'total'))
+                ?: array_sum(array_column($data['anticipos'], 'monto')));
             $invoice->setTotalAnticipos($totalAnticipos);
         }
 
@@ -253,8 +282,9 @@ class InvoiceBuilder
                     ->setMonto((float) $desc['monto']);
             }
         }
-        // SUNAT 3287: anticipos require descuento global tipo 04
-        if ($totalAnticipos > 0) {
+        // SUNAT 3287: anticipos requieren descuento global tipo 04.
+        // $anticipoBase ya fue calculado arriba como totalAnticipos/(1+igvRate).
+        if ($totalAnticipos > 0 && $anticipoBase > 0) {
             $hasTipo04 = false;
             foreach ($descuentos as $desc) {
                 if ($desc->getCodTipo() === '04') {
@@ -265,9 +295,9 @@ class InvoiceBuilder
             if (! $hasTipo04) {
                 $descuentos[] = (new Charge())
                     ->setCodTipo('04')
-                    ->setMontoBase($totalAnticipos)
+                    ->setMontoBase($anticipoBase)
                     ->setFactor(1)
-                    ->setMonto($totalAnticipos);
+                    ->setMonto($anticipoBase);
             }
         }
         if (! empty($descuentos)) {

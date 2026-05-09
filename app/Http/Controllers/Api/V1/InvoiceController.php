@@ -247,11 +247,11 @@ class InvoiceController extends Controller
         ]);
     }
 
-    public function pdf(Request $request, int $id): \Illuminate\Http\Response|JsonResponse
+    public function pdf(Request $request, int|string $id): \Illuminate\Http\Response|JsonResponse
     {
         $tenant = $request->get('tenant');
-        $invoice = Invoice::with(['items', 'payments'])->forTenant($tenant->id)->findOrFail($id);
-        $formatStr = $request->input('format', config('pdf.default_format', 'a4'));
+        $invoice = Invoice::with(['items', 'payments'])->forTenant($tenant->id)->findOrFail((int) $id);
+        $formatStr = $request->input('formato', $request->input('format', config('pdf.default_format', 'a4')));
 
         try {
             $format = PdfFormatConfig::from($formatStr);

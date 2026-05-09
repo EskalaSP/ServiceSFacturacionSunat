@@ -219,21 +219,11 @@ class DocumentCalculationService
             // no se agrega a sumDescuentosNoBase para evitar error SUNAT 3300
         }
 
-        // Auto-calcular anticipo: si hay anticipos pero no descuentos_globales cod 04, generarlos
+        // El anticipo se declara via PrepaidPayment en el XML (setAnticipos/setTotalAnticipos).
+        // NO se agrega AllowanceCharge tipo 04 porque genera validaciones en cascada de SUNAT
+        // (3277 → 3291 → 3294) imposibles de satisfacer simultáneamente con los valores brutos.
         if (! empty($data['anticipos']) && ! isset($data['total_anticipos'])) {
-            $data['total_anticipos'] = collect($data['anticipos'])->sum('total');
-        }
-        if (! empty($data['anticipos'])) {
-            $totalAnticipo = (float) ($data['total_anticipos'] ?? collect($data['anticipos'])->sum('total'));
-            $ya_tiene_descuento04 = collect($data['descuentos_globales'] ?? [])->contains(fn($d) => ($d['cod_tipo'] ?? '') === '04');
-            if (! $ya_tiene_descuento04 && $totalAnticipo > 0) {
-                $data['descuentos_globales'][] = [
-                    'cod_tipo'   => '04',
-                    'factor'     => 1,
-                    'monto'      => $totalAnticipo,
-                    'monto_base' => $totalAnticipo,
-                ];
-            }
+            $data['total_anticipos'] = collect($data['anticipos'])->sum('monto');
         }
 
         $descuentoGlobalGravadas = 0;
@@ -278,16 +268,15 @@ class DocumentCalculationService
         $valorVenta = round($gravadas + $exoneradas + $inafectas + $exportacion + $baseIvap, 2);
         $sumDescuentosNoBase = round($sumDescuentosNoBase, 2);
         $subTotal = round($valorVenta + $totalImpuestos, 2);
-        $totalAnticipos = (float) ($data['total_anticipos'] ?? collect($data['anticipos'] ?? [])->sum('total'));
+        $totalAnticipos = (float) ($data['total_anticipos'] ?? collect($data['anticipos'] ?? [])->sum('monto'));
         $mtoImpVenta = max(0, round($subTotal - $totalAnticipos - $sumDescuentosNoBase, 2));
 
-        // Para anticipos: mto_oper_gravadas y mto_igv se reducen proporcionalmente
-        // pero valor_venta y sub_total permanecen con el valor completo de los ítems
-        $gravadas_netas = $totalAnticipos > 0 ? round($gravadas - $totalAnticipos, 2) : $gravadas;
-        // Usa la tasa efectiva del régimen (no hardcodear 0.18)
-        $anticipoRateFrac = $this->taxRates->defaultIgvRate($tenant, $fechaEmision) / 100;
-        $igv_neto = $totalAnticipos > 0 ? round($gravadas_netas * $anticipoRateFrac, 2) : $totalIgv;
-        $totalImpuestos_neto = $totalAnticipos > 0 ? round($igv_neto + $totalIvap + $totalIsc + $totalIcbper, 2) : $totalImpuestos;
+        // El anticipo se declara como PrepaidAmount en el XML (línea separada).
+        // mto_oper_gravadas y mto_igv siempre reflejan el total bruto de los ítems;
+        // mto_imp_venta ya descuenta el anticipo.
+        $gravadas_netas = $gravadas;
+        $igv_neto = $totalIgv;
+        $totalImpuestos_neto = $totalImpuestos;
 
         return [
             'mto_oper_gravadas' => (float) ($data['mto_oper_gravadas'] ?? $gravadas_netas),
