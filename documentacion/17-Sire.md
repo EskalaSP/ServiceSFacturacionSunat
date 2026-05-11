@@ -7,8 +7,61 @@
 
 ---
 
+## 🧠 ¿Qué es SIRE y para qué sirve?
+
+**SIRE = Sistema Integrado de Registros Electrónicos** es el sistema de SUNAT que **reemplaza los libros contables físicos o en Excel**. En lugar de llevar tu Registro de Compras (RCE) y Registro de Ventas (RVIE) manualmente, SUNAT genera una **propuesta automática** cada mes basada en los comprobantes electrónicos que ya tiene registrados, y tú la revisas, corriges y confirmas.
+
+> **En una frase:** SUNAT ya sabe lo que compraste y vendiste → te propone el libro → tú lo aceptas o corriges.
+
+### ¿Quiénes están obligados?
+
+Contribuyentes del **Régimen General** y **MYPE Tributario** que lleven libros electrónicos. Aplica a partir del año en que SUNAT los incorpora al padrón (ver `GET /sire/periodos`).
+
+### ¿Qué hace esta API por ti?
+
+| Función | Para qué |
+|---------|----------|
+| Descargar la propuesta de SUNAT | Ver qué comprobantes incluye SUNAT ese mes |
+| Comparar con tus datos locales (reconciliación) | Detectar facturas que faltan o están con montos distintos |
+| Aceptar la propuesta | Confirmar el libro si todo está correcto |
+| Reemplazar la propuesta | Corregir el libro subiendo tu propio archivo |
+| Registrar preliminar | Cerrar el libro del mes en SUNAT |
+| Ajustes posteriores | Corregir meses ya cerrados |
+| Descargar constancia | Obtener el PDF oficial de SUNAT |
+
+### Flujo mensual resumido
+
+```
+1. Activar SIRE (una sola vez)
+        ↓
+2. Ver periodos disponibles  →  GET /sire/periodos
+        ↓
+3. Solicitar propuesta SUNAT →  GET /sire/rce/{periodo}/propuesta
+        ↓ (asíncrono — el sistema hace polling automático)
+4. Ver comprobantes parseados → GET /sire/rce/{periodo}/comprobantes
+        ↓
+    ¿Está bien?                 ¿Hay diferencias?
+        ↓                              ↓
+5a. Aceptar propuesta         5b. Reemplazar propuesta
+    POST /aceptar-propuesta        POST /reemplazar-propuesta
+        ↓                              ↓
+6. Registrar preliminar  →  POST /sire/rce/{periodo}/registrar-preliminar
+        ↓
+7. Descargar constancia PDF → GET /sire/rce/constancia
+```
+
+### Libros soportados
+
+| Código | Clave API | Descripción |
+|--------|-----------|-------------|
+| `080000` | `rce` | Registro de Compras Electrónico |
+| `140000` | `rvie` | Registro de Ventas e Ingresos Electrónico |
+
+---
+
 ## 📑 Tabla de contenido
 
+- [¿Qué es SIRE y para qué sirve?](#-qué-es-sire-y-para-qué-sirve)
 - [1. Conceptos clave](#1-conceptos-clave)
 - [2. Configuración previa](#2-configuración-previa)
 - [3. Flujo de activación](#3-flujo-de-activación)
