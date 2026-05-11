@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SucursalController;
 use App\Http\Controllers\Api\V1\SummaryController;
 use App\Http\Controllers\Api\V1\TenantController;
+use App\Http\Controllers\Api\V1\CredentialRecoveryController;
 use App\Http\Controllers\Api\V1\PerceptionController;
 use App\Http\Controllers\Api\V1\RetentionController;
 use App\Http\Controllers\Api\V1\ReversionController;
@@ -28,6 +29,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->middleware(['throttle:api'])->group(function () {
     Route::post('registro', [RegisterController::class, 'store']);
     Route::get('planes', [SubscriptionController::class, 'plans']);
+    Route::post('credenciales/recuperar', [CredentialRecoveryController::class, 'solicitar']);
+    Route::post('credenciales/recuperar/verificar', [CredentialRecoveryController::class, 'verificar']);
 });
 
 // === Rutas protegidas (requieren X-Api-Key + X-Api-Secret) ===
