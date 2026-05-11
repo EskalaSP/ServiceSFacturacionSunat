@@ -47,7 +47,7 @@ class VoidedController extends Controller
                 ->where('fecha_comunicacion', $fechaCom)
                 ->max('correlativo') ?? 0;
 
-            $correlativo = str_pad((int) $lastCorrelativo + 1, 3, '0', STR_PAD_LEFT);
+            $correlativo = str_pad((string) ((int) $lastCorrelativo + 1), 3, '0', STR_PAD_LEFT);
             $identifier = "RA-{$fechaId}-{$correlativo}";
 
             $voided = VoidedDocument::create([

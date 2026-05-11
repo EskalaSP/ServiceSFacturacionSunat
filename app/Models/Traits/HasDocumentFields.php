@@ -15,7 +15,7 @@ trait HasDocumentFields
 
     public function getNumeroCompletoAttribute(): string
     {
-        return $this->serie . '-' . str_pad($this->correlativo, 6, '0', STR_PAD_LEFT);
+        return $this->serie . '-' . str_pad((string) $this->correlativo, 6, '0', STR_PAD_LEFT);
     }
 
     public function client(): BelongsTo

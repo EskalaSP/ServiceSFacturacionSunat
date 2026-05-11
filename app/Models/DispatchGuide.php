@@ -85,6 +85,6 @@ class DispatchGuide extends Model
 
     public function getNumeroCompletoAttribute(): string
     {
-        return $this->serie . '-' . str_pad($this->correlativo, 6, '0', STR_PAD_LEFT);
+        return $this->serie . '-' . str_pad((string) $this->correlativo, 6, '0', STR_PAD_LEFT);
     }
 }
