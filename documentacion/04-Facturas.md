@@ -4,12 +4,31 @@
 > Todos los endpoints requieren `X-Api-Key` + `X-Api-Secret`.
 > Serie requerida: debe empezar con `F` (ej: `F001`) o ser 4 dígitos numéricos.
 
+## 📑 Tabla de contenido
+
+- [Endpoints](#-endpoints)
+- [1. POST /facturas — Crear](#1-post-facturas--crear-factura)
+- [2. GET /facturas — Listar](#2-get-facturas--listar)
+- [3. GET /facturas/{id} — Ver](#3-get-facturasid--ver-factura)
+- [4. PUT /facturas/{id} — Actualizar](#4-put-facturasid--actualizar)
+- [5. XML firmado](#5-get-facturasidxml--xml-firmado)
+- [6. CDR de SUNAT](#6-get-facturasidcdr--cdr-de-sunat)
+- [7. PDF](#7-get-facturasidpdf--pdf)
+- [8. Reenviar a SUNAT](#8-post-facturasidreenviar--reenviar-a-sunat)
+- [9. Pagos](#9-pagos-asociados)
+- [10. Sucursales — Filtrar y asociar](#10-sucursales--filtrar-y-asociar-facturas)
+- [Flujos típicos](#-flujos-típicos)
+- [Catálogos SUNAT](#-catálogos-sunat-referenciados)
+- [Reglas de negocio](#️-reglas-de-negocio-clave)
+
+---
+
 ## 📑 Endpoints
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `POST` | `/facturas` | Crear factura |
-| `GET` | `/facturas` | Listar facturas |
+| `GET` | `/facturas` | Listar facturas (con filtro `?sucursal_id=N`) |
 | `GET` | `/facturas/{id}` | Ver factura |
 | `PUT` | `/facturas/{id}` | Actualizar (solo si NO aceptada) |
 | `GET` | `/facturas/{id}/xml` | Descargar XML firmado |
@@ -79,6 +98,7 @@
 | Campo | Tipo | Obligatorio | Notas |
 |-------|------|-------------|-------|
 | `serie` | string(4) | ✅ | `F001`-`F999` o 4 dígitos |
+| `sucursal_id` | integer | ❌ | ID de la sucursal (ver `GET /sucursales`). Si no se envía, la factura no queda asociada a ninguna sucursal |
 | `cod_local` | string(4) | ❌ | Si no se envía usa el de la sucursal principal |
 | `fecha_emision` | date | ✅ | `yyyy-mm-dd` |
 | `fecha_vencimiento` | date | ❌ | Requerido si `forma_pago=Credito` |
@@ -371,23 +391,38 @@ Si `forma_pago=Credito`, las cuotas son obligatorias:
 
 ### Query params
 
-| Param | Descripción |
-|-------|-------------|
-| `buscar` | Texto libre (serie, correlativo, cliente) |
-| `serie` | Filtrar por serie exacta |
-| `correlativo` | Filtrar por correlativo (carga items automáticamente) |
-| `cliente_doc` | RUC/DNI del cliente |
-| `estado` | `pendiente`, `enviado`, `aceptado`, `rechazado`, `anulado` |
-| `payment_status` | `pendiente`, `parcial`, `pagado` |
-| `moneda` | `PEN`, `USD`, `EUR` |
-| `desde`, `hasta` | Rango de `fecha_emision` |
-| `con` | CSV con relaciones: `items,payments` |
-| `por_pagina` | Default 15, máx 100 |
+| Param | Tipo | Descripción |
+|-------|------|-------------|
+| `search` / `q` | string | Búsqueda libre: razón social, num doc, serie o correlativo |
+| `serie` | string(4) | Serie exacta (ej: `F001`) o con comodín (ej: `F0%`) |
+| `correlativo` | integer | Correlativo exacto (carga items automáticamente) |
+| `correlativo_desde` | integer | Correlativo mínimo |
+| `correlativo_hasta` | integer | Correlativo máximo |
+| `client_num_doc` | string | RUC/DNI exacto del cliente |
+| `client_tipo_doc` | string | Tipo doc: `6`=RUC, `1`=DNI, etc. |
+| `cliente` | string | Búsqueda parcial en razón social (LIKE) |
+| `sunat_status` | string | `pendiente`, `enviado`, `aceptado`, `rechazado`, `anulado` (permite varios separados por coma) |
+| `estado_pago` | string | `pendiente`, `parcial`, `pagado` (permite varios separados por coma) |
+| `tipo_moneda` | string | `PEN`, `USD`, `EUR` |
+| `tipo_operacion` | string | `0101`, `0200`, `1001`, etc. |
+| `forma_pago` | string | `Contado`, `Credito` |
+| `fecha_desde` | date | Desde `fecha_emision` (`yyyy-mm-dd`) |
+| `fecha_hasta` | date | Hasta `fecha_emision` (`yyyy-mm-dd`) |
+| `vencimiento_desde` | date | Desde `fecha_vencimiento` |
+| `vencimiento_hasta` | date | Hasta `fecha_vencimiento` |
+| `monto_min` | numeric | Monto total mínimo |
+| `monto_max` | numeric | Monto total máximo |
+| `sucursal_id` | integer | **Filtrar por sucursal** (ver sección 10) |
+| `con_cdr` | boolean | `true` = solo facturas con CDR descargado |
+| `con` | string | Relaciones a cargar: `items`, `payments` (CSV) |
+| `ordenar_por` | string | `fecha_emision`, `correlativo`, `mto_imp_venta`, `client_razon_social`, `sunat_status`, `created_at` (default) |
+| `orden` | string | `desc` (default) \| `asc` |
+| `por_pagina` | integer | Default `15`, máx `100` |
 
 ### Ejemplo
 
 ```bash
-curl "https://tu-api.com/api/v1/facturas?estado=aceptado&desde=2026-04-01&hasta=2026-04-30&con=items,payments" \
+curl "https://tu-api.com/api/v1/facturas?sunat_status=aceptado&fecha_desde=2026-04-01&fecha_hasta=2026-04-30&con=items,payments" \
   -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}"
 ```
 
@@ -585,6 +620,81 @@ Anula un pago específico.
 
 ---
 
+## 10. Sucursales — Filtrar y asociar facturas
+
+Cada factura puede estar asociada a una sucursal mediante el campo `sucursal_id`. Esto permite que cada punto de venta o sede solo vea sus propios documentos.
+
+### Paso 1 — Obtener el ID de tu sucursal
+
+```bash
+curl https://tu-api.com/api/v1/sucursales \
+  -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}"
+```
+
+```json
+{
+  "datos": [
+    { "id": 1, "nombre": "Sede Principal",      "cod_local": "0000", "is_principal": true  },
+    { "id": 2, "nombre": "Sucursal Lima Norte",  "cod_local": "0001", "is_principal": false },
+    { "id": 3, "nombre": "Sucursal Miraflores",  "cod_local": "0002", "is_principal": false }
+  ]
+}
+```
+
+### Paso 2 — Crear facturas vinculadas a una sucursal
+
+```json
+{
+  "sucursal_id": 2,
+  "serie": "F002",
+  "fecha_emision": "2026-05-11",
+  "cliente": { "tipo_doc": "6", "num_doc": "20100000001", "razon_social": "CLIENTE SAC" },
+  "items": [{ "descripcion": "Producto", "unidad": "NIU", "cantidad": 1, "precio_unitario": 100 }]
+}
+```
+
+> ⚠️ Si no envías `sucursal_id`, la factura **no queda asociada** a ninguna sucursal y no aparecerá al filtrar por ella.
+
+### Paso 3 — Ver solo las facturas de una sucursal
+
+```bash
+# Facturas de la sucursal 2
+curl "https://tu-api.com/api/v1/facturas?sucursal_id=2" \
+  -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}"
+
+# Facturas de la sucursal 2 aceptadas en mayo 2026
+curl "https://tu-api.com/api/v1/facturas?sucursal_id=2&sunat_status=aceptado&fecha_desde=2026-05-01&fecha_hasta=2026-05-31" \
+  -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}"
+```
+
+### También aplica a boletas, notas y guías
+
+```bash
+GET /api/v1/boletas?sucursal_id=2
+GET /api/v1/notas-credito?sucursal_id=2
+GET /api/v1/notas-debito?sucursal_id=2
+GET /api/v1/guias-remision?sucursal_id=2
+```
+
+### Series por sucursal
+
+Cada sucursal tiene asignadas sus propias series. Esto evita mezclar correlativos entre sedes:
+
+| Sucursal | Series facturas | Series boletas |
+|----------|----------------|----------------|
+| Principal (0000) | `F001` | `B001` |
+| Lima Norte (0001) | `F002` | `B002` |
+| Miraflores (0002) | `F003` | `B003` |
+
+Para consultar las series de una sucursal:
+
+```bash
+curl "https://tu-api.com/api/v1/sucursales/2" \
+  -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}"
+```
+
+---
+
 ## 🎯 Flujos típicos
 
 ### Flujo feliz
@@ -647,3 +757,4 @@ Todos los códigos están en [config/sunat_catalogs.php](../config/sunat_catalog
 - **Fecha vencimiento:** requerida solo si `forma_pago=Credito`
 - **Detracción:** aplicable solo si monto total > S/ 700
 - **Cliente RUC:** obligatorio en factura (para boleta puede ser DNI/sin documento)
+- **Sucursal:** enviar `sucursal_id` al crear para asociar la factura a una sede. Sin este campo, la factura no aparece en filtros por sucursal. Ver sección 10.
