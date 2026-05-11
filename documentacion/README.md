@@ -34,6 +34,9 @@
 17. [**17-Sire.md**](./17-Sire.md) — SIRE RCE completo: 25 endpoints, Postman collection
 18. [**18-Plan-implementacion-sire.md**](./18-Plan-implementacion-sire.md) — Arquitectura y plan técnico SIRE
 
+### 📦 Exportación masiva
+21. [**21-Exportar-ZIP.md**](./21-Exportar-ZIP.md) — Descarga masiva de XMLs y PDFs en ZIP por rango de fechas, tipo y sucursal
+
 ### 🚀 Despliegue
 19. [**19-Cron-hosting.md**](./19-Cron-hosting.md) — Cómo correr jobs + scheduler en hosting compartido (`cron-jobs.php`)
 20. [**20-Despliegue-VPS.md**](./20-Despliegue-VPS.md) — Guía completa: VPS Ubuntu 24 (Hostinger) + MySQL + Nginx + SSL + Supervisor + cron
@@ -210,6 +213,11 @@ POST   /consultar-cdr
 GET    /consultar-cpe
 ```
 
+### Exportación masiva (1 ruta)
+```
+GET    /comprobantes/exportar-zip      descarga ZIP con XMLs y/o PDFs por rango de fechas
+```
+
 ### Panel / Reportes (11 + 7 rutas)
 ```
 GET    /panel/                        vista completa mes
@@ -308,6 +316,7 @@ Estados comunes en todos los documentos:
 | Verificar factura de proveedor | [14-Consultar-CPE.md#caso-1](./14-Consultar-CPE.md#caso-1--verificar-proveedor-antes-de-pagar) |
 | Ver KPIs del negocio | [15-Panel-de-control.md](./15-Panel-de-control.md) |
 | Cargar compras a SUNAT SIRE | [17-Sire.md](./17-Sire.md) |
+| Descargar XMLs/PDFs en ZIP | [21-Exportar-ZIP.md](./21-Exportar-ZIP.md) |
 
 ---
 

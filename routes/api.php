@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\TenantController;
 use App\Http\Controllers\Api\V1\CredentialRecoveryController;
 use App\Http\Controllers\Api\V1\PerceptionController;
 use App\Http\Controllers\Api\V1\RetentionController;
+use App\Http\Controllers\Api\V1\ExportController;
 use App\Http\Controllers\Api\V1\ReversionController;
 use App\Http\Controllers\Api\V1\VoidedController;
 use Illuminate\Support\Facades\Route;
@@ -197,6 +198,9 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
         Route::get('documentos-recientes', 'documentosRecientes'); // Feed últimos 20
         Route::get('alertas', 'alertas');                  // Rechazos, vencimientos, series
     });
+
+    // === Exportación masiva ===
+    Route::get('comprobantes/exportar-zip', [ExportController::class, 'zip']);
 
     // === Reportes ===
     Route::get('reportes/registro-ventas', [ReportController::class, 'registroVentas']);

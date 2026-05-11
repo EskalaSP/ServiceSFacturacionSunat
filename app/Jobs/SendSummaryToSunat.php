@@ -56,6 +56,8 @@ class SendSummaryToSunat implements ShouldQueue
             $greenterSummary = $service->buildSummary($data);
             $result = $service->send($greenterSummary);
         } catch (\SoapFault $e) {
+            // Guardar XML aunque falle el envío SOAP (fue generado y firmado antes del error)
+            $this->saveXmlIfAvailable($service, $summary, $tenant, $data);
             $this->handleRetryableError($summary, $tenant, $e->getMessage());
             return;
         } catch (\Greenter\XMLSecLibs\Exception\XmlSignException $e) {
@@ -106,6 +108,25 @@ class SendSummaryToSunat implements ShouldQueue
 
             $this->markAsRejected($summary, $tenant, $errorCode, $result['error_message'] ?? null);
         }
+    }
+
+    private function saveXmlIfAvailable(
+        \App\Services\Greenter\GreenterService $service,
+        Summary $summary,
+        Tenant $tenant,
+        array $data
+    ): void {
+        $xml = $service->getLastXml();
+        if (empty($xml) || $summary->xml_path) {
+            return;
+        }
+
+        $fechaId   = str_replace('-', '', $data['fecha_envio']);
+        $identifier = "RC-{$fechaId}-{$data['correlativo']}";
+        $xmlPath   = "{$tenant->ruc}/0000/{$data['fecha_referencia']}/xml/{$identifier}.xml";
+
+        Storage::disk('public')->put($xmlPath, $xml);
+        $summary->update(['xml_path' => $xmlPath]);
     }
 
     private function isRetryableError(string $errorCode): bool

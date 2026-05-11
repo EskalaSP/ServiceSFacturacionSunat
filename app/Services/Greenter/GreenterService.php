@@ -19,10 +19,16 @@ use Greenter\Ws\Services\SunatEndpoints;
 class GreenterService
 {
     private Tenant $tenant;
+    private ?See $currentSee = null;
 
     public function __construct(Tenant $tenant)
     {
         $this->tenant = $tenant;
+    }
+
+    public function getLastXml(): ?string
+    {
+        return $this->currentSee?->getFactory()->getLastXml();
     }
 
     public function createSee(?string $endpoint = null): See
@@ -227,6 +233,7 @@ class GreenterService
     public function send(DocumentInterface $document): array
     {
         $see = $this->resolveSee($document);
+        $this->currentSee = $see;
         $result = $see->send($document);
         $xml = $see->getFactory()->getLastXml();
 
