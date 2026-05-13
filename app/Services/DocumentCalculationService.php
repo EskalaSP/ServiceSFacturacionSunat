@@ -65,16 +65,26 @@ class DocumentCalculationService
                     // cod_tipo "00" y "01" se tratan igual a nivel de ítem (reducen base)
                     // La distinción "no afecta base" solo aplica a descuentos globales (cod "03")
                     if ($codTipo === '00' || $codTipo === '01') {
-                        $factor = (float) ($desc['factor'] ?? 0);
-                        $montoBase = $valorBruto;
-                        $monto = round($montoBase * $factor, 2);
-                        $descuentoBase += $monto;
-                        $descuentoConIgv += round($totalConIgvBruto * $factor, 2);
+                        $montoBase = round($valorBruto, 2);
+
+                        if (! empty($desc['porcentaje'])) {
+                            $factor = round((float) $desc['porcentaje'] / 100, 6);
+                            $monto  = round($montoBase * $factor, 2);
+                        } elseif (! empty($desc['factor'])) {
+                            $factor = (float) $desc['factor'];
+                            $monto  = round($montoBase * $factor, 2);
+                        } else {
+                            $monto  = (float) ($desc['monto'] ?? 0);
+                            $factor = $montoBase > 0 ? round($monto / $montoBase, 6) : 0;
+                        }
+
+                        $descuentoBase    += $monto;
+                        $descuentoConIgv  += round($totalConIgvBruto * $factor, 2);
                         $recalculatedDescuentos[] = [
-                            'cod_tipo' => $codTipo,
-                            'monto_base' => round($montoBase, 2),
-                            'factor' => $factor,
-                            'monto' => $monto,
+                            'cod_tipo'   => $codTipo,
+                            'monto_base' => $montoBase,
+                            'factor'     => $factor,
+                            'monto'      => $monto,
                         ];
                     } else {
                         $recalculatedDescuentos[] = $desc;

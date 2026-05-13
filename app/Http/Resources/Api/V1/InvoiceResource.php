@@ -54,19 +54,30 @@ class InvoiceResource extends JsonResource
                 $isc = (float) ($item->isc ?? 0);
                 $descuentoBase = (float) $item->descuento;
 
+                $descuentosItem = null;
+                if (! empty($item->descuentos)) {
+                    $descuentosItem = collect($item->descuentos)->map(fn ($d) => [
+                        'cod_tipo'   => $d['cod_tipo'] ?? '00',
+                        'monto_base' => (float) ($d['monto_base'] ?? 0),
+                        'factor'     => (float) ($d['factor'] ?? 0),
+                        'monto'      => (float) ($d['monto'] ?? 0),
+                    ])->values();
+                }
+
                 return array_filter([
-                    'codigo' => $item->codigo,
-                    'descripcion' => $item->descripcion,
-                    'unidad' => $item->unidad,
-                    'cantidad' => $cantidad,
+                    'codigo'          => $item->codigo,
+                    'descripcion'     => $item->descripcion,
+                    'unidad'          => $item->unidad,
+                    'cantidad'        => $cantidad,
                     'precio_unitario' => $precioUnitario,
-                    'valor_unitario' => (float) $item->mto_valor_unitario,
-                    'igv' => $igv,
-                    'isc' => $isc,
-                    'icbper' => $icbper,
-                    'descuento' => $descuentoBase,
-                    'total' => round($valorVenta + $igv + $icbper + $isc, 2),
-                ], fn ($v, $k) => ! (in_array($k, ['descuento', 'isc', 'icbper'], true) && $v == 0), ARRAY_FILTER_USE_BOTH);
+                    'valor_unitario'  => (float) $item->mto_valor_unitario,
+                    'igv'             => $igv,
+                    'isc'             => $isc,
+                    'icbper'          => $icbper,
+                    'descuento'       => $descuentoBase,
+                    'descuentos'      => $descuentosItem,
+                    'total'           => round($valorVenta + $igv + $icbper + $isc, 2),
+                ], fn ($v, $k) => ! (in_array($k, ['descuento', 'isc', 'icbper', 'descuentos'], true) && ($v == 0 || $v === null)), ARRAY_FILTER_USE_BOTH);
             })),
             'detraccion' => $this->when($this->detraccion, $this->detraccion),
             'percepcion' => $this->when($this->percepcion, $this->percepcion),
