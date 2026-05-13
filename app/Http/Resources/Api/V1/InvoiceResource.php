@@ -61,7 +61,7 @@ class InvoiceResource extends JsonResource
                         'monto_base' => (float) ($d['monto_base'] ?? 0),
                         'factor'     => (float) ($d['factor'] ?? 0),
                         'monto'      => (float) ($d['monto'] ?? 0),
-                    ])->values();
+                    ])->values()->all();
                 }
 
                 return array_filter([
