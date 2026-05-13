@@ -73,7 +73,8 @@ class StoreInvoiceRequest extends FormRequest
             'items.*.descuentos' => 'nullable|array',
             'items.*.descuentos.*.cod_tipo' => ['nullable', 'string', new SunatCatalog('53')],
             'items.*.descuentos.*.monto_base' => 'nullable|numeric|min:0',
-            'items.*.descuentos.*.factor' => 'required_with:items.*.descuentos|numeric',
+            'items.*.descuentos.*.factor' => 'nullable|numeric|min:0|max:1',
+            'items.*.descuentos.*.porcentaje' => 'nullable|numeric|min:0|max:100',
             'items.*.descuentos.*.monto' => 'nullable|numeric|min:0',
 
             // Leyendas — Cat 52

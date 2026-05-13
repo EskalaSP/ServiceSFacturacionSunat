@@ -182,9 +182,19 @@ class NoteBuilder
             $recalculatedDescuentos = [];
             foreach ($item['descuentos'] as $desc) {
                 if (($desc['cod_tipo'] ?? '00') === '00') {
-                    $factor = (float) ($desc['factor'] ?? 0);
                     $montoBase = round($valorBruto, 2);
-                    $monto = round($montoBase * $factor, 2);
+
+                    if (! empty($desc['porcentaje'])) {
+                        $factor = round((float) $desc['porcentaje'] / 100, 6);
+                        $monto = round($montoBase * $factor, 2);
+                    } elseif (! empty($desc['factor'])) {
+                        $factor = (float) $desc['factor'];
+                        $monto = round($montoBase * $factor, 2);
+                    } else {
+                        $monto = (float) ($desc['monto'] ?? 0);
+                        $factor = $montoBase > 0 ? round($monto / $montoBase, 6) : 0;
+                    }
+
                     $descuentoBase += $monto;
                     $descuentoConIgv += round($totalConIgvBruto * $factor, 2);
                     $recalculatedDescuentos[] = [

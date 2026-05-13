@@ -275,11 +275,28 @@ class InvoiceBuilder
         $descuentos = [];
         if (! empty($data['descuentos_globales'])) {
             foreach ($data['descuentos_globales'] as $desc) {
+                $monto = (float) ($desc['monto'] ?? 0);
+
+                if (! empty($desc['porcentaje'])) {
+                    // porcentaje: 0-100 → convierte a factor decimal
+                    $factor = round((float) $desc['porcentaje'] / 100, 6);
+                    $montoBase = round($mtoOperGravadas, 2);
+                    $monto = round($montoBase * $factor, 2);
+                } elseif (! empty($desc['factor']) && ! empty($desc['monto_base'])) {
+                    // Forma explícita: el usuario mandó los tres valores
+                    $factor = (float) $desc['factor'];
+                    $montoBase = (float) $desc['monto_base'];
+                } else {
+                    // Solo monto: calcular monto_base y factor automáticamente
+                    $montoBase = round($mtoOperGravadas ?: $monto, 2);
+                    $factor = $montoBase > 0 ? round($monto / $montoBase, 6) : 1;
+                }
+
                 $descuentos[] = (new Charge())
                     ->setCodTipo($desc['cod_tipo'] ?? '02')
-                    ->setMontoBase((float) ($desc['monto_base'] ?? 0))
-                    ->setFactor((float) ($desc['factor'] ?? 1))
-                    ->setMonto((float) $desc['monto']);
+                    ->setMontoBase($montoBase)
+                    ->setFactor($factor)
+                    ->setMonto($monto);
             }
         }
         // SUNAT 3287: anticipos requieren descuento global tipo 04.
@@ -345,9 +362,22 @@ class InvoiceBuilder
             foreach ($item['descuentos'] as $desc) {
                 $codTipo = $desc['cod_tipo'] ?? '00';
                 if ($codTipo === '00' || $codTipo === '01') {
-                    $factor = (float) ($desc['factor'] ?? 0);
                     $montoBase = round($valorBruto, 2);
-                    $monto = round($montoBase * $factor, 2);
+
+                    if (! empty($desc['porcentaje'])) {
+                        // porcentaje 0-100 → factor decimal
+                        $factor = round((float) $desc['porcentaje'] / 100, 6);
+                        $monto = round($montoBase * $factor, 2);
+                    } elseif (! empty($desc['factor'])) {
+                        // factor decimal (forma original)
+                        $factor = (float) $desc['factor'];
+                        $monto = round($montoBase * $factor, 2);
+                    } else {
+                        // Solo monto fijo: calcular factor
+                        $monto = (float) ($desc['monto'] ?? 0);
+                        $factor = $montoBase > 0 ? round($monto / $montoBase, 6) : 0;
+                    }
+
                     $descuentoBase += $monto;
                     $descuentoConIgv += round($totalConIgvBruto * $factor, 2);
                     // Normalizar "01" → "00" en el XML: ambos se aplican a la base en nuestra implementación
