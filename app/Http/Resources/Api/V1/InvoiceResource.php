@@ -72,7 +72,15 @@ class InvoiceResource extends JsonResource
             'percepcion' => $this->when($this->percepcion, $this->percepcion),
             'anticipos' => $this->when($this->anticipos, $this->anticipos),
             'cuotas' => $this->when($this->cuotas, $this->cuotas),
-            'descuentos_globales' => $this->when($this->descuentos_globales, $this->descuentos_globales),
+            'descuentos_globales' => $this->when(
+                ! empty($this->descuentos_globales),
+                fn () => collect($this->descuentos_globales)->map(fn ($d) => [
+                    'cod_tipo'   => $d['cod_tipo'] ?? '02',
+                    'monto_base' => (float) ($d['monto_base'] ?? 0),
+                    'factor'     => (float) ($d['factor'] ?? 0),
+                    'monto'      => (float) ($d['monto'] ?? 0),
+                ])->values()
+            ),
             'guias' => $this->when($this->guias, $this->guias),
             'extras' => $this->when($this->extras, $this->extras),
             'sunat' => [

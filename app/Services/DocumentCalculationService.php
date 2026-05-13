@@ -228,19 +228,35 @@ class DocumentCalculationService
 
         $descuentoGlobalGravadas = 0;
         if (! empty($data['descuentos_globales'])) {
+            $normalizedDescuentos = [];
             foreach ($data['descuentos_globales'] as $desc) {
                 $codTipo = $desc['cod_tipo'] ?? '02';
-                $monto = (float) ($desc['monto'] ?? 0);
+
+                // Normalizar: resolver monto desde porcentaje si no viene monto
+                if (! empty($desc['porcentaje']) && empty($desc['monto'])) {
+                    $baseParaDesc = in_array($codTipo, ['02', '04', '05', '06']) ? $gravadas : ($exoneradas + $inafectas + $exportacion + $gravadas);
+                    $monto = round($baseParaDesc * ((float) $desc['porcentaje'] / 100), 2);
+                } else {
+                    $monto = (float) ($desc['monto'] ?? 0);
+                }
+
+                // Calcular monto_base y factor para almacenar valores completos
+                $montoBase = round(in_array($codTipo, ['02', '04', '05', '06']) ? $gravadas : ($gravadas + $exoneradas + $inafectas), 2);
+                $factor = $montoBase > 0 ? round($monto / $montoBase, 6) : 0;
+
+                $normalizedDescuentos[] = array_merge($desc, [
+                    'monto'      => $monto,
+                    'monto_base' => (float) ($desc['monto_base'] ?? $montoBase),
+                    'factor'     => (float) ($desc['factor'] ?? $factor),
+                ]);
 
                 if ($codTipo === '02') {
-                    // Descuento global que afecta la base imponible (gravadas)
                     $descuentoGlobalGravadas += $monto;
                 } elseif ($codTipo === '03') {
-                    // Cargo/descuento que no afecta base imponible
                     $sumDescuentosNoBase += $monto;
                 }
-                // Tipo 62 (retención) no modifica totales en XML, solo se muestra como descuento
             }
+            $data['descuentos_globales'] = $normalizedDescuentos;
         }
 
         // Apply global discount to gravadas and recalculate IGV using actual rate
