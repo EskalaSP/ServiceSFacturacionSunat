@@ -13,6 +13,7 @@ use App\Models\CreditNote;
 use App\Models\DebitNote;
 use App\Models\Invoice;
 use App\Models\VoidedDocument;
+use App\Services\Greenter\GreenterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -210,9 +211,70 @@ class VoidedController extends Controller
         }
     }
 
+    private function updateOriginalDocuments(VoidedDocument $voided): void
+    {
+        $modelMap = [
+            '01' => Invoice::class,
+            '03' => Boleta::class,
+            '07' => CreditNote::class,
+            '08' => DebitNote::class,
+        ];
+
+        foreach ($voided->detalles ?? [] as $detalle) {
+            $model = $modelMap[$detalle['tipo_documento'] ?? null] ?? null;
+            if (! $model) continue;
+
+            $model::where('tenant_id', $voided->tenant_id)
+                ->where('serie', $detalle['serie'] ?? '')
+                ->where('correlativo', $detalle['correlativo'] ?? '')
+                ->update(['sunat_status' => 'anulado']);
+        }
+    }
+
     public function checkStatus(Request $request, int $id): JsonResponse
     {
-        return $this->show($request, $id);
+        $tenant = $request->get('tenant');
+        $voided = VoidedDocument::where('tenant_id', $tenant->id)->findOrFail($id);
+
+        // Si hay ticket y aún está enviado, consultar SUNAT en tiempo real
+        if ($voided->ticket && $voided->sunat_status === 'enviado') {
+            try {
+                $service = new GreenterService($tenant);
+                $result = $service->getStatus($voided->ticket);
+
+                if ($result['success']) {
+                    $accepted = $result['accepted'] ?? false;
+                    $updateData = [
+                        'sunat_status'      => $accepted ? 'aceptado' : 'rechazado',
+                        'sunat_code'        => $result['code'] ?? null,
+                        'sunat_description' => $result['description'] ?? null,
+                        'sunat_notes'       => $result['notes'] ?? null,
+                    ];
+                    $voided->update($updateData);
+                    $voided->refresh();
+
+                    if ($accepted) {
+                        $this->updateOriginalDocuments($voided);
+                    }
+                } elseif (
+                    is_numeric((string) ($result['error_code'] ?? ''))
+                    && ! in_array($result['error_code'] ?? '', ['0', '187', 0, 187], true)
+                ) {
+                    // Error SUNAT definitivo (código 1xxx/2xxx/4xxx): actualizar en BD
+                    $voided->update([
+                        'sunat_status'      => 'rechazado',
+                        'sunat_code'        => $result['error_code'],
+                        'sunat_description' => $result['error_message'] ?? null,
+                    ]);
+                    $voided->refresh();
+                }
+                // Código 0/187 = aún procesando; error no numérico = red → sin cambios
+            } catch (\Throwable) {
+                // Si falla la conexión con SUNAT, devolver estado actual de BD
+            }
+        }
+
+        return $this->buildResponse($voided);
     }
 
     public function enviar(Request $request, int $id): JsonResponse
@@ -254,26 +316,30 @@ class VoidedController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $tenant = $request->get('tenant');
-
         $voided = VoidedDocument::where('tenant_id', $tenant->id)->findOrFail($id);
 
+        return $this->buildResponse($voided);
+    }
+
+    private function buildResponse(VoidedDocument $voided): JsonResponse
+    {
         return response()->json([
             'estado' => 'exito',
             'datos' => [
-                'id_anulacion' => $voided->id,
-                'identifier' => $voided->identifier,
-                'correlativo' => $voided->correlativo,
-                'ticket' => $voided->ticket,
+                'id_anulacion'     => $voided->id,
+                'identifier'       => $voided->identifier,
+                'correlativo'      => $voided->correlativo,
+                'ticket'           => $voided->ticket,
                 'fecha_generacion' => $voided->fecha_generacion?->format('Y-m-d'),
                 'fecha_comunicacion' => $voided->fecha_comunicacion?->format('Y-m-d'),
-                'estado_sunat' => $voided->sunat_status,
-                'codigo_sunat' => $voided->sunat_code,
+                'estado_sunat'     => $voided->sunat_status,
+                'codigo_sunat'     => $voided->sunat_code,
                 'descripcion_sunat' => $voided->sunat_description,
-                'notas_sunat' => $voided->sunat_notes,
+                'notas_sunat'      => $voided->sunat_notes,
                 'total_documentos' => $voided->total_documentos,
-                'detalles' => $voided->detalles,
-                'creado_en' => $voided->created_at?->toIso8601String(),
-                'actualizado_en' => $voided->updated_at?->toIso8601String(),
+                'detalles'         => $voided->detalles,
+                'creado_en'        => $voided->created_at?->toIso8601String(),
+                'actualizado_en'   => $voided->updated_at?->toIso8601String(),
             ],
         ]);
     }
