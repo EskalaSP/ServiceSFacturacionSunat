@@ -254,7 +254,7 @@ class GreenterService
         $signedXml = $signer->signXml($unsignedXml);
         $this->lastXml = $signedXml;
 
-        $result = $see->sendXmlFile($signedXml);
+        $result = $see->sendXml(get_class($document), $document->getName(), $signedXml);
         $xml = $signedXml;
 
         // Verificar primero si es BillResult con CDR (incluye observaciones 3xxx)
