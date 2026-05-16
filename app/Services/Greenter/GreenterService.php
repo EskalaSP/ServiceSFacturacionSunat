@@ -8,6 +8,7 @@ use App\Services\Greenter\Builders\InvoiceBuilder;
 use App\Services\Greenter\Builders\NoteBuilder;
 use App\Services\Greenter\Builders\SummaryBuilder;
 use App\Services\Greenter\Builders\VoidedBuilder;
+use Greenter\Factory\XmlBuilderResolver;
 use Greenter\Model\DocumentInterface;
 use Greenter\Model\Response\BillResult;
 use Greenter\Model\Response\SummaryResult;
@@ -15,11 +16,13 @@ use Greenter\Model\Sale\Invoice;
 use Greenter\Model\Sale\Note;
 use Greenter\See;
 use Greenter\Ws\Services\SunatEndpoints;
+use Greenter\XMLSecLibs\Sunat\SignedXml;
 
 class GreenterService
 {
     private Tenant $tenant;
     private ?See $currentSee = null;
+    private ?string $lastXml = null;
 
     public function __construct(Tenant $tenant)
     {
@@ -28,7 +31,7 @@ class GreenterService
 
     public function getLastXml(): ?string
     {
-        return $this->currentSee?->getFactory()->getLastXml();
+        return $this->lastXml ?? $this->currentSee?->getFactory()->getLastXml();
     }
 
     public function createSee(?string $endpoint = null): See
@@ -234,8 +237,25 @@ class GreenterService
     {
         $see = $this->resolveSee($document);
         $this->currentSee = $see;
-        $result = $see->send($document);
-        $xml = $see->getFactory()->getLastXml();
+
+        // Build unsigned XML, strip languageLocaleID (SUNAT XSD rejects it), sign, then send.
+        $cachePath = storage_path('app/cache/greenter');
+        if (! is_dir($cachePath)) {
+            mkdir($cachePath, 0755, true);
+        }
+        $options = ['autoescape' => false, 'cache' => $cachePath];
+        $xmlBuilder = (new XmlBuilderResolver($options))->find(get_class($document));
+        $unsignedXml = $xmlBuilder->build($document);
+        $unsignedXml = (string) preg_replace('/ languageLocaleID="[^"]*"/', '', $unsignedXml);
+
+        $cert = $this->tenant->getCertificateContent();
+        $signer = new SignedXml();
+        $signer->setCertificate($cert);
+        $signedXml = $signer->signXml($unsignedXml);
+        $this->lastXml = $signedXml;
+
+        $result = $see->sendXmlFile($signedXml);
+        $xml = $signedXml;
 
         // Verificar primero si es BillResult con CDR (incluye observaciones 3xxx)
         if ($result instanceof BillResult) {
