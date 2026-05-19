@@ -238,7 +238,7 @@ class GreenterService
         $see = $this->resolveSee($document);
         $this->currentSee = $see;
 
-        // Build unsigned XML, strip languageLocaleID (SUNAT XSD rejects it), sign, then send.
+        // Build unsigned XML, sign, then send.
         $cachePath = storage_path('app/cache/greenter');
         if (! is_dir($cachePath)) {
             mkdir($cachePath, 0755, true);
@@ -246,7 +246,6 @@ class GreenterService
         $options = ['autoescape' => false, 'cache' => $cachePath];
         $xmlBuilder = (new XmlBuilderResolver($options))->find(get_class($document));
         $unsignedXml = $xmlBuilder->build($document);
-        $unsignedXml = (string) preg_replace('/ languageLocaleID="[^"]*"/', '', $unsignedXml);
 
         $cert = $this->tenant->getCertificateContent();
         $signer = new SignedXml();
