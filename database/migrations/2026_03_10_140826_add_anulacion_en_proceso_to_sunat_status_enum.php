@@ -29,6 +29,7 @@ return new class extends Migration
         }
 
         foreach ($this->tables as $table) {
+            DB::statement("UPDATE `{$table}` SET `sunat_status` = 'pendiente' WHERE `sunat_status` = 'anulacion_en_proceso'");
             DB::statement("ALTER TABLE `{$table}` MODIFY `sunat_status` {$this->oldEnum} NOT NULL DEFAULT 'pendiente'");
         }
     }
