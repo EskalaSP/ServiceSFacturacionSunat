@@ -1,14 +1,14 @@
 {
   "info": {
-    "_postman_id": "c1ec5706-6226-4acf-a12a-244d97e3ccbd",
-    "name": "API SUNAT PRO V2.1 ✅✅✅✅✅",
+    "_postman_id": "78756797-7ee2-4445-b3ab-dda6834e041a",
+    "name": "API FACTURACION SUNAT PERU ✅✅✅✅✅",
     "description": "Colección completa en español para API SUNAT PRO — facturación electrónica Perú.\n\n**Cobertura**: todas las rutas /api/v1 con ejemplos realistas, agrupado por flujo de uso.\n\n**Formato de respuestas**:\n```json\n{\n  \"estado\": \"exito\" | \"error\",\n  \"mensaje\": \"texto\",\n  \"datos\": {...} | [...],\n  \"meta\": {...}         (paginación — opcional),\n  \"errores\": {...}      (detalles de validación — solo en errores)\n}\n```\n\n**Variables de entorno requeridas**:\n- `base_url` → `https://api.kodevo.es/sunat-api/api/v1` (producción) o `http://api-pro.test/api/v1` (local)\n- `api_key` → X-Api-Key de la empresa\n- `api_secret` → X-Api-Secret de la empresa\n\n**Documentación completa**: `documentacion/README.md`",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "20633485"
   },
   "item": [
     {
-      "name": "01. Setup inicial",
+      "name": "01. Configuración inicial",
       "item": [
         {
           "name": "Registrar empresa (cert PFX)",
@@ -23,12 +23,14 @@
               {
                 "key": "X-Api-Key",
                 "value": "{{api_key}}",
-                "type": "text"
+                "type": "text",
+                "disabled": true
               },
               {
                 "key": "X-Api-Secret",
                 "value": "{{api_secret}}",
-                "type": "text"
+                "type": "text",
+                "disabled": true
               }
             ],
             "body": {
@@ -36,7 +38,7 @@
               "formdata": [
                 {
                   "key": "ruc",
-                  "value": "20100000001",
+                  "value": "20161515648",
                   "type": "text"
                 },
                 {
@@ -67,17 +69,59 @@
                 {
                   "key": "certificado",
                   "type": "file",
-                  "value": ""
+                  "src": "postman-cloud:///1f148a67-d9c6-4ad0-9432-69c0e466503d"
                 },
                 {
                   "key": "contrasena_certificado",
-                  "value": "secreto",
+                  "value": "123456",
                   "type": "text"
                 },
                 {
                   "key": "tax_regime",
                   "value": "general",
                   "type": "text"
+                },
+                {
+                  "key": "departamento",
+                  "value": "LIMA",
+                  "type": "text",
+                  "uuid": "dfd30703-9dae-4999-ad6e-29fe3b90823b"
+                },
+                {
+                  "key": "provincia",
+                  "value": "LIMA",
+                  "type": "text",
+                  "uuid": "fcc0ef4e-3264-4a7d-b799-f00431d36365"
+                },
+                {
+                  "key": "distrito",
+                  "value": "MIRAFLORES",
+                  "type": "text",
+                  "uuid": "5564c388-a0ea-445a-911e-717d1565fb2b"
+                },
+                {
+                  "key": "plan",
+                  "value": "pro",
+                  "type": "text",
+                  "uuid": "0476f141-50b4-4ac2-8ca8-2a24c5584b15"
+                },
+                {
+                  "key": "entorno",
+                  "value": "beta",
+                  "type": "text",
+                  "uuid": "bec2838c-ec47-4743-8527-f92cd08e12f4"
+                },
+                {
+                  "key": "client_id",
+                  "value": "test-85e5b0ae-255c-4891-a595-0b98c65c9854",
+                  "type": "text",
+                  "uuid": "7b2dc18c-0599-47be-803b-dc02c197ae1c"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "test-Hty/M6QshYvPgItX2P0+Kw==",
+                  "type": "text",
+                  "uuid": "cef69b94-12e4-4d7e-b1a2-c9d10243a8b5"
                 }
               ]
             },
@@ -190,7 +234,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"razon_social\": \"MI EMPRESA SAC\",\n    \"nombre_comercial\": \"MI EMPRESA\",\n    \"direccion\": \"AV. PRINCIPAL 456\",\n    \"ubigeo\": \"150101\",\n    \"departamento\": \"LIMA\",\n    \"provincia\": \"LIMA\",\n    \"distrito\": \"LIMA\",\n    \"telefonos\": [\n        \"+51 999 888 777\"\n    ],\n    \"emails\": [\n        \"contacto@miempresa.pe\"\n    ],\n    \"mensaje_agradecimiento\": \"Gracias por su compra\",\n    \"webhook_url\": \"https://miempresa.pe/sunat-webhook\"\n}",
+              "raw": "{\n    \"ruc\": \"20161515648\",\n    \"razon_social\": \"MI EMPRESA SAC\",\n    \"nombre_comercial\": \"MI EMPRESA\",\n    \"direccion\": \"AV. PRINCIPAL 456\",\n    \"ubigeo\": \"150101\",\n    \"departamento\": \"LIMA\",\n    \"provincia\": \"LIMA\",\n    \"distrito\": \"LIMA\",\n    \"telefonos\": [\n        \"+51 999 888 777\"\n    ],\n    \"emails\": [\n        \"contacto@miempresa.pe\"\n    ],\n    \"mensaje_agradecimiento\": \"Gracias por su compra\",\n    \"webhook_url\": \"https://miempresa.pe/sunat-webhook\",\n    \"entorno\": \"beta\" // production\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -237,7 +281,7 @@
                 {
                   "key": "logo",
                   "type": "file",
-                  "src": "postman-cloud:///1f0fd453-070e-4080-b0bb-044740b3bd71"
+                  "src": "postman-cloud:///1f0fd465-8f93-4330-b2fb-d68e46f16e25"
                 }
               ]
             },
@@ -348,6 +392,86 @@
             "description": "Consulta local + SUNAT/RENIEC. Si existe en BD lo devuelve; si no, llama a SUNAT/RENIEC y lo guarda. Params: tipo (1=DNI, 4=CE, 6=RUC, 7=Pasaporte) + numero."
           },
           "response": []
+        },
+        {
+          "name": "API key actual",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empresa/credenciales",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empresa",
+                "credenciales"
+              ]
+            },
+            "description": "Consulta local + SUNAT/RENIEC. Si existe en BD lo devuelve; si no, llama a SUNAT/RENIEC y lo guarda. Params: tipo (1=DNI, 4=CE, 6=RUC, 7=Pasaporte) + numero."
+          },
+          "response": []
+        },
+        {
+          "name": "Genera uno nuevo api key y api secret",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/empresa/credenciales/regenerar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empresa",
+                "credenciales",
+                "regenerar"
+              ]
+            },
+            "description": "Consulta local + SUNAT/RENIEC. Si existe en BD lo devuelve; si no, llama a SUNAT/RENIEC y lo guarda. Params: tipo (1=DNI, 4=CE, 6=RUC, 7=Pasaporte) + numero."
+          },
+          "response": []
         }
       ],
       "description": "Registro de empresa + perfil + certificado + sucursales + series + clientes. Lee primero 01-Configuracion.md."
@@ -383,7 +507,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"nombre\": \"Sucursal Principal\",\n    \"cod_local\": \"0000\",\n    \"direccion\": \"AV. PRINCIPAL 123, LIMA\",\n    \"ubigeo\": \"150101\",\n    \"es_principal\": true,\n    \"telefono\": \"+51 999 888 777\",\n    \"email\": \"principal@miempresa.pe\"\n}",
+              "raw": "{\n    \"nombre\": \"Sucursal Principal\",\n    \"cod_local\": \"0003\",\n    \"direccion\": \"AV. PRINCIPAL 123, LIMA\",\n    \"ubigeo\": \"150101\",\n    \"es_principal\": true,\n    \"telefono\": \"+51 999 888 777\",\n    \"email\": \"principal@miempresa.pe\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -632,7 +756,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"series\": [\n        {\n            \"tipo\": \"factura\",\n            \"serie\": \"F001\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"boleta\",\n            \"serie\": \"B001\",\n            \"sucursal_id\": 1,\n            \"correlativo_inicial\": 100\n        },\n        {\n            \"tipo\": \"nota_credito\",\n            \"serie\": \"FC01\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"nota_debito\",\n            \"serie\": \"FD01\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"guia_remision\",\n            \"serie\": \"T001\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"guia_transportista\",\n            \"serie\": \"V001\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"retencion\",\n            \"serie\": \"R001\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"percepcion\",\n            \"serie\": \"P001\",\n            \"sucursal_id\": 1\n        }\n    ]\n}",
+              "raw": "{\n  \"series\": [\n    {\n      \"tipo\": \"factura\",\n      \"serie\": \"F001\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"boleta\",\n      \"serie\": \"B001\",\n      \"sucursal_id\": 1,\n      \"correlativo_inicial\": 1\n    },\n    {\n      \"tipo\": \"nota_credito\",\n      \"serie\": \"FC01\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"nota_debito\",\n      \"serie\": \"FD01\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"guia_remision\",\n      \"serie\": \"T001\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"guia_transportista\",\n      \"serie\": \"V001\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"retencion\",\n      \"serie\": \"R001\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"percepcion\",\n      \"serie\": \"P001\",\n      \"sucursal_id\": 1\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1666,7 +1790,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE DEMO SAC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Laptop HP 15.6 pulgadas\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 2,\n            \"precio_unitario\": 2360,\n            \"tip_afe_igv\": \"10\"\n        },\n        {\n            \"codigo\": \"P002\",\n            \"descripcion\": \"Mouse inalámbrico Logitech\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 5,\n            \"precio_unitario\": 59,\n            \"tip_afe_igv\": \"10\"\n        }\n    ]\n}",
+              "raw": "{\n\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-05-19\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE DEMO SAC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n    \n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Laptop HP 15.6 pulgadas\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 100,\n            \"tip_afe_igv\": \"10\"\n        },\n        {\n            \"codigo\": \"P002\",\n            \"descripcion\": \"Mouse inalámbrico Logitech\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 5,\n            \"precio_unitario\": 59,\n            \"tip_afe_igv\": \"10\"\n        }\n    ]\n}\n\n\n\n\n\n\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1714,7 +1838,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"fecha_vencimiento\": \"2026-05-19\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Credito\",\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE SAC\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Producto\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 10,\n            \"precio_unitario\": 118,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n    \"cuotas\": [\n        {\n            \"monto\": 590,\n            \"fecha_pago\": \"2026-05-19\"\n        },\n        {\n            \"monto\": 590,\n            \"fecha_pago\": \"2026-06-19\"\n        }\n    ]\n}",
+              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-05-14\",\n    \"fecha_vencimiento\": \"2026-07-14\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Credito\",\n\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE SAC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Producto\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 10,\n            \"precio_unitario\": 118,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n\n    \"cuotas\": [\n        {\n            \"monto\": 590,\n            \"fecha_pago\": \"2026-06-14\"\n        },\n        {\n            \"monto\": 590,\n            \"fecha_pago\": \"2026-07-14\"\n        }\n    ]\n}\n\n\n\n\n\n\n\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1761,7 +1885,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE SAC\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"SERV001\",\n            \"descripcion\": \"Consulta médica especializada\",\n            \"unidad\": \"ZZ\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 200,\n            \"tip_afe_igv\": \"20\"\n        }\n    ]\n}",
+              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-05-13\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE SAC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"SERV001\",\n            \"descripcion\": \"Consulta médica especializada\",\n            \"unidad\": \"ZZ\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 200,\n            \"tip_afe_igv\": \"20\"\n        }\n    ]\n}\n\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1809,7 +1933,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"tipo_operacion\": \"0200\",\n    \"tipo_moneda\": \"USD\",\n    \"forma_pago\": \"Contado\",\n    \"cliente\": {\n        \"tipo_doc\": \"0\",\n        \"num_doc\": \"00000000\",\n        \"razon_social\": \"FOREIGN CLIENT INC\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"EXP001\",\n            \"descripcion\": \"Producto exportación\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 100,\n            \"precio_unitario\": 50,\n            \"tip_afe_igv\": \"40\"\n        }\n    ]\n}",
+              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-05-13\",\n    \"tipo_operacion\": \"0200\",\n    \"tipo_moneda\": \"USD\",\n    \"forma_pago\": \"Contado\",\n    \n    \"cliente\": {\n        \"tipo_doc\": \"0\",\n        \"num_doc\": \"00000000\",\n        \"razon_social\": \"FOREIGN CLIENT INC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"EXP001\",\n            \"descripcion\": \"Producto exportación\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 12,\n            \"precio_unitario\": 50,\n            \"tip_afe_igv\": \"40\"\n        }\n    ]\n}\n\n\n\n\n\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1826,6 +1950,594 @@
               ]
             },
             "description": "tipo_operacion 0200=Exportación. tip_afe_igv 40=Exportación. Moneda USD típica."
+          },
+          "response": []
+        },
+        {
+          "name": "Factura inafecta (Tipo 4)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-05-07\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\",\r\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"PROD 1\",\r\n            \"unidad\": \"KGM\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 50,\r\n            \"tip_afe_igv\": \"30\"\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura gratuita",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-05-07\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\",\r\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"Mause Razer\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 0,\r\n            \"mto_valor_unitario\": 100,\r\n            \"tip_afe_igv\": \"11\",\r\n            \"porcentaje_igv\": 18\r\n        }\r\n    ]\r\n}\r\n\r\n\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura con detracción",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-05-07\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\",\r\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"Matenimiento preventivo de PC\",\r\n            \"unidad\": \"ZZ\",\r\n            \"cantidad\": 4,\r\n            \"precio_unitario\": 236,\r\n            \"tip_afe_igv\": \"10\"\r\n        }\r\n    ],\r\n    \"detraccion\": {\r\n        \"tipo_operacion\": \"1001\",\r\n        \"cod_bien\": \"014\",\r\n        \"cod_medio_pago\": \"001\",\r\n        \"cta_banco\": \"0004-3342343243\",\r\n        \"porcentaje\": 4.00,\r\n        \"monto\": 37.76\r\n    }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura anticipo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-05-07\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\",\r\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\r\n    },\r\n    \"anticipos\": [\r\n        {\r\n            \"tipo_doc\": \"02\",\r\n            \"serie\": \"F001\",\r\n            \"correlativo\": \"111\",\r\n            \"monto\": 100\r\n        }\r\n    ],\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"PROD 1\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 118,\r\n            \"tip_afe_igv\": \"10\"\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura descuento global",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-05-13\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"Cuadernos\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 10,\r\n            \"precio_unitario\": 2.36,\r\n            \"tip_afe_igv\": \"10\"\r\n        },\r\n        {\r\n            \"codigo\": \"P002\",\r\n            \"descripcion\": \"Radio\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 1,\r\n            \"precio_unitario\": 59.00,\r\n            \"tip_afe_igv\": \"10\"\r\n        }\r\n    ],\r\n    \"descuentos_globales\": [\r\n        {\r\n            \"cod_tipo\": \"02\",\r\n            \"monto\": 3.00\r\n        }\r\n    ]\r\n}\r\n\r\n\r\n\r\n\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura descuento por línea",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-05-13\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"Cuadernos\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 10,\r\n            \"precio_unitario\": 2.36,\r\n            \"tip_afe_igv\": \"10\",\r\n            \"descuentos\": [\r\n                {\r\n                    \"cod_tipo\": \"00\",\r\n                    \"monto\": 4\r\n                }\r\n            ]\r\n        },\r\n        {\r\n            \"codigo\": \"P002\",\r\n            \"descripcion\": \"Radio\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 1,\r\n            \"precio_unitario\": 59,\r\n            \"tip_afe_igv\": \"10\"\r\n        }\r\n    ]\r\n}\r\n\r\n\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura descuento que NO afecta base",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-04-20\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"descuentos_globales\": [\r\n        {\r\n            \"cod_tipo\": \"03\",\r\n            \"monto_base\": 3,\r\n            \"factor\": 1,\r\n            \"monto\": 3\r\n        }\r\n    ],\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P004\",\r\n            \"descripcion\": \"PRODUCTO 4\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 10,\r\n            \"precio_unitario\": 2.36,\r\n            \"tip_afe_igv\": \"10\",\r\n            \"descuentos\": [\r\n                {\r\n                    \"cod_tipo\": \"01\",\r\n                    \"monto_base\": 20,\r\n                    \"factor\": 0.2,\r\n                    \"monto\": 4\r\n                }\r\n            ]\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura ICBPER (bolsas plásticas)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-04-20\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"PRODUCTO 1\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 118,\r\n            \"tip_afe_igv\": \"10\"\r\n        },\r\n        {\r\n            \"codigo\": \"P002\",\r\n            \"descripcion\": \"BOLSA DE PLASTICO\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 4,\r\n            \"precio_unitario\": 0.059,\r\n            \"tip_afe_igv\": \"10\",\r\n            \"mto_valor_unitario\": 0.05,\r\n            \"factor_icbper\": 0.20\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura ISC (impuesto selectivo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-04-17\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"PROD CON ISC\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 138.06,\r\n            \"tip_afe_igv\": \"10\",\r\n            \"porcentaje_isc\": 17,\r\n            \"tip_sis_isc\": \"01\"\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura IVAP (arroz pilado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-05-14\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"A001\",\r\n            \"descripcion\": \"SACOS DE ARROZ\",\r\n            \"unidad\": \"SA\",\r\n            \"cantidad\": 900,\r\n            \"precio_unitario\": 104,\r\n            \"tip_afe_igv\": \"17\",\r\n            \"porcentaje_igv\": 4\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura + Guía de Remisión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": " {\r\n    \"tipo_documento\": \"01\",\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-04-17\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000002\",\r\n      \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"guias\": [\r\n      {\r\n        \"tipo_doc\": \"09\",\r\n        \"nro_doc\": \"T001-2\"\r\n      }\r\n    ],\r\n    \"items\": [\r\n      {\r\n        \"codigo\": \"P001\",\r\n        \"descripcion\": \"PROD 1\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 2,\r\n        \"precio_unitario\": 118,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura compleja (todos los campos)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"tipo_documento\": \"01\",\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-04-17\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000002\",\r\n      \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"codigo\": \"P001\",\r\n        \"descripcion\": \"PROD 1 - Gravado\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 2,\r\n        \"precio_unitario\": 118,\r\n        \"tip_afe_igv\": \"10\"\r\n      },\r\n      {\r\n        \"codigo\": \"P002\",\r\n        \"descripcion\": \"PROD 2 - Exonerado\",\r\n        \"unidad\": \"KGM\",\r\n        \"cantidad\": 2,\r\n        \"precio_unitario\": 50,\r\n        \"tip_afe_igv\": \"20\"\r\n      },\r\n      {\r\n        \"codigo\": \"P003\",\r\n        \"descripcion\": \"PROD 3 - Inafecto\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 2,\r\n        \"precio_unitario\": 100,\r\n        \"tip_afe_igv\": \"30\"\r\n      },\r\n      {\r\n        \"codigo\": \"P004\",\r\n        \"descripcion\": \"PROD 4 - Gratuita Gravada (Retiro)\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 0,\r\n        \"mto_valor_unitario\": 100,\r\n        \"tip_afe_igv\": \"13\",\r\n        \"porcentaje_igv\": 18\r\n      },\r\n      {\r\n        \"codigo\": \"P005\",\r\n        \"descripcion\": \"PROD 5 - Gratuita Inafecta (Retiro)\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 2,\r\n        \"precio_unitario\": 0,\r\n        \"mto_valor_unitario\": 100,\r\n        \"tip_afe_igv\": \"32\"\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura ICBPER + ítem gratuito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"tipo_documento\": \"01\",\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-03-04\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"PRODUCTO 1\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 118,\r\n            \"tip_afe_igv\": \"10\"\r\n        },\r\n        {\r\n            \"codigo\": \"P002\",\r\n            \"descripcion\": \"BOLSA - Gratuita\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 0,\r\n            \"mto_valor_unitario\": 0.05,\r\n            \"tip_afe_igv\": \"13\",\r\n            \"factor_icbper\": 0.20\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Factura con contingencia (modo offline)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "//Serie numérica 0001 — comprobante de contingencia                  \r\n{\r\n    \"tipo_documento\": \"01\",\r\n    \"serie\": \"0001\",\r\n    \"fecha_emision\": \"2026-03-04\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"PROD 1\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 118,\r\n            \"tip_afe_igv\": \"10\"\r\n        }\r\n    ]\r\n}\r\n//Nota: Para probar esto necesitas crear primero la serie 0001 de tipo 01 en tu tenant. La diferencia con una factura normal es solo la serie (numérica en vez de F001).",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
           },
           "response": []
         },
@@ -1878,488 +2590,6 @@
           "response": []
         },
         {
-          "name": "Listar facturas",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas?por_pagina=15",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas"
-              ],
-              "query": [
-                {
-                  "key": "por_pagina",
-                  "value": "15"
-                }
-              ]
-            },
-            "description": "Soporta filtros: serie, correlativo, fecha_desde, fecha_hasta, sunat_status, client_num_doc, sucursal_id."
-          },
-          "response": []
-        },
-        {
-          "name": "Listar facturas con items y pagos",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas?con=items,payments&por_pagina=15",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas"
-              ],
-              "query": [
-                {
-                  "key": "con",
-                  "value": "items,payments"
-                },
-                {
-                  "key": "por_pagina",
-                  "value": "15"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Filtrar facturas rechazadas",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas?sunat_status=rechazado",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas"
-              ],
-              "query": [
-                {
-                  "key": "sunat_status",
-                  "value": "rechazado"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Buscar factura por correlativo",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas?serie=F001&correlativo=2",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas"
-              ],
-              "query": [
-                {
-                  "key": "serie",
-                  "value": "F001"
-                },
-                {
-                  "key": "correlativo",
-                  "value": "2"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Ver factura por ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas/11",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas",
-                "11"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar factura (corregir y reenviar)",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"EMPRESA CORREGIDA SAC\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Producto corregido\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 118,\n            \"tip_afe_igv\": \"10\"\n        }\n    ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/facturas/1",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas",
-                "1"
-              ]
-            },
-            "description": "Solo permitido si NO está aceptada. Auto-reenvía a SUNAT."
-          },
-          "response": []
-        },
-        {
-          "name": "Descargar XML",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas/2/xml",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas",
-                "2",
-                "xml"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Descargar CDR (ZIP de SUNAT)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas/1/cdr",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas",
-                "1",
-                "cdr"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Descargar PDF (A4)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas/8/pdf?formato=a4",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas",
-                "8",
-                "pdf"
-              ],
-              "query": [
-                {
-                  "key": "formato",
-                  "value": "a4"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Descargar PDF (A5)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas/1/pdf?format=a5",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas",
-                "1",
-                "pdf"
-              ],
-              "query": [
-                {
-                  "key": "format",
-                  "value": "a5"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Descargar PDF (Ticket 80mm)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas/6/pdf?format=ticket-80",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas",
-                "6",
-                "pdf"
-              ],
-              "query": [
-                {
-                  "key": "format",
-                  "value": "ticket-80"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Descargar PDF (Ticket 58mm)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/facturas/1/pdf?format=ticket-58",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "facturas",
-                "1",
-                "pdf"
-              ],
-              "query": [
-                {
-                  "key": "format",
-                  "value": "ticket-58"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
           "name": "Enviar a SUNAT (manual)",
           "request": {
             "method": "POST",
@@ -2381,13 +2611,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/facturas/11/enviar",
+              "raw": "{{base_url}}/facturas/{{id_factura}}/enviar",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "facturas",
-                "11",
+                "{{id_factura}}",
                 "enviar"
               ]
             },
@@ -2530,6 +2760,504 @@
           "response": []
         },
         {
+          "name": "Listar facturas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/facturas?sucursal_id=1&?por_pagina=15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ],
+              "query": [
+                {
+                  "key": "sucursal_id",
+                  "value": "1"
+                },
+                {
+                  "key": "?por_pagina",
+                  "value": "15"
+                }
+              ]
+            },
+            "description": "Soporta filtros: serie, correlativo, fecha_desde, fecha_hasta, sunat_status, client_num_doc, sucursal_id."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar facturas con items y pagos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/facturas?con=items,payments&por_pagina=15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ],
+              "query": [
+                {
+                  "key": "con",
+                  "value": "items,payments"
+                },
+                {
+                  "key": "por_pagina",
+                  "value": "15"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Filtrar facturas rechazadas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/facturas?sunat_status=rechazado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ],
+              "query": [
+                {
+                  "key": "sunat_status",
+                  "value": "rechazado"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar factura por correlativo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/facturas?serie=F001&correlativo=2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ],
+              "query": [
+                {
+                  "key": "serie",
+                  "value": "F001"
+                },
+                {
+                  "key": "correlativo",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ver factura por ID",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas/{{id_factura}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas",
+                "{{id_factura}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar factura (corregir y reenviar)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"EMPRESA CORREGIDA SAC\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Producto corregido\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 118,\n            \"tip_afe_igv\": \"10\"\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas",
+                "1"
+              ]
+            },
+            "description": "Solo permitido si NO está aceptada. Auto-reenvía a SUNAT."
+          },
+          "response": []
+        },
+        {
+          "name": "Descargar XML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/facturas/{{id_factura}}/xml",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas",
+                "{{id_factura}}",
+                "xml"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Descargar CDR (ZIP de SUNAT)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/facturas/{{id_factura}}/cdr",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas",
+                "{{id_factura}}",
+                "cdr"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Descargar PDF (A4)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/facturas/{{id_factura}}/pdf?formato=a4",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas",
+                "{{id_factura}}",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "formato",
+                  "value": "a4"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Descargar PDF (A5)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/facturas/{{id_factura}}/pdf?format=a5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas",
+                "{{id_factura}}",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "a5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Descargar PDF (Ticket 80mm)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/facturas/{{id_factura}}/pdf?format=ticket-80",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas",
+                "{{id_factura}}",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "ticket-80"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Descargar PDF (Ticket 58mm)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/facturas/{{id_factura}}/pdf?format=ticket-58",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas",
+                "{{id_factura}}",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "ticket-58"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Listar pagos de la factura",
           "request": {
             "method": "GET",
@@ -2634,7 +3362,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"B001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \"cliente\": {\n        \"tipo_doc\": \"1\",\n        \"num_doc\": \"12345678\",\n        \"razon_social\": \"JUAN PEREZ LOPEZ\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Pollo a la brasa\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 35,\n            \"tip_afe_igv\": \"10\"\n        }\n    ]\n}",
+              "raw": "{\n    \"serie\": \"B001\",\n    \"fecha_emision\": \"2026-05-19\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \"cliente\": {\n        \"tipo_doc\": \"1\",\n        \"num_doc\": \"12345678\",\n        \"razon_social\": \"JUAN PEREZ LOPEZ\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Menú\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 35,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n    \"solo_registro\": true\n}\n\n\n\n\n\n\n\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2681,7 +3409,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"B001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"cliente\": {\n        \"tipo_doc\": \"0\",\n        \"num_doc\": \"00000000\",\n        \"razon_social\": \"CONSUMIDOR FINAL\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P002\",\n            \"descripcion\": \"Producto varios\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 12,\n            \"tip_afe_igv\": \"10\"\n        }\n    ]\n}",
+              "raw": "{\n    \"serie\": \"B001\",\n    \"fecha_emision\": \"2026-05-11\",\n    \"cliente\": {\n        \"tipo_doc\": \"0\",\n        \"num_doc\": \"99999999\",\n        \"razon_social\": \"CONSUMIDOR FINAL\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P002\",\n            \"descripcion\": \"Producto varios\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 12,\n            \"tip_afe_igv\": \"10\"\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2825,7 +3553,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"B001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"cliente\": {\n        \"tipo_doc\": \"1\",\n        \"num_doc\": \"12345678\",\n        \"razon_social\": \"CLIENTE\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Producto\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 10,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n    \"solo_registro\": true\n}",
+              "raw": "{\n    \"serie\": \"B001\",\n    \"fecha_emision\": \"2026-04-25\",\n    \"cliente\": {\n        \"tipo_doc\": \"1\",\n        \"num_doc\": \"12345678\",\n        \"razon_social\": \"CLIENTE\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Producto\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 10,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n    \"solo_registro\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2873,7 +3601,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"B001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"cliente\": {\n        \"tipo_doc\": \"1\",\n        \"num_doc\": \"12345678\",\n        \"razon_social\": \"CLIENTE\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Producto\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 10,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n    \"enviar_automatico\": false\n}",
+              "raw": "{\n    \"serie\": \"B001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"cliente\": {\n        \"tipo_doc\": \"1\",\n        \"num_doc\": \"12345678\",\n        \"razon_social\": \"CLIENTE\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Producto\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 10,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n    \"enviar_automatico\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2993,13 +3721,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/boletas/15",
+              "raw": "{{base_url}}/boletas/{{id_boleta}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "boletas",
-                "15"
+                "{{id_boleta}}"
               ]
             }
           },
@@ -3179,13 +3907,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/boletas/5/pdf?format=a4",
+              "raw": "{{base_url}}/boletas/{{id_boleta}}/pdf?format=a4",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "boletas",
-                "5",
+                "{{id_boleta}}",
                 "pdf"
               ],
               "query": [
@@ -3220,13 +3948,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/boletas/1/pdf?format=ticket-80",
+              "raw": "{{base_url}}/boletas/{{id_boleta}}/pdf?format=ticket-80",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "boletas",
-                "1",
+                "{{id_boleta}}",
                 "pdf"
               ],
               "query": [
@@ -3436,6 +4164,216 @@
       "name": "06. Notas de Crédito (Tipo 07)",
       "item": [
         {
+          "name": "NC — Anulación total de factura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"FC01\",\r\n    \"fecha_emision\": \"2026-04-17\",\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"1\",\r\n    \"cod_motivo\": \"01\",\r\n    \"des_motivo\": \"Anulación de la operación\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20512345678\",\r\n        \"razon_social\": \"EMPRESA DEMO SAC\",\r\n        \"direccion\": \"Av. Los Olivos 123, Lima\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"descripcion\": \"Producto de prueba\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 100.00,\r\n            \"tip_afe_igv\": \"10\"\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notas-credito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-credito"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NC — Descuento parcial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "  {\r\n    \"serie\": \"FC01\",\r\n    \"fecha_emision\": \"2026-05-11\",\r\n\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"2\",\r\n\r\n    \"cod_motivo\": \"04\",\r\n    \"des_motivo\": \"Descuento por volumen de compra\",\r\n\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000001\",\r\n      \"razon_social\": \"CLIENTE PRUEBA S.A.C.\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"descripcion\": \"Descuento Producto A\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 80.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notas-credito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-credito"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NC — Corrección de precio / devolución parcial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "  {\r\n    \"serie\": \"FC01\",\r\n    \"fecha_emision\": \"2026-04-17\",\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"3\",\r\n    \"cod_motivo\": \"06\",\r\n    \"des_motivo\": \"Devolución parcial de mercadería\",\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000001\",\r\n      \"razon_social\": \"CLIENTE PRUEBA S.A.C.\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"descripcion\": \"Producto devuelto X\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 3,\r\n        \"precio_unitario\": 25.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      },\r\n      {\r\n        \"descripcion\": \"Producto devuelto Y\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 80.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notas-credito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-credito"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NC — En dólares (USD)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"FC01\",\r\n    \"fecha_emision\": \"2026-03-05\",\r\n    \"tipo_moneda\": \"USD\",\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"5\",\r\n    \"cod_motivo\": \"01\",\r\n    \"des_motivo\": \"Anulación de operación en dólares\",\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000001\",\r\n      \"razon_social\": \"CLIENTE PRUEBA S.A.C.\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"descripcion\": \"Consultoría internacional\",\r\n        \"unidad\": \"ZZ\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 500.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notas-credito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-credito"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NC — Anulación de boleta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": " {\r\n    \"serie\": \"BC01\",\r\n    \"fecha_emision\": \"2026-04-17\",\r\n    \"doc_afectado_tipo\": \"03\",\r\n    \"doc_afectado_serie\": \"B001\",\r\n    \"doc_afectado_correlativo\": \"1\",\r\n    \"cod_motivo\": \"01\",\r\n    \"des_motivo\": \"Anulación de la operación\",\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"1\",\r\n      \"num_doc\": \"12345678\",\r\n      \"razon_social\": \"JUAN PEREZ\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"descripcion\": \"Producto vendido\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 50.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notas-credito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-credito"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "NC envío manual (enviar_automatico=false)",
           "request": {
             "method": "POST",
@@ -3477,6 +4415,76 @@
               ],
               "path": [
                 "notas-credito"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enviar a SUNAT (manual)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notas-credito/1/enviar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-credito",
+                "1",
+                "enviar"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reenviar a SUNAT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notas-credito/1/reenviar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-credito",
+                "1",
+                "reenviar"
               ]
             }
           },
@@ -3582,13 +4590,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/notas-credito/1",
+              "raw": "{{base_url}}/notas-credito/{{id_NC}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "notas-credito",
-                "1"
+                "{{id_NC}}"
               ]
             }
           },
@@ -3734,13 +4742,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/notas-credito/1/pdf?format=a4",
+              "raw": "{{base_url}}/notas-credito/{{id_NC}}/pdf?format=a4",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "notas-credito",
-                "1",
+                "{{id_NC}}",
                 "pdf"
               ],
               "query": [
@@ -3752,76 +4760,6 @@
             }
           },
           "response": []
-        },
-        {
-          "name": "Enviar a SUNAT (manual)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/notas-credito/1/enviar",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "notas-credito",
-                "1",
-                "enviar"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Reenviar a SUNAT",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/notas-credito/1/reenviar",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "notas-credito",
-                "1",
-                "reenviar"
-              ]
-            }
-          },
-          "response": []
         }
       ],
       "description": "NC para anular/devolver/descontar. Cat. 09 motivos: 01=anulación, 02=anulación error RUC, 03=corrección descripción, 04=descuento global, 05=descuento por ítem, 06=devolución total, 07=devolución parcial, 08=bonificación, 09=ajuste, 10=otros. Lee 06-Notas-credito.md."
@@ -3829,6 +4767,174 @@
     {
       "name": "07. Notas de Débito (Tipo 08)",
       "item": [
+        {
+          "name": "ND — Intereses por mora",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": " {\r\n    \"serie\": \"FD01\",\r\n    \"fecha_emision\": \"2026-05-05\",\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"1\",\r\n    \"cod_motivo\": \"01\",\r\n    \"des_motivo\": \"Intereses por mora\",\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000001\",\r\n      \"razon_social\": \"CLIENTE PRUEBA S.A.C.\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"descripcion\": \"Interés por pago fuera de plazo\",\r\n        \"unidad\": \"ZZ\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 150.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notas-debito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-debito"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ND — Aumento de valor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "  {\r\n    \"serie\": \"FD01\",\r\n    \"fecha_emision\": \"2026-05-06\",\r\n\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"2\",\r\n\r\n\r\n    \"cod_motivo\": \"02\",\r\n    \"des_motivo\": \"Aumento en el valor por servicio adicional\",\r\n\r\n\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000001\",\r\n      \"razon_social\": \"CLIENTE PRUEBA S.A.C.\"\r\n    },\r\n\r\n    \"items\": [\r\n      {\r\n        \"descripcion\": \"Servicio de instalación adicional\",\r\n        \"unidad\": \"ZZ\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 120.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notas-debito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-debito"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ND — Penalidad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "  {\r\n    \"serie\": \"FD01\",\r\n    \"fecha_emision\": \"2026-03-05\",\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"2\",\r\n    \"cod_motivo\": \"02\",\r\n    \"des_motivo\": \"Aumento en el valor por servicio adicional\",\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000001\",\r\n      \"razon_social\": \"CLIENTE PRUEBA S.A.C.\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"descripcion\": \"Servicio de instalación adicional\",\r\n        \"unidad\": \"ZZ\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 200.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notas-debito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-debito"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ND — Sobre boleta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"BD01\",\r\n    \"fecha_emision\": \"2026-03-05\",\r\n    \"doc_afectado_tipo\": \"03\",\r\n    \"doc_afectado_serie\": \"B001\",\r\n    \"doc_afectado_correlativo\": \"1\",\r\n    \"cod_motivo\": \"01\",\r\n    \"des_motivo\": \"Intereses por mora\",\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"1\",\r\n      \"num_doc\": \"12345678\",\r\n      \"razon_social\": \"JUAN PEREZ\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"descripcion\": \"Interés por pago tardío\",\r\n        \"unidad\": \"ZZ\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 20.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notas-debito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-debito"
+              ]
+            }
+          },
+          "response": []
+        },
         {
           "name": "ND envío manual",
           "request": {
@@ -3871,6 +4977,76 @@
               ],
               "path": [
                 "notas-debito"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enviar a SUNAT (manual)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notas-debito/1/enviar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-debito",
+                "1",
+                "enviar"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reenviar a SUNAT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notas-debito/1/reenviar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notas-debito",
+                "1",
+                "reenviar"
               ]
             }
           },
@@ -4089,13 +5265,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/notas-debito/1/pdf?format=a4",
+              "raw": "{{base_url}}/notas-debito/{{id_ND}}/pdf?format=a4",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "notas-debito",
-                "1",
+                "{{id_ND}}",
                 "pdf"
               ],
               "query": [
@@ -4103,76 +5279,6 @@
                   "key": "format",
                   "value": "a4"
                 }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Enviar a SUNAT (manual)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/notas-debito/1/enviar",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "notas-debito",
-                "1",
-                "enviar"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Reenviar a SUNAT",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/notas-debito/1/reenviar",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "notas-debito",
-                "1",
-                "reenviar"
               ]
             }
           },
@@ -4212,7 +5318,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"fecha_resumen\": \"2026-04-19\"\n}",
+              "raw": "{\n    \"fecha_resumen\": \"2026-05-19\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4467,13 +5573,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/resumenes/1/estado",
+              "raw": "{{base_url}}/resumenes/{{id_resumen}}/estado",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "resumenes",
-                "1",
+                "{{id_resumen}}",
                 "estado"
               ]
             },
@@ -4503,13 +5609,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/resumenes/1/xml",
+              "raw": "{{base_url}}/resumenes/{{id_resumen}}/xml",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "resumenes",
-                "1",
+                "{{id_resumen}}",
                 "xml"
               ]
             }
@@ -4620,7 +5726,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"fecha_generacion\": \"2026-04-19\",\n    \"fecha_comunicacion\": \"2026-04-19\",\n    \"detalles\": [\n        {\n            \"tipo_documento\": \"01\",\n            \"serie\": \"F001\",\n            \"correlativo\": \"000006\",\n            \"motivo\": \"Error en datos del cliente\"\n        }\n    ]\n}",
+              "raw": "{\n    \"fecha_generacion\": \"2026-05-14\",\n    \"fecha_comunicacion\": \"2026-05-14\",\n    \"detalles\": [\n        {\n            \"tipo_documento\": \"01\", // Factura\n            \"serie\": \"F001\",\n            \"correlativo\": \"8\",\n            \"motivo\": \"Error en datos del cliente\"\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4881,13 +5987,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/anulaciones/1",
+              "raw": "{{base_url}}/anulaciones/{{id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "anulaciones",
-                "1"
+                "{{id}}"
               ]
             }
           },
@@ -4915,13 +6021,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/anulaciones/1/estado",
+              "raw": "{{base_url}}/anulaciones/{{id_anular}}/estado",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "anulaciones",
-                "1",
+                "{{id_anular}}",
                 "estado"
               ]
             }
@@ -4970,6 +6076,216 @@
       "name": "10. Guía Remisión Remitente (Tipo 09)",
       "item": [
         {
+          "name": "GRR — Transporte público",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"T001\",\r\n    \"fecha_emision\": \"2026-05-14\",\r\n    \"destinatario\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA DESTINO SAC\"\r\n    },\r\n    \"cod_traslado\": \"01\",\r\n    \"mod_traslado\": \"01\",\r\n    \"fecha_traslado\": \"2026-05-14\",\r\n    \"peso_total\": 12.5,\r\n    \"und_peso_total\": \"KGM\",\r\n    \"partida_ubigeo\": \"150203\",\r\n    \"partida_direccion\": \"AV ITALIA 123, RIMAC\",\r\n    \"llegada_ubigeo\": \"150101\",\r\n    \"llegada_direccion\": \"AV LIMA 456, CERCADO\",\r\n    \"transportista\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"TRANSPORTES SAC\",\r\n        \"nro_mtc\": \"0001\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"PROD1\",\r\n            \"descripcion\": \"Producto de prueba\",\r\n            \"cantidad\": 2,\r\n            \"unidad\": \"NIU\"\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/guias-remision",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "guias-remision"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GRR — Transporte privado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": " {\r\n      \"serie\": \"T001\",\r\n      \"fecha_emision\": \"2026-04-17\",\r\n      \"destinatario\": {\r\n          \"tipo_doc\": \"6\",\r\n          \"num_doc\": \"20000000002\",\r\n          \"razon_social\": \"EMPRESA DESTINO SAC\"\r\n      },\r\n      \"cod_traslado\": \"01\",\r\n      \"mod_traslado\": \"02\",\r\n      \"fecha_traslado\": \"2026-04-17\",\r\n      \"peso_total\": 50.0,\r\n      \"und_peso_total\": \"KGM\",\r\n      \"num_bultos\": 5,\r\n      \"partida_ubigeo\": \"150203\",\r\n      \"partida_direccion\": \"AV ITALIA 123, RIMAC\",\r\n      \"llegada_ubigeo\": \"150101\",\r\n      \"llegada_direccion\": \"AV LIMA 456, CERCADO\",\r\n      \"vehiculo\": {\r\n          \"placa\": \"ABC123\",\r\n          \"secundarios\": [\r\n              { \"placa\": \"XYZ789\" }\r\n          ]\r\n      },\r\n      \"conductor\": {\r\n          \"tipo\": \"Principal\",\r\n          \"tipo_doc\": \"1\",\r\n          \"num_doc\": \"44004400\",\r\n          \"nombres\": \"ROBERTO\",\r\n          \"apellidos\": \"RODRIGUEZ VALENCIA\",\r\n          \"licencia\": \"0001122020\"\r\n      },\r\n      \"items\": [\r\n          {\r\n              \"codigo\": \"PROD1\",\r\n              \"descripcion\": \"Laptop HP ProBook 450\",\r\n              \"cantidad\": 10,\r\n              \"unidad\": \"NIU\"\r\n          }\r\n      ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/guias-remision",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "guias-remision"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GRR — Vehículo menor M1/L",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": " //Para motos, autos pequeños, etc. No requiere datos de vehículo/conductor.\r\n\r\n  {\r\n      \"serie\": \"T001\",\r\n      \"fecha_emision\": \"2026-04-17\",\r\n      \"destinatario\": {\r\n          \"tipo_doc\": \"1\",\r\n          \"num_doc\": \"44004400\",\r\n          \"razon_social\": \"JUAN PEREZ GARCIA\"\r\n      },\r\n      \"cod_traslado\": \"01\",\r\n      \"mod_traslado\": \"02\",\r\n      \"fecha_traslado\": \"2026-04-17\",\r\n      \"peso_total\": 5.0,\r\n      \"und_peso_total\": \"KGM\",\r\n      \"indicadores\": [\"SUNAT_Envio_IndicadorTrasladoVehiculoM1L\"],\r\n      \"partida_ubigeo\": \"150101\",\r\n      \"partida_direccion\": \"AV LIMA 123, CERCADO\",\r\n      \"llegada_ubigeo\": \"150203\",\r\n      \"llegada_direccion\": \"JR COMERCIO 456, RIMAC\",\r\n      \"items\": [\r\n          {\r\n              \"codigo\": \"PED001\",\r\n              \"descripcion\": \"Paquete pequeño delivery\",\r\n              \"cantidad\": 1,\r\n              \"unidad\": \"ZZ\"\r\n          }\r\n      ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/guias-remision",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "guias-remision"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GRR — Entre establecimientos propios",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n      \"serie\": \"T001\",\r\n      \"fecha_emision\": \"2026-04-17\",\r\n      \"destinatario\": {\r\n          \"tipo_doc\": \"6\",\r\n          \"num_doc\": \"20161515648\",\r\n          \"razon_social\": \"EMPRESA DE PRUEBAS GRE SAC\"\r\n      },\r\n      \"cod_traslado\": \"04\",\r\n      \"mod_traslado\": \"02\",\r\n      \"indicadores\": [\"SUNAT_Envio_IndicadorTrasladoVehiculoM1L\"],\r\n      \"fecha_traslado\": \"2026-04-17\",\r\n      \"peso_total\": 200.0,\r\n      \"und_peso_total\": \"KGM\",\r\n      \"num_bultos\": 15,\r\n      \"partida_ubigeo\": \"150203\",\r\n      \"partida_direccion\": \"Almacén Central - AV ITALIA 123, RIMAC\",\r\n      \"partida_ruc\": \"20161515648\",\r\n      \"partida_cod_local\": \"0000\",\r\n      \"llegada_ubigeo\": \"150101\",\r\n      \"llegada_direccion\": \"Sucursal Lima - AV LIMA 456, CERCADO\",\r\n      \"llegada_ruc\": \"20161515648\",\r\n      \"llegada_cod_local\": \"0001\",\r\n      \"items\": [\r\n          {\r\n              \"codigo\": \"INV001\",\r\n              \"descripcion\": \"Televisor Samsung 55 pulgadas\",\r\n              \"cantidad\": 10,\r\n              \"unidad\": \"NIU\"\r\n          },\r\n          {\r\n              \"codigo\": \"INV002\",\r\n              \"descripcion\": \"Refrigeradora LG 350L\",\r\n              \"cantidad\": 5,\r\n              \"unidad\": \"NIU\"\r\n          }\r\n      ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/guias-remision",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "guias-remision"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GRR — Múltiples conductores",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n      \"serie\": \"T001\",\r\n      \"fecha_emision\": \"2026-04-17\",\r\n      \"destinatario\": {\r\n          \"tipo_doc\": \"6\",\r\n          \"num_doc\": \"20000000002\",\r\n          \"razon_social\": \"DISTRIBUIDORA NORTE SAC\"\r\n      },\r\n      \"cod_traslado\": \"01\",\r\n      \"mod_traslado\": \"02\",\r\n      \"fecha_traslado\": \"2026-04-17\",\r\n      \"peso_total\": 500.0,\r\n      \"und_peso_total\": \"KGM\",\r\n      \"num_bultos\": 30,\r\n      \"partida_ubigeo\": \"150101\",\r\n      \"partida_direccion\": \"AV ARGENTINA 1500, LIMA\",\r\n      \"llegada_ubigeo\": \"130101\",\r\n      \"llegada_direccion\": \"AV MANSICHE 500, TRUJILLO\",\r\n      \"vehiculo\": {\r\n          \"placa\": \"D4E567\"\r\n      },\r\n      \"conductores\": [\r\n          {\r\n              \"tipo\": \"Principal\",\r\n              \"tipo_doc\": \"1\",\r\n              \"num_doc\": \"44004400\",\r\n              \"nombres\": \"CARLOS\",\r\n              \"apellidos\": \"GOMEZ TORRES\",\r\n              \"licencia\": \"Q44004400\"\r\n          },\r\n          {\r\n              \"tipo\": \"Secundario\",\r\n              \"tipo_doc\": \"1\",\r\n              \"num_doc\": \"55005500\",\r\n              \"nombres\": \"PEDRO\",\r\n              \"apellidos\": \"LOPEZ RUIZ\",\r\n              \"licencia\": \"Q55005500\"\r\n          }\r\n      ],\r\n      \"items\": [\r\n          {\r\n              \"codigo\": \"FERT01\",\r\n              \"descripcion\": \"Fertilizante NPK 50kg\",\r\n              \"cantidad\": 100,\r\n              \"unidad\": \"NIU\"\r\n          }\r\n      ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/guias-remision",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "guias-remision"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "GRR envío manual (enviar_automatico=false)",
           "request": {
             "method": "POST",
@@ -5011,6 +6327,41 @@
               ],
               "path": [
                 "guias-remision"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enviar a SUNAT (manual)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/guias-remision/1/enviar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "guias-remision",
+                "1",
+                "enviar"
               ]
             }
           },
@@ -5199,13 +6550,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/guias-remision/1/pdf?format=a4",
+              "raw": "{{base_url}}/guias-remision/{{id_guia}}/pdf?format=a4",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "guias-remision",
-                "1",
+                "{{id_guia}}",
                 "pdf"
               ],
               "query": [
@@ -5240,52 +6591,17 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/guias-remision/1/estado",
+              "raw": "{{base_url}}/guias-remision/{{id_guia}}/estado",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "guias-remision",
-                "1",
+                "{{id_guia}}",
                 "estado"
               ]
             },
             "description": "Las guías usan REST API GRE (no SOAP). Hay que consultar el ticket para saber el resultado."
-          },
-          "response": []
-        },
-        {
-          "name": "Enviar a SUNAT (manual)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/guias-remision/1/enviar",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "guias-remision",
-                "1",
-                "enviar"
-              ]
-            }
           },
           "response": []
         }
@@ -6757,6 +8073,62 @@
               ],
               "path": [
                 "consultar-cdr"
+              ]
+            },
+            "description": "Consulta el CDR archivado en SUNAT. Devuelve el ZIP del CDR."
+          },
+          "response": []
+        },
+        {
+          "name": "Exportar comprobantes",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"ruc_emisor\": \"20100000001\",\n    \"tipo_doc\": \"01\",\n    \"serie\": \"F001\",\n    \"correlativo\": \"1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/comprobantes/exportar-zip?fecha_desde=2026-05-01&fecha_hasta=2026-05-31&documentos=facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comprobantes",
+                "exportar-zip"
+              ],
+              "query": [
+                {
+                  "key": "fecha_desde",
+                  "value": "2026-05-01"
+                },
+                {
+                  "key": "fecha_hasta",
+                  "value": "2026-05-31"
+                },
+                {
+                  "key": "documentos",
+                  "value": "facturas"
+                }
               ]
             },
             "description": "Consulta el CDR archivado en SUNAT. Devuelve el ZIP del CDR."
@@ -8648,7 +10020,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"R001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"cod_local\": \"0000\",\n    \"proveedor\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20987654321\",\n        \"razon_social\": \"PROVEEDOR SAC\",\n        \"direccion\": \"AV. PROVEEDOR 100\"\n    },\n    \"regimen\": \"01\",\n    \"tasa\": 3,\n    \"observacion\": \"Retención por servicios profesionales\",\n    \"documentos\": [\n        {\n            \"tipo_doc\": \"01\",\n            \"num_doc\": \"F001-100\",\n            \"fecha_emision\": \"2026-04-15\",\n            \"imp_total\": 1180,\n            \"moneda\": \"PEN\",\n            \"pagos\": [\n                {\n                    \"fecha\": \"2026-04-19\",\n                    \"imp_total\": 1180\n                }\n            ],\n            \"fecha_retencion\": \"2026-04-19\"\n        }\n    ]\n}",
+              "raw": "  {\n      \"serie\": \"R001\",\n      \"fecha_emision\": \"2026-04-25\",\n      \"regimen\": \"01\",\n      \"tasa\": 3,\n      \"proveedor\": {\n          \"tipo_doc\": \"6\",\n          \"num_doc\": \"20000000002\",\n          \"razon_social\": \"EMPRESA X SAC\"\n      },\n      \"documentos\": [\n          {\n              \"tipo_doc\": \"01\",\n              \"num_doc\": \"F001-000034\",\n              \"fecha_emision\": \"2026-04-20\",\n              \"moneda\": \"PEN\",\n              \"imp_total\": 236.00,\n              \"fecha_retencion\": \"2026-04-20\",\n              \"imp_retenido\": 7.08,\n              \"imp_pagar\": 228.92,\n              \"pagos\": [\n                  {\n                      \"moneda\": \"PEN\",\n                      \"importe\": 236.00,\n                      \"fecha\": \"2026-04-20\"\n                  }\n              ]\n          }\n      ]\n  }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -8862,13 +10234,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/retenciones/1",
+              "raw": "{{base_url}}/retenciones/3",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "retenciones",
-                "1"
+                "3"
               ]
             }
           },
@@ -8896,13 +10268,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/retenciones/1/xml",
+              "raw": "{{base_url}}/retenciones/2/xml",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "retenciones",
-                "1",
+                "2",
                 "xml"
               ]
             }
@@ -8931,14 +10303,178 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/retenciones/1/cdr",
+              "raw": "{{base_url}}/retenciones/2/cdr",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "retenciones",
-                "1",
+                "2",
                 "cdr"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Descargar PDF a4",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/retenciones/3/pdf?format=a4",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "retenciones",
+                "3",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "a4"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Descargar PDF a5",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/retenciones/2/pdf?format=a5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "retenciones",
+                "2",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "a5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Descargar PDF 58 MM",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/retenciones/2/pdf?format=ticket-58",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "retenciones",
+                "2",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "ticket-58"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Descargar PDF 80 MM",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/retenciones/2/pdf?format=ticket-80",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "retenciones",
+                "2",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "ticket-80"
+                }
               ]
             }
           },
@@ -8985,6 +10521,132 @@
     {
       "name": "19. Percepciones (Tipo 40)",
       "item": [
+        {
+          "name": "0.5% — Entre agentes de percepción",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-04-25\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\",\r\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\r\n    },\r\n    \"percepcion\": {\r\n        \"cod_regimen\": \"03\",\r\n        \"porcentaje\": 0.5,\r\n        \"base\": 236.00,\r\n        \"monto\": 1.18\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"COMBUSTIBLE\",\r\n            \"unidad\": \"GLL\",\r\n            \"cantidad\": 1,\r\n            \"precio_unitario\": 236,\r\n            \"tip_afe_igv\": \"10\"\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1% — Venta de bienes (combustible, consumo masivo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-04-25\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\"\r\n    },\r\n    \"percepcion\": {\r\n        \"cod_regimen\": \"02\",\r\n        \"porcentaje\": 1,\r\n        \"base\": 236.00,\r\n        \"monto\": 2.36\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"BIEN DE CONSUMO MASIVO\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 1,\r\n            \"precio_unitario\": 236,\r\n            \"tip_afe_igv\": \"10\"\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2% — Sujeto no designado / consumidor final",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "  {\r\n    \"tipo_documento\": \"01\",\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-04-17\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": { \"tipo_doc\": \"6\", \"num_doc\": \"20000000002\", \"razon_social\": \"EMPRESA X SAC\" },\r\n    \"percepcion\": {\r\n      \"tipo_operacion\": \"2001\",\r\n      \"cod_reg\": \"51\",\r\n      \"porcentaje\": 0.02,\r\n      \"mto_base\": 236,\r\n      \"mto\": 4.72,\r\n      \"mto_total\": 240.72\r\n    },\r\n    \"items\": [\r\n      { \"codigo\": \"P001\", \"descripcion\": \"MERCADERIA GENERAL\", \"unidad\": \"NIU\", \"cantidad\": 1, \"precio_unitario\": 236, \"tip_afe_igv\": \"10\" }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "facturas"
+              ]
+            }
+          },
+          "response": []
+        },
         {
           "name": "Crear percepción 1% (venta interna)",
           "request": {
@@ -9061,7 +10723,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"P001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"cod_local\": \"0000\",\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20987654321\",\n        \"razon_social\": \"CLIENTE SAC\"\n    },\n    \"regimen\": \"02\",\n    \"tasa\": 2,\n    \"documentos\": [\n        {\n            \"tipo_doc\": \"01\",\n            \"num_doc\": \"F001-100\",\n            \"fecha_emision\": \"2026-04-15\",\n            \"imp_total\": 5900,\n            \"moneda\": \"PEN\",\n            \"cobros\": [\n                {\n                    \"fecha\": \"2026-04-19\",\n                    \"imp_total\": 5900\n                }\n            ],\n            \"fecha_percepcion\": \"2026-04-19\"\n        }\n    ]\n}",
+              "raw": "{\n    \"serie\": \"P001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"cod_local\": \"0000\",\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20987654321\",\n        \"razon_social\": \"CLIENTE SAC\"\n    },\n    \"regimen\": \"01\",\n    \"tasa\": 2,\n    \"documentos\": [\n        {\n            \"tipo_doc\": \"01\",\n            \"num_doc\": \"F001-100\",\n            \"fecha_emision\": \"2026-04-15\",\n            \"imp_total\": 5900,\n            \"moneda\": \"PEN\",\n            \"cobros\": [\n                {\n                    \"fecha\": \"2026-04-19\",\n                    \"importe\": 5900\n                }\n            ],\n            \"fecha_percepcion\": \"2026-04-19\"\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -9123,6 +10785,41 @@
               ],
               "path": [
                 "percepciones"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enviar a SUNAT (manual)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "{{api_secret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/percepciones/1/enviar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "percepciones",
+                "1",
+                "enviar"
               ]
             }
           },
@@ -9309,41 +11006,6 @@
             }
           },
           "response": []
-        },
-        {
-          "name": "Enviar a SUNAT (manual)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Key",
-                "value": "{{api_key}}",
-                "type": "text"
-              },
-              {
-                "key": "X-Api-Secret",
-                "value": "{{api_secret}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/percepciones/1/enviar",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "percepciones",
-                "1",
-                "enviar"
-              ]
-            }
-          },
-          "response": []
         }
       ],
       "description": "Comprobante de percepción del IGV. El vendedor percibe un % adicional al cliente. Solo lo emiten Agentes de Percepción designados por SUNAT."
@@ -9379,7 +11041,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"fecha_generacion\": \"2026-04-19\",\n    \"fecha_comunicacion\": \"2026-04-19\",\n    \"detalles\": [\n        {\n            \"tipo_documento\": \"20\",\n            \"serie\": \"R001\",\n            \"correlativo\": \"1\",\n            \"motivo\": \"Error en datos del proveedor\"\n        }\n    ]\n}",
+              "raw": "{\n    \"fecha_generacion\": \"2026-04-20\",\n    \"fecha_comunicacion\": \"2026-04-20\",\n    \"detalles\": [\n        {\n            \"tipo_documento\": \"20\",\n            \"serie\": \"R001\",\n            \"correlativo\": \"1\",\n            \"motivo\": \"Error en datos del proveedor\"\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"

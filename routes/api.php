@@ -37,6 +37,25 @@ Route::prefix('v1')->middleware(['throttle:api'])->group(function () {
 // === Rutas protegidas (requieren X-Api-Key + X-Api-Secret) ===
 Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'usage.headers'])->group(function () {
 
+    // Estado del circuit breaker de SUNAT (útil para monitoreo y antes de enviar masivos)
+    Route::get('sunat/estado', function (\Illuminate\Http\Request $request) {
+        $tenant   = $request->get('tenant');
+        $env      = $tenant->environment;
+        $endpoint = config("facturacion.sunat.{$env}.fe");
+        $cb       = new \App\Services\Sunat\SunatCircuitBreaker();
+        $stats    = $cb->getStats($endpoint);
+
+        return response()->json([
+            'estado'        => 'exito',
+            'sunat'         => [
+                'disponible'  => $stats['state'] === 'closed',
+                'circuit'     => $stats['state'],   // closed | open | half_open
+                'fallas'      => $stats['failures'],
+                'entorno'     => $env,
+            ],
+        ]);
+    });
+
     // === Documentos SUNAT (con límite de plan) ===
 
     // Facturas (01)
