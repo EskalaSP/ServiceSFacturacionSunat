@@ -26,6 +26,9 @@ return new class extends Migration
     {
         $original = "'pendiente', 'enviado', 'aceptado', 'rechazado', 'anulado'";
         foreach ($this->tables as $table) {
+            // Convierte filas con 'anulacion_en_proceso' al valor más cercano
+            // antes de restaurar el constraint que no lo incluye.
+            DB::statement("UPDATE {$table} SET sunat_status = 'pendiente' WHERE sunat_status = 'anulacion_en_proceso'");
             DB::statement("ALTER TABLE {$table} DROP CONSTRAINT IF EXISTS {$table}_sunat_status_check");
             DB::statement("ALTER TABLE {$table} ADD CONSTRAINT {$table}_sunat_status_check CHECK (sunat_status IN ({$original}))");
         }
