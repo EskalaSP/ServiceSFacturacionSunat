@@ -39,6 +39,77 @@ class InvoiceController extends Controller
         }
     }
 
+    public function masivo(Request $request, CreateInvoiceAction $action): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+
+        $items = $request->input('facturas');
+
+        if (! is_array($items) || empty($items)) {
+            return $this->error('El campo "facturas" debe ser un array con al menos 1 elemento.', 422);
+        }
+
+        $limit = 100;
+        if (count($items) > $limit) {
+            return $this->error("Máximo {$limit} facturas por envío masivo.", 422);
+        }
+
+        $creadas  = [];
+        $errores  = [];
+
+        foreach ($items as $index => $data) {
+            // Validar campos mínimos por item
+            $missing = [];
+            foreach (['serie', 'fecha_emision', 'cliente', 'items'] as $campo) {
+                if (empty($data[$campo])) {
+                    $missing[] = $campo;
+                }
+            }
+            if (! empty($missing)) {
+                $errores[] = [
+                    'indice'  => $index,
+                    'mensaje' => 'Campos requeridos faltantes: ' . implode(', ', $missing),
+                    'data'    => $data,
+                ];
+                continue;
+            }
+
+            try {
+                $invoice = $action->execute($tenant, $data, true);
+                $creadas[] = [
+                    'indice'          => $index,
+                    'id'              => $invoice->id,
+                    'numero_completo' => $invoice->numero_completo,
+                    'total'           => $invoice->mto_imp_venta,
+                    'estado_sunat'    => $invoice->sunat_status,
+                ];
+            } catch (\Throwable $e) {
+                $errores[] = [
+                    'indice'  => $index,
+                    'mensaje' => $e->getMessage(),
+                    'data'    => $data,
+                ];
+            }
+        }
+
+        $totalCreadas = count($creadas);
+        $totalErrores = count($errores);
+
+        return $this->success([
+            'resumen' => [
+                'total_enviadas'  => count($items),
+                'creadas'         => $totalCreadas,
+                'errores'         => $totalErrores,
+            ],
+            'facturas' => $creadas,
+            'errores'  => $errores,
+        ], $totalCreadas > 0
+            ? "{$totalCreadas} factura(s) creadas y encoladas para envío a SUNAT."
+            : 'Ninguna factura fue creada. Revisa los errores.',
+            $totalCreadas > 0 ? 201 : 422
+        );
+    }
+
     public function index(Request $request): JsonResponse
     {
         $tenant = $request->get('tenant');

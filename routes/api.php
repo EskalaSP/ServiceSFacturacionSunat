@@ -60,6 +60,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
 
     // Facturas (01)
     Route::post('facturas', [InvoiceController::class, 'store'])->middleware('check.limit:sunat');
+    Route::post('facturas/masivo', [InvoiceController::class, 'masivo'])->middleware('check.limit:sunat');
     Route::get('facturas', [InvoiceController::class, 'index']);
     Route::get('facturas/{id}', [InvoiceController::class, 'show']);
     Route::put('facturas/{id}', [InvoiceController::class, 'update']);

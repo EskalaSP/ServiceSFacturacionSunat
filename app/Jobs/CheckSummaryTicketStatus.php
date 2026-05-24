@@ -38,7 +38,13 @@ class CheckSummaryTicketStatus implements ShouldQueue
 
         $tenant = Tenant::findOrFail($summary->tenant_id);
         $service = new GreenterService($tenant);
-        $result = $service->getStatus($summary->ticket);
+
+        try {
+            $result = $service->getStatus($summary->ticket);
+        } catch (\SoapFault $e) {
+            $this->release($this->nextBackoff());
+            return;
+        }
 
         if ($result['success']) {
             $accepted = $result['accepted'] ?? false;

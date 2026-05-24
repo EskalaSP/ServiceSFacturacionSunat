@@ -317,15 +317,39 @@ class GreenterService
     public function getStatus(string $ticket, ?string $endpoint = null): array
     {
         $see = $endpoint ? $this->createSee($endpoint) : $this->createSee();
-        $result = $see->getStatus($ticket);
+
+        try {
+            $result = $see->getStatus($ticket);
+        } catch (\SoapFault $e) {
+            return [
+                'success'       => false,
+                'error_code'    => 'NETWORK_ERROR',
+                'error_message' => $this->sanitizeUtf8($e->getMessage()),
+            ];
+        }
 
         if (! $result->isSuccess()) {
             $error = $result->getError();
+            $code  = (string) $error->getCode();
+            $msg   = $this->sanitizeUtf8($error->getMessage());
+
+            // Greenter wraps network-layer failures (SoapFaults caught internally) as
+            // numeric codes like 200 with messages such as "Failed to process response
+            // headers". Those are transient, not SUNAT validation rejections.
+            $looksLikeNetworkError = ! is_numeric($code) ||
+                str_contains(strtolower($msg), 'failed to process') ||
+                str_contains(strtolower($msg), 'could not connect') ||
+                str_contains(strtolower($msg), 'connection refused') ||
+                str_contains(strtolower($msg), 'timed out');
+
+            if ($looksLikeNetworkError) {
+                $code = 'NETWORK_ERROR';
+            }
 
             return [
-                'success' => false,
-                'error_code' => $error->getCode(),
-                'error_message' => $this->sanitizeUtf8($error->getMessage()),
+                'success'       => false,
+                'error_code'    => $code,
+                'error_message' => $msg,
             ];
         }
 

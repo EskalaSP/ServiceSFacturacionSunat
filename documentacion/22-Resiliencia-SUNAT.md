@@ -255,6 +255,118 @@ supervisorctl status api-pro-worker:*
 
 ---
 
+## Envíos masivos: paralelismo y throughput
+
+### El problema con 1 worker
+
+Con un solo worker, los jobs se procesan **uno a la vez**. Cada factura espera a que la anterior termine antes de ser enviada a SUNAT:
+
+```
+Worker 1:  [factura 1] → [factura 2] → [factura 3] → ... → [factura 1000]
+Tiempo:    ~700ms         ~700ms         ~700ms               = ~11.6 minutos
+```
+
+Con 1000 facturas a ~700ms cada una = **~11 minutos** en cola. Los clientes ven su factura en estado `enviado` durante todo ese tiempo sin recibir respuesta de SUNAT.
+
+### La solución: workers en paralelo
+
+Cada worker es un proceso PHP independiente que toma un job de la cola simultáneamente. Con N workers, N facturas se envían a SUNAT **al mismo tiempo**:
+
+```
+Worker 1:  [factura 1] → [factura 4] → [factura 7] → ...
+Worker 2:  [factura 2] → [factura 5] → [factura 8] → ...
+Worker 3:  [factura 3] → [factura 6] → [factura 9] → ...
+                                               ↓
+                              Tiempo total ÷ N workers
+```
+
+### Tabla de tiempos estimados para 1000 facturas
+
+| Workers | Tiempo estimado | Latencia por cliente |
+|---------|----------------|----------------------|
+| 1       | ~11.6 min      | Hasta 11 min de espera |
+| 4       | ~2.9 min       | Hasta 3 min de espera |
+| 10      | ~1.2 min       | Hasta 72 seg de espera |
+| 20      | ~35 seg        | Hasta 35 seg de espera |
+| 50      | ~14 seg        | Respuesta casi inmediata |
+
+> **Nota:** Estos tiempos asumen que SUNAT responde en ~700ms. En práctica SUNAT puede tardar hasta 3-5 segundos en momentos de alta carga, multiplicando estos valores.
+
+### Cómo escalar workers en Supervisor
+
+Cambia `numprocs` en `/etc/supervisor/conf.d/api-pro-worker.conf`:
+
+```ini
+[program:api-pro-worker]
+numprocs=10   # ← ajusta este número
+```
+
+```bash
+supervisorctl reread
+supervisorctl update
+supervisorctl restart api-pro-worker:*
+```
+
+### ¿Cuántos workers poner?
+
+El cuello de botella no es tu servidor — es **SUNAT**. Más de 50 workers simultáneos puede ser interpretado como abuso y SUNAT te responde con timeouts o bloqueos temporales.
+
+| Clientes activos | Workers recomendados | Queue driver |
+|-----------------|---------------------|--------------|
+| < 500           | 4                   | database     |
+| 500 – 5.000     | 10                  | database o redis |
+| 5.000 – 50.000  | 20                  | redis        |
+| 50.000+         | 30-50 + múltiples servidores | redis |
+
+> **Regla práctica:** empieza con 10 workers. Si ves jobs esperando más de 2 minutos en la cola, duplica. Si SUNAT empieza a retornar SoapFaults frecuentes, reduce.
+
+### Queue driver: database vs Redis
+
+**Con `QUEUE_CONNECTION=database`** (por defecto):
+- Cada worker hace un `SELECT FOR UPDATE` en la tabla `jobs`
+- Con 20+ workers hay contención de locks en PostgreSQL/MySQL
+- Funciona bien hasta ~20 workers
+
+**Con `QUEUE_CONNECTION=redis`**:
+- Redis usa listas atómicas — sin contención entre workers
+- Escala a 100+ workers sin degradación
+- **Recomendado para producción con >5.000 clientes**
+
+Cambiar a Redis requiere solo modificar `.env`:
+```dotenv
+QUEUE_CONNECTION=redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+```
+
+### Monitorear la cola en tiempo real
+
+```bash
+# Ver cuántos jobs están pendientes
+php artisan queue:monitor default
+
+# Ver jobs fallidos
+php artisan queue:failed
+
+# Número exacto de jobs en cola (MySQL/PostgreSQL)
+php artisan tinker
+>>> DB::table('jobs')->count();
+
+# Con Redis:
+>>> Queue::size('default');
+```
+
+### El circuit breaker con múltiples workers
+
+Con N workers enviando a SUNAT simultáneamente, el circuit breaker se vuelve **crítico**. Si SUNAT se cae:
+
+- Sin circuit breaker: 20 workers × 20 reintentos = 400 requests fallidos por segundo golpeando a SUNAT mientras está caído
+- Con circuit breaker: tras 5 SoapFaults en 60 segundos, todos los workers detectan `open` en Cache y hacen `release(300 + jitter)` sin tocar SUNAT
+
+El jitter (0-120 seg aleatorio por worker) evita que cuando el circuit se cierra, 20 workers no vuelvan a golpear SUNAT exactamente al mismo segundo.
+
+---
+
 ## Webhook: diferenciar errores
 
 Los clientes que usan webhooks deben manejar dos eventos distintos:
