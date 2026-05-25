@@ -65,16 +65,26 @@ class DocumentCalculationService
                     // cod_tipo "00" y "01" se tratan igual a nivel de ítem (reducen base)
                     // La distinción "no afecta base" solo aplica a descuentos globales (cod "03")
                     if ($codTipo === '00' || $codTipo === '01') {
-                        $factor = (float) ($desc['factor'] ?? 0);
-                        $montoBase = $valorBruto;
-                        $monto = round($montoBase * $factor, 2);
-                        $descuentoBase += $monto;
-                        $descuentoConIgv += round($totalConIgvBruto * $factor, 2);
+                        $montoBase = round($valorBruto, 2);
+
+                        if (! empty($desc['porcentaje'])) {
+                            $factor = round((float) $desc['porcentaje'] / 100, 6);
+                            $monto  = round($montoBase * $factor, 2);
+                        } elseif (! empty($desc['factor'])) {
+                            $factor = (float) $desc['factor'];
+                            $monto  = round($montoBase * $factor, 2);
+                        } else {
+                            $monto  = (float) ($desc['monto'] ?? 0);
+                            $factor = $montoBase > 0 ? round($monto / $montoBase, 6) : 0;
+                        }
+
+                        $descuentoBase    += $monto;
+                        $descuentoConIgv  += round($totalConIgvBruto * $factor, 2);
                         $recalculatedDescuentos[] = [
-                            'cod_tipo' => $codTipo,
-                            'monto_base' => round($montoBase, 2),
-                            'factor' => $factor,
-                            'monto' => $monto,
+                            'cod_tipo'   => $codTipo,
+                            'monto_base' => $montoBase,
+                            'factor'     => $factor,
+                            'monto'      => $monto,
                         ];
                     } else {
                         $recalculatedDescuentos[] = $desc;
@@ -219,38 +229,44 @@ class DocumentCalculationService
             // no se agrega a sumDescuentosNoBase para evitar error SUNAT 3300
         }
 
-        // Auto-calcular anticipo: si hay anticipos pero no descuentos_globales cod 04, generarlos
+        // El anticipo se declara via PrepaidPayment en el XML (setAnticipos/setTotalAnticipos).
+        // NO se agrega AllowanceCharge tipo 04 porque genera validaciones en cascada de SUNAT
+        // (3277 → 3291 → 3294) imposibles de satisfacer simultáneamente con los valores brutos.
         if (! empty($data['anticipos']) && ! isset($data['total_anticipos'])) {
-            $data['total_anticipos'] = collect($data['anticipos'])->sum('total');
-        }
-        if (! empty($data['anticipos'])) {
-            $totalAnticipo = (float) ($data['total_anticipos'] ?? collect($data['anticipos'])->sum('total'));
-            $ya_tiene_descuento04 = collect($data['descuentos_globales'] ?? [])->contains(fn($d) => ($d['cod_tipo'] ?? '') === '04');
-            if (! $ya_tiene_descuento04 && $totalAnticipo > 0) {
-                $data['descuentos_globales'][] = [
-                    'cod_tipo'   => '04',
-                    'factor'     => 1,
-                    'monto'      => $totalAnticipo,
-                    'monto_base' => $totalAnticipo,
-                ];
-            }
+            $data['total_anticipos'] = collect($data['anticipos'])->sum('monto');
         }
 
         $descuentoGlobalGravadas = 0;
         if (! empty($data['descuentos_globales'])) {
+            $normalizedDescuentos = [];
             foreach ($data['descuentos_globales'] as $desc) {
                 $codTipo = $desc['cod_tipo'] ?? '02';
-                $monto = (float) ($desc['monto'] ?? 0);
+
+                // Normalizar: resolver monto desde porcentaje si no viene monto
+                if (! empty($desc['porcentaje']) && empty($desc['monto'])) {
+                    $baseParaDesc = in_array($codTipo, ['02', '04', '05', '06']) ? $gravadas : ($exoneradas + $inafectas + $exportacion + $gravadas);
+                    $monto = round($baseParaDesc * ((float) $desc['porcentaje'] / 100), 2);
+                } else {
+                    $monto = (float) ($desc['monto'] ?? 0);
+                }
+
+                // Calcular monto_base y factor para almacenar valores completos
+                $montoBase = round(in_array($codTipo, ['02', '04', '05', '06']) ? $gravadas : ($gravadas + $exoneradas + $inafectas), 2);
+                $factor = $montoBase > 0 ? round($monto / $montoBase, 6) : 0;
+
+                $normalizedDescuentos[] = array_merge($desc, [
+                    'monto'      => $monto,
+                    'monto_base' => (float) ($desc['monto_base'] ?? $montoBase),
+                    'factor'     => (float) ($desc['factor'] ?? $factor),
+                ]);
 
                 if ($codTipo === '02') {
-                    // Descuento global que afecta la base imponible (gravadas)
                     $descuentoGlobalGravadas += $monto;
                 } elseif ($codTipo === '03') {
-                    // Cargo/descuento que no afecta base imponible
                     $sumDescuentosNoBase += $monto;
                 }
-                // Tipo 62 (retención) no modifica totales en XML, solo se muestra como descuento
             }
+            $data['descuentos_globales'] = $normalizedDescuentos;
         }
 
         // Aplicar descuento global a gravadas y recalcular el IGV usando la tasa efectiva
@@ -278,16 +294,15 @@ class DocumentCalculationService
         $valorVenta = round($gravadas + $exoneradas + $inafectas + $exportacion + $baseIvap, 2);
         $sumDescuentosNoBase = round($sumDescuentosNoBase, 2);
         $subTotal = round($valorVenta + $totalImpuestos, 2);
-        $totalAnticipos = (float) ($data['total_anticipos'] ?? collect($data['anticipos'] ?? [])->sum('total'));
+        $totalAnticipos = (float) ($data['total_anticipos'] ?? collect($data['anticipos'] ?? [])->sum('monto'));
         $mtoImpVenta = max(0, round($subTotal - $totalAnticipos - $sumDescuentosNoBase, 2));
 
-        // Para anticipos: mto_oper_gravadas y mto_igv se reducen proporcionalmente
-        // pero valor_venta y sub_total permanecen con el valor completo de los ítems
-        $gravadas_netas = $totalAnticipos > 0 ? round($gravadas - $totalAnticipos, 2) : $gravadas;
-        // Usa la tasa efectiva del régimen (no hardcodear 0.18)
-        $anticipoRateFrac = $this->taxRates->defaultIgvRate($tenant, $fechaEmision) / 100;
-        $igv_neto = $totalAnticipos > 0 ? round($gravadas_netas * $anticipoRateFrac, 2) : $totalIgv;
-        $totalImpuestos_neto = $totalAnticipos > 0 ? round($igv_neto + $totalIvap + $totalIsc + $totalIcbper, 2) : $totalImpuestos;
+        // El anticipo se declara como PrepaidAmount en el XML (línea separada).
+        // mto_oper_gravadas y mto_igv siempre reflejan el total bruto de los ítems;
+        // mto_imp_venta ya descuenta el anticipo.
+        $gravadas_netas = $gravadas;
+        $igv_neto = $totalIgv;
+        $totalImpuestos_neto = $totalImpuestos;
 
         return [
             'mto_oper_gravadas' => (float) ($data['mto_oper_gravadas'] ?? $gravadas_netas),

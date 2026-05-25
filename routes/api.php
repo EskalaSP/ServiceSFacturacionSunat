@@ -18,8 +18,10 @@ use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SucursalController;
 use App\Http\Controllers\Api\V1\SummaryController;
 use App\Http\Controllers\Api\V1\TenantController;
+use App\Http\Controllers\Api\V1\CredentialRecoveryController;
 use App\Http\Controllers\Api\V1\PerceptionController;
 use App\Http\Controllers\Api\V1\RetentionController;
+use App\Http\Controllers\Api\V1\ExportController;
 use App\Http\Controllers\Api\V1\ReversionController;
 use App\Http\Controllers\Api\V1\VoidedController;
 use Illuminate\Support\Facades\Route;
@@ -28,15 +30,37 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->middleware(['throttle:api'])->group(function () {
     Route::post('registro', [RegisterController::class, 'store']);
     Route::get('planes', [SubscriptionController::class, 'plans']);
+    Route::post('credenciales/recuperar', [CredentialRecoveryController::class, 'solicitar']);
+    Route::post('credenciales/recuperar/verificar', [CredentialRecoveryController::class, 'verificar']);
 });
 
 // === Rutas protegidas (requieren X-Api-Key + X-Api-Secret) ===
 Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'usage.headers'])->group(function () {
 
+    // Estado del circuit breaker de SUNAT (útil para monitoreo y antes de enviar masivos)
+    Route::get('sunat/estado', function (\Illuminate\Http\Request $request) {
+        $tenant   = $request->get('tenant');
+        $env      = $tenant->environment;
+        $endpoint = config("facturacion.sunat.{$env}.fe");
+        $cb       = new \App\Services\Sunat\SunatCircuitBreaker();
+        $stats    = $cb->getStats($endpoint);
+
+        return response()->json([
+            'estado'        => 'exito',
+            'sunat'         => [
+                'disponible'  => $stats['state'] === 'closed',
+                'circuit'     => $stats['state'],   // closed | open | half_open
+                'fallas'      => $stats['failures'],
+                'entorno'     => $env,
+            ],
+        ]);
+    });
+
     // === Documentos SUNAT (con límite de plan) ===
 
     // Facturas (01)
     Route::post('facturas', [InvoiceController::class, 'store'])->middleware('check.limit:sunat');
+    Route::post('facturas/masivo', [InvoiceController::class, 'masivo'])->middleware('check.limit:sunat');
     Route::get('facturas', [InvoiceController::class, 'index']);
     Route::get('facturas/{id}', [InvoiceController::class, 'show']);
     Route::put('facturas/{id}', [InvoiceController::class, 'update']);
@@ -148,6 +172,8 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::put('empresa', [TenantController::class, 'update']);
     Route::post('empresa/logo', [TenantController::class, 'uploadLogo']);
     Route::post('empresa/certificado', [TenantController::class, 'uploadCertificate']);
+    Route::get('empresa/credenciales', [TenantController::class, 'credenciales']);
+    Route::post('empresa/credenciales/regenerar', [TenantController::class, 'regenerarCredenciales']);
 
     // Sucursales
     Route::apiResource('sucursales', SucursalController::class);
@@ -193,6 +219,9 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
         Route::get('documentos-recientes', 'documentosRecientes'); // Feed últimos 20
         Route::get('alertas', 'alertas');                  // Rechazos, vencimientos, series
     });
+
+    // === Exportación masiva ===
+    Route::get('comprobantes/exportar-zip', [ExportController::class, 'zip']);
 
     // === Reportes ===
     Route::get('reportes/registro-ventas', [ReportController::class, 'registroVentas']);

@@ -10,6 +10,7 @@ use App\Events\DocumentSent;
 use App\Services\Greenter\GreenterService;
 use App\Services\Pdf\PdfGeneratorService;
 use App\Services\Storage\DocumentStorageService;
+use App\Services\Sunat\SunatCircuitBreaker;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Queue\Queueable;
@@ -18,9 +19,14 @@ class SendDocumentToSunat implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 10;
+    public int $tries = 20;
 
-    public array $backoff = [15, 30, 60, 60, 120, 120, 300, 300, 600, 600];
+    // Cubre hasta ~15 horas de caída de SUNAT antes de rendirse.
+    // Los errores de validación permanentes (0306, 2074, etc.) fallan en el 1er intento
+    // sin pasar por este backoff — solo errores de red y códigos temporales llegan aquí.
+    public array $backoff = [15, 30, 60, 120, 300, 600, 1200, 1800, 3600, 3600, 3600, 3600, 3600, 3600, 3600, 3600, 3600, 3600, 3600, 3600];
+
+    public int $timeout = 90;
 
     public function __construct(
         private string $modelClass,
@@ -30,7 +36,22 @@ class SendDocumentToSunat implements ShouldQueue
     public function handle(): void
     {
         $document = $this->modelClass::with('items')->findOrFail($this->documentId);
-        $tenant = $document->tenant;
+        $tenant   = $document->tenant;
+
+        // Endpoint de SUNAT para este tenant (beta o producción)
+        $env      = $tenant->environment;
+        $endpoint = config("facturacion.sunat.{$env}.fe");
+
+        // ── Circuit Breaker ────────────────────────────────────────────────────
+        $cb = new SunatCircuitBreaker();
+        if (! $cb->isAvailable($endpoint)) {
+            // SUNAT está caído. No intentamos — liberamos el job con jitter
+            // para que millones de jobs no vuelvan al mismo segundo cuando SUNAT recupere.
+            $jitter = random_int(0, 120);
+            $this->release(300 + $jitter);
+            return;
+        }
+        // ──────────────────────────────────────────────────────────────────────
 
         $service = new GreenterService($tenant);
         $storage = new DocumentStorageService();
@@ -47,8 +68,10 @@ class SendDocumentToSunat implements ShouldQueue
             };
 
             $result = $service->send($greenterDoc);
+            $cb->recordSuccess($endpoint);
         } catch (\SoapFault $e) {
-            // Error de conexión SOAP (SUNAT caído, timeout) → reintentar
+            // Error de red/SUNAT caído → abre el circuit breaker y reintenta
+            $cb->recordFailure($endpoint);
             $this->handleRetryableError($document, $e->getMessage());
             return;
         } catch (\Greenter\XMLSecLibs\Exception\XmlSignException $e) {
@@ -153,22 +176,26 @@ class SendDocumentToSunat implements ShouldQueue
     private function handleRetryableError($document, string $message): void
     {
         if ($this->attempts() >= $this->tries) {
-            // Último intento → marcar como rechazado
+            // Agotados todos los reintentos: SUNAT estuvo inaccesible demasiado tiempo.
+            // Se marca como pendiente (no rechazado) para que el cliente pueda reenviar
+            // manualmente cuando SUNAT vuelva a estar disponible.
             $document->update([
-                'sunat_status' => 'rechazado',
-                'sunat_code' => 'MAX_RETRIES',
-                'sunat_description' => "Agotados {$this->tries} intentos: {$message}",
+                'sunat_status' => 'pendiente',
+                'sunat_code' => 'SUNAT_TIMEOUT',
+                'sunat_description' => "SUNAT no disponible después de {$this->tries} intentos. Use POST /reenviar cuando SUNAT esté disponible.",
             ]);
 
             if ($document->tenant->webhook_url) {
-                NotifyWebhookJob::dispatch($this->modelClass, $document->id, 'document.rejected');
+                // Evento distinto para que el cliente sepa que puede reintentar
+                // (diferente de document.rejected que indica error de validación permanente)
+                NotifyWebhookJob::dispatch($this->modelClass, $document->id, 'document.timeout_sunat');
             }
 
             return;
         }
 
         // Reintentar con backoff
-        $delay = $this->backoff[$this->attempts() - 1] ?? 600;
+        $delay = $this->backoff[$this->attempts() - 1] ?? 3600;
         $this->release($delay);
     }
 

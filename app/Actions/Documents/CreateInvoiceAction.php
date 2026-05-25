@@ -85,7 +85,7 @@ class CreateInvoiceAction
                 'valor_venta' => $totals['valor_venta'],
                 'sub_total' => $totals['sub_total'],
                 'mto_imp_venta' => $totals['mto_imp_venta'],
-                'total_anticipos' => $data['total_anticipos'] ?? 0,
+                'total_anticipos' => $data['total_anticipos'] ?? collect($data['anticipos'] ?? [])->sum('monto'),
                 'total_descuentos' => $data['total_descuentos'] ?? 0,
                 'leyenda' => $data['leyenda'] ?? null,
                 'observacion' => $data['observacion'] ?? null,

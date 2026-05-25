@@ -284,8 +284,21 @@ class SummaryController extends Controller
         $tenant = $request->get('tenant');
         $summary = Summary::where('tenant_id', $tenant->id)->findOrFail($id);
 
-        if (! $summary->xml_path || ! Storage::disk('public')->exists($summary->xml_path)) {
-            return $this->error('XML no disponible', 404);
+        if (! $summary->xml_path) {
+            $motivo = match ($summary->sunat_status) {
+                'pendiente' => 'El resumen aún no fue procesado (estado: pendiente). Espera a que el worker lo envíe a SUNAT.',
+                'enviado'   => 'El resumen fue enviado pero el XML no está disponible aún. Consulta el estado con GET /resumenes/{id}/estado.',
+                'rechazado' => 'El resumen fue rechazado por SUNAT y el XML no pudo guardarse. Código: ' . ($summary->sunat_code ?? 'N/A') . '.',
+                default     => 'XML no generado (estado: ' . $summary->sunat_status . ').',
+            };
+            return $this->error($motivo, 404);
+        }
+
+        if (! Storage::disk('public')->exists($summary->xml_path)) {
+            return $this->error(
+                'El XML fue generado pero el archivo no se encuentra en disco. Ruta esperada: ' . $summary->xml_path,
+                404
+            );
         }
 
         $content = Storage::disk('public')->get($summary->xml_path);

@@ -2,7 +2,8 @@
 @if($tipo_documento !== '09')
 @php
     $moneda_prefix = $tipo_moneda !== 'PEN' ? $tipo_moneda : $moneda_simbolo;
-    $igv_pct = (isset($tipo_operacion) && str_starts_with($tipo_operacion, '02')) ? 0 : 18;
+    $igv_pct = (isset($tipo_operacion) && str_starts_with($tipo_operacion, '02')) ? 0
+             : ((($mto_oper_gravadas ?? 0) == 0 && ($mto_igv ?? 0) == 0) ? 0 : 18);
 @endphp
 <div class="totals-section">
     <table class="totals-table-ticket">

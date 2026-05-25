@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class TenantController extends Controller
 {
@@ -141,6 +142,40 @@ class TenantController extends Controller
             'logo_path' => $logoPath,
             'logo_url'  => $logoUrl,
         ], 'Logo actualizado.');
+    }
+
+    public function credenciales(Request $request): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+
+        return $this->success([
+            'api_key' => $tenant->api_key,
+            'api_secret' => '*** oculto — use POST /empresa/credenciales/regenerar para obtener uno nuevo ***',
+        ], 'El api_secret no puede mostrarse. Si lo perdiste, regenera tus credenciales.');
+    }
+
+    public function regenerarCredenciales(Request $request): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+
+        $oldApiKey = $tenant->api_key;
+
+        $newApiKey    = Str::random(64);
+        $rawSecret    = Str::random(64);
+        $newApiSecret = hash('sha256', $rawSecret);
+
+        $tenant->update([
+            'api_key'    => $newApiKey,
+            'api_secret' => $newApiSecret,
+        ]);
+
+        Cache::forget("tenant:key:{$oldApiKey}");
+
+        return $this->success([
+            'api_key'    => $newApiKey,
+            'api_secret' => $rawSecret,
+            'aviso'      => 'Guarda estas credenciales ahora. El api_secret NO se volverá a mostrar.',
+        ], 'Credenciales regeneradas. Las anteriores ya no son válidas.');
     }
 
     public function uploadCertificate(Request $request): JsonResponse

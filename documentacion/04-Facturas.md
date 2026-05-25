@@ -4,12 +4,32 @@
 > Todos los endpoints requieren `X-Api-Key` + `X-Api-Secret`.
 > Serie requerida: debe empezar con `F` (ej: `F001`) o ser 4 dígitos numéricos.
 
+## 📑 Tabla de contenido
+
+- [Endpoints](#-endpoints)
+- [1. POST /facturas — Crear](#1-post-facturas--crear-factura)
+- [2. GET /facturas — Listar](#2-get-facturas--listar)
+- [3. GET /facturas/{id} — Ver](#3-get-facturasid--ver-factura)
+- [4. PUT /facturas/{id} — Actualizar](#4-put-facturasid--actualizar)
+- [5. XML firmado](#5-get-facturasidxml--xml-firmado)
+- [6. CDR de SUNAT](#6-get-facturasidcdr--cdr-de-sunat)
+- [7. PDF](#7-get-facturasidpdf--pdf)
+- [8. Reenviar a SUNAT](#8-post-facturasidreenviar--reenviar-a-sunat)
+- [9. Pagos](#9-pagos-asociados)
+- [10. Sucursales — Filtrar y asociar](#10-sucursales--filtrar-y-asociar-facturas)
+- [11. Descuentos y cargos — Guía completa](#11-descuentos-y-cargos--guía-completa)
+- [Flujos típicos](#-flujos-típicos)
+- [Catálogos SUNAT](#-catálogos-sunat-referenciados)
+- [Reglas de negocio](#️-reglas-de-negocio-clave)
+
+---
+
 ## 📑 Endpoints
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `POST` | `/facturas` | Crear factura |
-| `GET` | `/facturas` | Listar facturas |
+| `GET` | `/facturas` | Listar facturas (con filtro `?sucursal_id=N`) |
 | `GET` | `/facturas/{id}` | Ver factura |
 | `PUT` | `/facturas/{id}` | Actualizar (solo si NO aceptada) |
 | `GET` | `/facturas/{id}/xml` | Descargar XML firmado |
@@ -79,6 +99,7 @@
 | Campo | Tipo | Obligatorio | Notas |
 |-------|------|-------------|-------|
 | `serie` | string(4) | ✅ | `F001`-`F999` o 4 dígitos |
+| `sucursal_id` | integer | ❌ | ID de la sucursal (ver `GET /sucursales`). Si no se envía, la factura no queda asociada a ninguna sucursal |
 | `cod_local` | string(4) | ❌ | Si no se envía usa el de la sucursal principal |
 | `fecha_emision` | date | ✅ | `yyyy-mm-dd` |
 | `fecha_vencimiento` | date | ❌ | Requerido si `forma_pago=Credito` |
@@ -178,52 +199,383 @@
 
 ### Descuentos por ítem
 
+Aplican sobre el valor de un ítem específico antes de calcular el IGV. Se envían dentro de `items[].descuentos[]`.
+
+#### Formas de enviar el descuento por ítem
+
+La API acepta **3 formas equivalentes** — elige la que sea más cómoda:
+
 ```json
-{
-  "items": [{
-    "descripcion": "PRODUCTO A",
-    "unidad": "NIU",
-    "cantidad": 2,
-    "precio_unitario": 100.00,
-    "descuentos": [
-      {
-        "cod_tipo": "00",
-        "factor": 0.10,
-        "monto_base": 200.00,
-        "monto": 20.00
-      }
-    ]
-  }]
-}
+// Forma 1 — Solo el monto fijo (la API calcula todo automáticamente)
+"descuentos": [{ "cod_tipo": "00", "monto": 4.00 }]
+
+// Forma 2 — Por porcentaje (0-100)
+"descuentos": [{ "cod_tipo": "00", "porcentaje": 20 }]
+
+// Forma 3 — Completa (monto_base + factor + monto)
+"descuentos": [{ "cod_tipo": "00", "monto_base": 20.00, "factor": 0.20, "monto": 4.00 }]
 ```
 
-**Catálogo 53 — códigos de descuento/cargo:**
-| Código | Descripción | Nivel |
-|--------|-------------|-------|
-| `00` | Descuentos que afectan base imponible | Ítem |
-| `01` | Descuentos que NO afectan base imponible | Ítem |
-| `02` | Descuentos globales que afectan base imp | Global |
-| `03` | Descuentos globales que NO afectan base | Global |
-| `04`/`05`/`06` | Descuentos globales por anticipos | Global |
-| `47` | Cargos ítem afectos | Ítem |
-| `49` | Cargos globales afectos | Global |
-| `50` | Cargos globales NO afectos | Global |
-| `51`-`53` | Percepciones | Global |
+> Para la mayoría de casos usa la **Forma 1** o **Forma 2** — el usuario solo indica cuánto descuenta.
 
-### Descuentos globales
+#### Campos
+
+| Campo | Tipo | Obligatorio | Descripción |
+|-------|------|-------------|-------------|
+| `cod_tipo` | string | ❌ | `"00"` afecta base IGV (default) · `"01"` no afecta IGV |
+| `monto` | numeric | ✅* | Importe fijo del descuento sin IGV. *Requerido si no se envía `porcentaje` o `factor` |
+| `porcentaje` | numeric | ✅* | Porcentaje de descuento (0-100). *Requerido si no se envía `monto` o `factor` |
+| `factor` | numeric | ✅* | Tasa decimal (ej: `0.20` = 20%). *Requerido si no se envía `monto` o `porcentaje` |
+| `monto_base` | numeric | ❌ | La API lo calcula automáticamente desde el valor venta del ítem |
+
+#### Ejemplo completo — descuento por línea en 2 ítems
+
+**Escenario:** 10 Cuadernos a S/ 2.36 c/u con 20% de descuento + 1 Radio a S/ 59.00 sin descuento.
+
+**Paso 1 — Calcular el valor venta de cada ítem** (`precio_unitario ÷ 1.18`):
+
+| Ítem | Cant. | P.Unit (c/IGV) | Valor venta (s/IGV) |
+|------|-------|----------------|---------------------|
+| Cuadernos | 10 | 2.36 | **20.00** |
+| Radio | 1 | 59.00 | **50.00** |
+
+**Paso 2 — Calcular el descuento del ítem P001:**
+
+```
+monto_base = 20.00        (valor venta s/IGV de los 10 cuadernos)
+factor     = 0.20         (20% de descuento)
+monto      = 20.00 × 0.20 = 4.00
+```
+
+**Paso 3 — Recalcular P001 con descuento aplicado:**
+
+```
+Valor venta neto = 20.00 - 4.00 = 16.00
+IGV              = 16.00 × 0.18 = 2.88
+Total P001       = 18.88
+```
+
+**Paso 4 — P002 sin descuento:**
+
+```
+Valor venta = 50.00
+IGV         = 50.00 × 0.18 = 9.00
+Total P002  = 59.00
+```
+
+**Totales finales:**
+
+```
+mto_oper_gravadas = 16.00 + 50.00 = 66.00
+mto_igv           = 2.88  + 9.00  = 11.88
+mto_imp_venta     =                 77.88
+```
+
+**Payload — forma simple (recomendada):**
 
 ```json
 {
-  "descuentos_globales": [
+  "tipo_documento": "01",
+  "serie": "F001",
+  "fecha_emision": "2026-04-17",
+  "tipo_operacion": "0101",
+  "tipo_moneda": "PEN",
+  "cliente": {
+    "tipo_doc": "6",
+    "num_doc": "20000000002",
+    "razon_social": "EMPRESA X SAC"
+  },
+  "items": [
     {
-      "cod_tipo": "02",
-      "porcentaje": 0.05,
-      "monto": 100.00,
-      "monto_base": 2000.00
+      "codigo": "P001",
+      "descripcion": "Cuadernos",
+      "unidad": "NIU",
+      "cantidad": 10,
+      "precio_unitario": 2.36,
+      "tip_afe_igv": "10",
+      "descuentos": [
+        { "monto": 4.00 }
+      ]
+    },
+    {
+      "codigo": "P002",
+      "descripcion": "Radio",
+      "unidad": "NIU",
+      "cantidad": 1,
+      "precio_unitario": 59.00,
+      "tip_afe_igv": "10"
     }
   ]
 }
 ```
+
+**Payload — forma por porcentaje:**
+
+```json
+{
+  "items": [
+    {
+      "codigo": "P001",
+      "descripcion": "Cuadernos",
+      "unidad": "NIU",
+      "cantidad": 10,
+      "precio_unitario": 2.36,
+      "tip_afe_igv": "10",
+      "descuentos": [
+        { "porcentaje": 20 }
+      ]
+    }
+  ]
+}
+```
+
+**Respuesta esperada:**
+
+```json
+{
+  "mto_oper_gravadas": "66.00",
+  "mto_igv":           "11.88",
+  "mto_imp_venta":     "77.88"
+}
+```
+
+#### Diferencia entre cod_tipo 00 y 01
+
+| cod_tipo | Efecto | Cuándo usar |
+|----------|--------|-------------|
+| `00` | Reduce la base imponible → el IGV se recalcula sobre el valor neto | Descuento comercial normal (el más común) |
+| `01` | No reduce la base imponible → el IGV se calcula sobre el precio original | Descuento financiero (ej: pronto pago) que no debe afectar el IGV declarado |
+
+**Ejemplo cod_tipo 01** (mismo caso pero IGV no cambia):
+
+```
+Valor venta s/IGV  = 20.00
+IGV (no cambia)    = 20.00 × 0.18 = 3.60
+Descuento          = 4.00
+Total P001         = 23.60 - 4.00 = 19.60  (pero IGV sigue siendo 3.60)
+```
+
+#### Múltiples descuentos en un mismo ítem
+
+Puedes enviar varios descuentos por ítem — se aplican en orden:
+
+```json
+{
+  "descuentos": [
+    { "cod_tipo": "00", "monto_base": 100.00, "factor": 0.10, "monto": 10.00 },
+    { "cod_tipo": "00", "monto_base": 90.00,  "factor": 0.05, "monto": 4.50  }
+  ]
+}
+```
+
+```
+Valor original  = 100.00
+1er descuento   = -10.00  → base = 90.00
+2do descuento   = -4.50   → base = 85.50
+IGV             = 85.50 × 0.18 = 15.39
+Total           = 100.89
+```
+
+Con `cod_tipo "00"` el descuento reduce la base imponible del ítem antes de calcular el IGV.
+
+### Descuentos globales
+
+Aplican sobre el total de la factura, después de sumar todos los ítems.
+
+#### Formas de enviar el descuento global
+
+La API acepta **3 formas equivalentes** — elige la que sea más cómoda:
+
+```json
+// Forma 1 — Solo el monto (la API calcula todo automáticamente)
+"descuentos_globales": [{ "cod_tipo": "02", "monto": 20.00 }]
+
+// Forma 2 — Por porcentaje (0-100)
+"descuentos_globales": [{ "cod_tipo": "02", "porcentaje": 5 }]
+
+// Forma 3 — Completa (monto_base + factor + monto)
+"descuentos_globales": [{ "cod_tipo": "02", "monto_base": 70.00, "factor": 0.0429, "monto": 3.00 }]
+```
+
+> Para la mayoría de casos usa la **Forma 1** — solo escribe cuánto quieres descontar.
+
+#### Campos
+
+| Campo | Tipo | Obligatorio | Descripción |
+|-------|------|-------------|-------------|
+| `cod_tipo` | string | ✅ | Código catálogo 53 (`"02"` más común) |
+| `monto` | numeric | ✅* | Importe del descuento sin IGV. *Requerido si no se envía `porcentaje` |
+| `porcentaje` | numeric | ✅* | Porcentaje de descuento (0-100). *Requerido si no se envía `monto` |
+| `monto_base` | numeric | ❌ | La API lo calcula automáticamente desde el total gravado |
+| `factor` | numeric | ❌ | La API lo calcula automáticamente desde `monto` o `porcentaje` |
+
+> `precio_unitario` en esta API es el precio **con IGV**. Para obtener el valor venta: `precio_unitario ÷ 1.18`
+
+#### Catálogo 53 — códigos de descuento/cargo
+
+| Código | Descripción | Nivel | Afecta IGV |
+|--------|-------------|-------|------------|
+| `00` | Descuento por ítem | Ítem | ✅ Sí |
+| `01` | Descuento por ítem (financiero) | Ítem | ❌ No |
+| `02` | Descuento global | Global | ✅ Sí |
+| `03` | Descuento global (financiero/comercial) | Global | ❌ No |
+| `04` | Descuento global por anticipo gravado | Global | ✅ Sí |
+| `05` | Descuento global por anticipo exonerado | Global | ❌ No |
+| `06` | Descuento global por anticipo inafecto | Global | ❌ No |
+| `47` | Cargo por ítem | Ítem | ✅ Sí |
+| `48` | Cargo por ítem (financiero) | Ítem | ❌ No |
+| `49` | Cargo global (ej: flete, seguro) | Global | ✅ Sí |
+| `50` | Cargo global (ej: intereses) | Global | ❌ No |
+| `51`-`53` | Percepciones | Global | — |
+
+#### Diferencia entre cod_tipo 02 y 03
+
+**`02` — Afecta la base imponible del IGV (más común):**
+El descuento reduce el valor de venta → el IGV se recalcula sobre la base reducida.
+
+```
+Valor venta total  = 70.00
+Descuento (cod 02) = -3.00
+Base gravada nueva = 67.00
+IGV (67 × 18%)     = 12.06
+Total a pagar      = 79.06
+```
+
+**`03` — No afecta la base imponible:**
+El descuento se aplica al monto final pero el IGV no cambia.
+
+```
+Valor venta total  = 70.00
+IGV                = 12.60  (no cambia)
+Total bruto        = 82.60
+Descuento (cod 03) = -3.00
+Total a pagar      = 79.60
+```
+
+#### Ejemplo completo con descuento global de S/ 3.00
+
+**Escenario:** 10 Cuadernos a S/ 2.36 c/u + 1 Radio a S/ 59.00. Descuento global de S/ 3.00 que afecta base IGV.
+
+**Paso 1 — Calcular el valor venta de cada ítem** (`precio_unitario ÷ 1.18`):
+
+| Ítem | Cant. | P.Unit (c/IGV) | Valor venta (s/IGV) | IGV | Total |
+|------|-------|----------------|---------------------|-----|-------|
+| Cuadernos | 10 | 2.36 | 20.00 | 3.60 | 23.60 |
+| Radio | 1 | 59.00 | 50.00 | 9.00 | 59.00 |
+| **Subtotal** | | | **70.00** | **12.60** | **82.60** |
+
+**Paso 2 — Aplicar descuento global cod_tipo 02:**
+
+```
+monto_base = 70.00  (suma de valores venta s/IGV)
+monto      = 3.00   (descuento sin IGV)
+factor     = 3.00 ÷ 70.00 = 0.0429
+```
+
+**Paso 3 — Totales finales:**
+
+```
+Base gravada = 70.00 - 3.00  = 67.00
+IGV          = 67.00 × 0.18  = 12.06
+Total a pagar                = 79.06
+```
+
+**Payload — forma simple (recomendada):**
+
+```json
+{
+  "tipo_documento": "01",
+  "serie": "F001",
+  "fecha_emision": "2026-05-07",
+  "tipo_operacion": "0101",
+  "tipo_moneda": "PEN",
+  "cliente": {
+    "tipo_doc": "6",
+    "num_doc": "20000000002",
+    "razon_social": "EMPRESA X SAC"
+  },
+  "items": [
+    { "codigo": "P001", "descripcion": "Cuadernos", "unidad": "NIU", "cantidad": 10, "precio_unitario": 2.36,  "tip_afe_igv": "10" },
+    { "codigo": "P002", "descripcion": "Radio",     "unidad": "NIU", "cantidad": 1,  "precio_unitario": 59.00, "tip_afe_igv": "10" }
+  ],
+  "descuentos_globales": [
+    { "cod_tipo": "02", "monto": 3.00 }
+  ]
+}
+```
+
+**Payload — forma por porcentaje (5% de descuento):**
+
+```json
+{
+  "descuentos_globales": [
+    { "cod_tipo": "02", "porcentaje": 5 }
+  ]
+}
+```
+
+**Payload — forma completa (cuando necesitas control total):**
+
+```json
+{
+  "descuentos_globales": [
+    { "cod_tipo": "02", "monto_base": 70.00, "factor": 0.0429, "monto": 3.00 }
+  ]
+}
+```
+
+**Respuesta esperada (las 3 formas producen el mismo resultado):**
+
+```json
+{
+  "mto_oper_gravadas": "67.00",
+  "mto_igv":           "12.06",
+  "mto_imp_venta":     "79.06"
+}
+```
+
+#### Ejemplo con cargo global (flete)
+
+Un cargo global con `cod_tipo "49"` suma al total y también afecta la base del IGV.
+
+```json
+{
+  "items": [
+    {
+      "descripcion": "Mercadería",
+      "unidad": "NIU",
+      "cantidad": 1,
+      "precio_unitario": 118.00,
+      "tip_afe_igv": "10"
+    }
+  ],
+  "cargos_globales": [
+    {
+      "cod_tipo": "49",
+      "monto_base": 100.00,
+      "factor": 0.10,
+      "monto": 10.00
+    }
+  ]
+}
+```
+
+```
+Base gravada = 100.00 + 10.00 = 110.00
+IGV          = 110.00 × 0.18 = 19.80
+Total        = 129.80
+```
+
+#### Descuento fijo vs descuento porcentual
+
+| Caso | monto_base | factor | monto |
+|------|-----------|--------|-------|
+| Descuento fijo de S/ 5.00 | `5.00` | `1` | `5.00` |
+| Descuento fijo de S/ 5.00 (forma alternativa) | `70.00` | `0.0714` | `5.00` |
+| Descuento del 10% sobre base 70.00 | `70.00` | `0.10` | `7.00` |
+| Descuento del 5% sobre base 200.00 | `200.00` | `0.05` | `10.00` |
+
+> La relación siempre debe cumplirse: `monto = monto_base × factor`
 
 ### Crédito — cuotas
 
@@ -371,23 +723,38 @@ Si `forma_pago=Credito`, las cuotas son obligatorias:
 
 ### Query params
 
-| Param | Descripción |
-|-------|-------------|
-| `buscar` | Texto libre (serie, correlativo, cliente) |
-| `serie` | Filtrar por serie exacta |
-| `correlativo` | Filtrar por correlativo (carga items automáticamente) |
-| `cliente_doc` | RUC/DNI del cliente |
-| `estado` | `pendiente`, `enviado`, `aceptado`, `rechazado`, `anulado` |
-| `payment_status` | `pendiente`, `parcial`, `pagado` |
-| `moneda` | `PEN`, `USD`, `EUR` |
-| `desde`, `hasta` | Rango de `fecha_emision` |
-| `con` | CSV con relaciones: `items,payments` |
-| `por_pagina` | Default 15, máx 100 |
+| Param | Tipo | Descripción |
+|-------|------|-------------|
+| `search` / `q` | string | Búsqueda libre: razón social, num doc, serie o correlativo |
+| `serie` | string(4) | Serie exacta (ej: `F001`) o con comodín (ej: `F0%`) |
+| `correlativo` | integer | Correlativo exacto (carga items automáticamente) |
+| `correlativo_desde` | integer | Correlativo mínimo |
+| `correlativo_hasta` | integer | Correlativo máximo |
+| `client_num_doc` | string | RUC/DNI exacto del cliente |
+| `client_tipo_doc` | string | Tipo doc: `6`=RUC, `1`=DNI, etc. |
+| `cliente` | string | Búsqueda parcial en razón social (LIKE) |
+| `sunat_status` | string | `pendiente`, `enviado`, `aceptado`, `rechazado`, `anulado` (permite varios separados por coma) |
+| `estado_pago` | string | `pendiente`, `parcial`, `pagado` (permite varios separados por coma) |
+| `tipo_moneda` | string | `PEN`, `USD`, `EUR` |
+| `tipo_operacion` | string | `0101`, `0200`, `1001`, etc. |
+| `forma_pago` | string | `Contado`, `Credito` |
+| `fecha_desde` | date | Desde `fecha_emision` (`yyyy-mm-dd`) |
+| `fecha_hasta` | date | Hasta `fecha_emision` (`yyyy-mm-dd`) |
+| `vencimiento_desde` | date | Desde `fecha_vencimiento` |
+| `vencimiento_hasta` | date | Hasta `fecha_vencimiento` |
+| `monto_min` | numeric | Monto total mínimo |
+| `monto_max` | numeric | Monto total máximo |
+| `sucursal_id` | integer | **Filtrar por sucursal** (ver sección 10) |
+| `con_cdr` | boolean | `true` = solo facturas con CDR descargado |
+| `con` | string | Relaciones a cargar: `items`, `payments` (CSV) |
+| `ordenar_por` | string | `fecha_emision`, `correlativo`, `mto_imp_venta`, `client_razon_social`, `sunat_status`, `created_at` (default) |
+| `orden` | string | `desc` (default) \| `asc` |
+| `por_pagina` | integer | Default `15`, máx `100` |
 
 ### Ejemplo
 
 ```bash
-curl "https://tu-api.com/api/v1/facturas?estado=aceptado&desde=2026-04-01&hasta=2026-04-30&con=items,payments" \
+curl "https://tu-api.com/api/v1/facturas?sunat_status=aceptado&fecha_desde=2026-04-01&fecha_hasta=2026-04-30&con=items,payments" \
   -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}"
 ```
 
@@ -585,6 +952,108 @@ Anula un pago específico.
 
 ---
 
+## 10. Sucursales — Filtrar y asociar facturas
+
+Cada factura puede estar asociada a una sucursal mediante el campo `sucursal_id`. Esto permite que cada punto de venta o sede solo vea sus propios documentos.
+
+### Paso 1 — Obtener el ID de tu sucursal
+
+```bash
+curl https://tu-api.com/api/v1/sucursales \
+  -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}"
+```
+
+```json
+{
+  "datos": [
+    { "id": 1, "nombre": "Sede Principal",      "cod_local": "0000", "is_principal": true  },
+    { "id": 2, "nombre": "Sucursal Lima Norte",  "cod_local": "0001", "is_principal": false },
+    { "id": 3, "nombre": "Sucursal Miraflores",  "cod_local": "0002", "is_principal": false }
+  ]
+}
+```
+
+### Paso 2 — Crear facturas vinculadas a una sucursal
+
+```json
+{
+  "sucursal_id": 2,
+  "serie": "F002",
+  "fecha_emision": "2026-05-11",
+  "cliente": { "tipo_doc": "6", "num_doc": "20100000001", "razon_social": "CLIENTE SAC" },
+  "items": [{ "descripcion": "Producto", "unidad": "NIU", "cantidad": 1, "precio_unitario": 100 }]
+}
+```
+
+> ⚠️ Si no envías `sucursal_id`, la factura **no queda asociada** a ninguna sucursal y no aparecerá al filtrar por ella.
+
+### Paso 3 — Ver solo las facturas de una sucursal
+
+```bash
+# Facturas de la sucursal 2
+curl "https://tu-api.com/api/v1/facturas?sucursal_id=2" \
+  -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}"
+
+# Facturas de la sucursal 2 aceptadas en mayo 2026
+curl "https://tu-api.com/api/v1/facturas?sucursal_id=2&sunat_status=aceptado&fecha_desde=2026-05-01&fecha_hasta=2026-05-31" \
+  -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}"
+```
+
+### También aplica a boletas, notas y guías
+
+```bash
+GET /api/v1/boletas?sucursal_id=2
+GET /api/v1/notas-credito?sucursal_id=2
+GET /api/v1/notas-debito?sucursal_id=2
+GET /api/v1/guias-remision?sucursal_id=2
+```
+
+### Series por sucursal
+
+Cada sucursal tiene asignadas sus propias series. Esto evita mezclar correlativos entre sedes:
+
+| Sucursal | Series facturas | Series boletas |
+|----------|----------------|----------------|
+| Principal (0000) | `F001` | `B001` |
+| Lima Norte (0001) | `F002` | `B002` |
+| Miraflores (0002) | `F003` | `B003` |
+
+Para consultar las series de una sucursal:
+
+```bash
+curl "https://tu-api.com/api/v1/sucursales/2" \
+  -H "X-Api-Key: {api_key}" -H "X-Api-Secret: {api_secret}"
+```
+
+---
+
+---
+
+## 11. Descuentos y cargos — Guía completa
+
+Ver sección **[Descuentos por ítem](#descuentos-por-ítem)** y **[Descuentos globales](#descuentos-globales)** dentro del cuerpo del POST `/facturas` arriba.
+
+**Resumen rápido:**
+
+| Tipo | Campo en el body | Cuándo usarlo |
+|------|-----------------|---------------|
+| Descuento por ítem | `items[].descuentos[]` | Descuento sobre un producto específico |
+| Descuento global `02` | `descuentos_globales[]` | Promoción/descuento comercial que reduce la base del IGV |
+| Descuento global `03` | `descuentos_globales[]` | Descuento financiero o nota de crédito futura (no toca IGV) |
+| Cargo global `49` | `cargos_globales[]` | Flete, seguro u otro cargo que suma a la base del IGV |
+| Cargo global `50` | `cargos_globales[]` | Intereses o recargos que no afectan el IGV |
+
+**Regla de oro:** Solo necesitas enviar UNO de estos tres: `monto`, `porcentaje` o `factor`. La API calcula el resto automáticamente.
+
+| Lo que envías | Ejemplo | La API calcula |
+|---------------|---------|----------------|
+| Solo `monto` | `"monto": 20.00` | `monto_base` y `factor` |
+| Solo `porcentaje` | `"porcentaje": 10` | `monto_base`, `factor` y `monto` |
+| Solo `factor` | `"factor": 0.10` | `monto_base` y `monto` |
+| Los tres | `"monto_base": 70, "factor": 0.0429, "monto": 3` | Nada (usa los valores enviados) |
+
+---
+
 ## 🎯 Flujos típicos
 
 ### Flujo feliz
@@ -647,3 +1116,4 @@ Todos los códigos están en [config/sunat_catalogs.php](../config/sunat_catalog
 - **Fecha vencimiento:** requerida solo si `forma_pago=Credito`
 - **Detracción:** aplicable solo si monto total > S/ 700
 - **Cliente RUC:** obligatorio en factura (para boleta puede ser DNI/sin documento)
+- **Sucursal:** enviar `sucursal_id` al crear para asociar la factura a una sede. Sin este campo, la factura no aparece en filtros por sucursal. Ver sección 10.

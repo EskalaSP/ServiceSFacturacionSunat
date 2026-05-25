@@ -8,6 +8,7 @@ use App\Services\Greenter\Builders\InvoiceBuilder;
 use App\Services\Greenter\Builders\NoteBuilder;
 use App\Services\Greenter\Builders\SummaryBuilder;
 use App\Services\Greenter\Builders\VoidedBuilder;
+use Greenter\Factory\XmlBuilderResolver;
 use Greenter\Model\DocumentInterface;
 use Greenter\Model\Response\BillResult;
 use Greenter\Model\Response\SummaryResult;
@@ -15,14 +16,22 @@ use Greenter\Model\Sale\Invoice;
 use Greenter\Model\Sale\Note;
 use Greenter\See;
 use Greenter\Ws\Services\SunatEndpoints;
+use Greenter\XMLSecLibs\Sunat\SignedXml;
 
 class GreenterService
 {
     private Tenant $tenant;
+    private ?See $currentSee = null;
+    private ?string $lastXml = null;
 
     public function __construct(Tenant $tenant)
     {
         $this->tenant = $tenant;
+    }
+
+    public function getLastXml(): ?string
+    {
+        return $this->lastXml ?? $this->currentSee?->getFactory()->getLastXml();
     }
 
     public function createSee(?string $endpoint = null): See
@@ -209,8 +218,25 @@ class GreenterService
     public function send(DocumentInterface $document): array
     {
         $see = $this->resolveSee($document);
-        $result = $see->send($document);
-        $xml = $see->getFactory()->getLastXml();
+        $this->currentSee = $see;
+
+        // Build unsigned XML, sign, then send.
+        $cachePath = storage_path('app/cache/greenter');
+        if (! is_dir($cachePath)) {
+            mkdir($cachePath, 0755, true);
+        }
+        $options = ['autoescape' => false, 'cache' => $cachePath];
+        $xmlBuilder = (new XmlBuilderResolver($options))->find(get_class($document));
+        $unsignedXml = $xmlBuilder->build($document);
+
+        $cert = $this->tenant->getCertificateContent();
+        $signer = new SignedXml();
+        $signer->setCertificate($cert);
+        $signedXml = $signer->signXml($unsignedXml);
+        $this->lastXml = $signedXml;
+
+        $result = $see->sendXml(get_class($document), $document->getName(), $signedXml);
+        $xml = $signedXml;
 
         // Verificar primero si es BillResult con CDR (incluye observaciones 3xxx)
         if ($result instanceof BillResult) {
@@ -273,15 +299,39 @@ class GreenterService
     public function getStatus(string $ticket, ?string $endpoint = null): array
     {
         $see = $endpoint ? $this->createSee($endpoint) : $this->createSee();
-        $result = $see->getStatus($ticket);
+
+        try {
+            $result = $see->getStatus($ticket);
+        } catch (\SoapFault $e) {
+            return [
+                'success'       => false,
+                'error_code'    => 'NETWORK_ERROR',
+                'error_message' => $this->sanitizeUtf8($e->getMessage()),
+            ];
+        }
 
         if (! $result->isSuccess()) {
             $error = $result->getError();
+            $code  = (string) $error->getCode();
+            $msg   = $this->sanitizeUtf8($error->getMessage());
+
+            // Greenter wraps network-layer failures (SoapFaults caught internally) as
+            // numeric codes like 200 with messages such as "Failed to process response
+            // headers". Those are transient, not SUNAT validation rejections.
+            $looksLikeNetworkError = ! is_numeric($code) ||
+                str_contains(strtolower($msg), 'failed to process') ||
+                str_contains(strtolower($msg), 'could not connect') ||
+                str_contains(strtolower($msg), 'connection refused') ||
+                str_contains(strtolower($msg), 'timed out');
+
+            if ($looksLikeNetworkError) {
+                $code = 'NETWORK_ERROR';
+            }
 
             return [
-                'success' => false,
-                'error_code' => $error->getCode(),
-                'error_message' => $this->sanitizeUtf8($error->getMessage()),
+                'success'       => false,
+                'error_code'    => $code,
+                'error_message' => $msg,
             ];
         }
 

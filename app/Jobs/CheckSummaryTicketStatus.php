@@ -38,7 +38,13 @@ class CheckSummaryTicketStatus implements ShouldQueue
 
         $tenant = Tenant::findOrFail($summary->tenant_id);
         $service = new GreenterService($tenant);
-        $result = $service->getStatus($summary->ticket);
+
+        try {
+            $result = $service->getStatus($summary->ticket);
+        } catch (\SoapFault $e) {
+            $this->release($this->nextBackoff());
+            return;
+        }
 
         if ($result['success']) {
             $accepted = $result['accepted'] ?? false;
@@ -95,13 +101,13 @@ class CheckSummaryTicketStatus implements ShouldQueue
         } else {
             $errorCode = $result['error_code'] ?? '';
 
-            // Codigo 0 o 187 = SUNAT aún procesando → reintentar
-            if (in_array($errorCode, ['0', '187', 0, 187], true)) {
+            // Codigo 0/187 = SUNAT aún procesando; no numérico (ej. "HTTP") = fallo de red → reintentar
+            if (in_array($errorCode, ['0', '187', 0, 187], true) || ! is_numeric((string) $errorCode)) {
                 $this->release($this->nextBackoff());
                 return;
             }
 
-            // Error definitivo
+            // Error definitivo (código numérico SUNAT: 1xxx, 2xxx, 4xxx)
             $summary->update([
                 'sunat_status' => 'rechazado',
                 'sunat_code' => $errorCode,

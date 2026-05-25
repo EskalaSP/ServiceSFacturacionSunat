@@ -49,17 +49,34 @@ return new class extends Migration
         // porque "pending" no es parte del ENUM original.
         \DB::table('subscriptions')->where('status', 'pending')->update(['status' => 'trialing']);
 
-        Schema::table('subscriptions', function (Blueprint $t) {
-            $t->enum('status', ['trialing', 'active', 'past_due', 'cancelled', 'expired'])
-                ->default('trialing')->change();
-            $t->enum('billing_cycle', ['monthly', 'yearly'])->default('monthly')->change();
-        });
+        $driver = \DB::getDriverName();
 
-        if (Schema::hasTable('subscription_payments') && Schema::hasColumn('subscription_payments', 'status')) {
-            Schema::table('subscription_payments', function (Blueprint $t) {
-                $t->enum('status', ['pending', 'completed', 'failed', 'refunded'])
-                    ->default('pending')->change();
+        if ($driver === 'pgsql') {
+            // PostgreSQL no soporta ALTER COLUMN TYPE ... CHECK en una sola sentencia.
+            // Dejamos las columnas como varchar — el rollback completo no es necesario.
+            Schema::table('subscriptions', function (Blueprint $t) {
+                $t->string('status', 20)->default('trialing')->change();
+                $t->string('billing_cycle', 10)->default('monthly')->change();
             });
+
+            if (Schema::hasTable('subscription_payments') && Schema::hasColumn('subscription_payments', 'status')) {
+                Schema::table('subscription_payments', function (Blueprint $t) {
+                    $t->string('status', 20)->default('pending')->change();
+                });
+            }
+        } else {
+            Schema::table('subscriptions', function (Blueprint $t) {
+                $t->enum('status', ['trialing', 'active', 'past_due', 'cancelled', 'expired'])
+                    ->default('trialing')->change();
+                $t->enum('billing_cycle', ['monthly', 'yearly'])->default('monthly')->change();
+            });
+
+            if (Schema::hasTable('subscription_payments') && Schema::hasColumn('subscription_payments', 'status')) {
+                Schema::table('subscription_payments', function (Blueprint $t) {
+                    $t->enum('status', ['pending', 'completed', 'failed', 'refunded'])
+                        ->default('pending')->change();
+                });
+            }
         }
     }
 };
