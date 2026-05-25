@@ -13,7 +13,7 @@ return new class extends Migration
             $table->index(['api_key', 'is_active']);
         });
 
-        // Documents: consultas frecuentes por tenant
+        // Documentos: consultas frecuentes por tenant
         if (Schema::hasTable('documents')) {
             Schema::table('documents', function (Blueprint $table) {
                 $table->index(['tenant_id', 'tipo_documento']);
@@ -22,13 +22,13 @@ return new class extends Migration
             });
         }
 
-        // Dispatch guides: índices faltantes
+        // Guías de remisión: índices faltantes
         Schema::table('dispatch_guides', function (Blueprint $table) {
             $table->index(['tenant_id', 'sunat_status']);
             $table->index(['tenant_id', 'fecha_emision']);
         });
 
-        // Api logs: limpieza por antigüedad
+        // Registros de API: limpieza por antigüedad
         Schema::table('api_logs', function (Blueprint $table) {
             $table->index('created_at', 'api_logs_created_at_index');
         });

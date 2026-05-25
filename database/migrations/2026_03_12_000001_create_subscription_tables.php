@@ -57,7 +57,7 @@ return new class extends Migration
             $table->index(['subscription_id', 'status']);
         });
 
-        // Add usage tracking columns to tenants
+        // Agregar columnas de seguimiento de uso a tenants
         Schema::table('tenants', function (Blueprint $table) {
             $table->unsignedInteger('documents_this_month')->default(0)->after('max_documents_month');
             $table->unsignedInteger('ai_messages_this_month')->default(0)->after('documents_this_month');

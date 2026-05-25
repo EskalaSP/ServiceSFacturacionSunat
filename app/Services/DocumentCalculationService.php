@@ -134,7 +134,7 @@ class DocumentCalculationService
                 $icbper = round($factorIcbper * $cantidad, 2);
             }
 
-            // When ISC present, IGV base = valor_venta + ISC and IGV must be recalculated
+            // Cuando hay ISC, la base del IGV = valor_venta + ISC y el IGV debe recalcularse
             if ($isc > 0 && ! isset($item['mto_base_igv']) && ! isset($item['igv'])) {
                 $baseIgv = round($valorVenta + $isc, 2);
                 $igv = round($baseIgv * $porcentajeIgv / 100, 2);
@@ -144,7 +144,7 @@ class DocumentCalculationService
             }
 
             // SUNAT: Gratuita inafecta/exonerada (21, 31-36) → TaxableAmount = LineExtensionAmount (ref × cantidad)
-            // Evita 3272 (base imponible != importes) y 3224 (observación gratuita)
+            // Evita error 3272 (base imponible != importes) y 3224 (observación gratuita)
             if (in_array($tipAfeIgv, $gratuitoInafectoCodes)) {
                 $baseIgv = $valorVenta;
             }
@@ -253,7 +253,7 @@ class DocumentCalculationService
             }
         }
 
-        // Apply global discount to gravadas and recalculate IGV using actual rate
+        // Aplicar descuento global a gravadas y recalcular el IGV usando la tasa efectiva
         if ($descuentoGlobalGravadas > 0) {
             // Deriva la tasa de los ítems gravados emitidos; si no hay, usa la del régimen del tenant.
             $defaultFrac = $this->taxRates->defaultIgvRate($tenant, $fechaEmision) / 100;
@@ -262,7 +262,7 @@ class DocumentCalculationService
             $totalIgv = round($gravadas * $igvRate, 2);
         }
 
-        // Ensure all totals are non-negative (SUNAT rejects negative amounts)
+        // Asegurar que todos los totales sean no negativos (SUNAT rechaza montos negativos)
         $gravadas = max(0, round($gravadas, 2));
         $exoneradas = max(0, round($exoneradas, 2));
         $inafectas = max(0, round($inafectas, 2));

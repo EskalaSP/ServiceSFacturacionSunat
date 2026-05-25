@@ -8,13 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subscription extends Model
 {
-    // Status válidos (antes eran ENUM — ahora VARCHAR con validación a nivel app).
+    // Estados válidos (antes eran ENUM — ahora VARCHAR con validación a nivel de aplicación).
     public const STATUS_TRIALING  = 'trialing';    // Periodo de prueba gratis
     public const STATUS_ACTIVE    = 'active';      // Suscripción activa y pagada
     public const STATUS_PAST_DUE  = 'past_due';    // Pago vencido, falta cobrar
     public const STATUS_CANCELLED = 'cancelled';   // Cancelada por usuario/admin
     public const STATUS_EXPIRED   = 'expired';     // Expiró sin renovación
-    public const STATUS_PENDING   = 'pending';     // Programada (ej. downgrade al fin del periodo)
+    public const STATUS_PENDING   = 'pending';     // Programada (ej. reducción al fin del periodo)
 
     public const STATUSES = [
         self::STATUS_TRIALING,

@@ -52,7 +52,7 @@ class SendReversionToSunat implements ShouldQueue
             return;
         }
 
-        // Save XML
+        // Guardar XML
         if (! empty($result['xml'])) {
             $xmlPath = "{$tenant->ruc}/reversions/{$voided->identifier}.xml";
             Storage::disk('public')->put($xmlPath, $result['xml']);
@@ -65,7 +65,7 @@ class SendReversionToSunat implements ShouldQueue
                 'sunat_status' => 'enviado',
             ]);
 
-            // Mark original documents as anulado
+            // Marcar documentos originales como anulados
             $modelMap = ['20' => Retention::class, '40' => Perception::class];
             foreach ($voided->detalles as $detalle) {
                 $model = $modelMap[$detalle['tipo_documento']] ?? null;

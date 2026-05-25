@@ -46,7 +46,7 @@ return new class extends Migration
             $table->string('leyenda', 500)->nullable();
             $table->text('observacion')->nullable();
 
-            // JSON fields (factura-specific)
+            // Campos JSON (específicos de factura)
             $table->json('cuotas')->nullable();
             $table->json('detraccion')->nullable();
             $table->json('percepcion')->nullable();

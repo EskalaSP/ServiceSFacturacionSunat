@@ -12,7 +12,7 @@ return new class extends Migration
             // Activación explícita de SIRE (se marca true después de verificar credenciales)
             $table->boolean('sire_enabled')->default(false)->after('is_active');
 
-            // Audit
+            // Auditoría
             $table->string('sire_last_period_synced', 6)->nullable()->after('sire_enabled');
             $table->timestamp('sire_last_reconciliation_at')->nullable()->after('sire_last_period_synced');
 

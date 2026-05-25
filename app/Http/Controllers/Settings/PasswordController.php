@@ -11,7 +11,7 @@ use Inertia\Response;
 class PasswordController extends Controller
 {
     /**
-     * Show the user's password settings page.
+     * Mostrar la página de configuración de contraseña del usuario.
      */
     public function edit(): Response
     {
@@ -19,7 +19,7 @@ class PasswordController extends Controller
     }
 
     /**
-     * Update the user's password.
+     * Actualizar la contraseña del usuario.
      */
     public function update(PasswordUpdateRequest $request): RedirectResponse
     {

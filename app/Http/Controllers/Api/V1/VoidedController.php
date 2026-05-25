@@ -32,7 +32,7 @@ class VoidedController extends Controller
             $fechaCom = $validated['fecha_comunicacion'] ?? now()->format('Y-m-d');
             $validated['fecha_comunicacion'] = $fechaCom;
 
-            // Pre-validate against SUNAT rules before hitting them.
+            // Pre-validar contra las reglas de SUNAT antes de enviarles.
             $errors = $this->validateDetalles($tenant->id, $validated['detalles']);
             if (! empty($errors)) {
                 return response()->json([

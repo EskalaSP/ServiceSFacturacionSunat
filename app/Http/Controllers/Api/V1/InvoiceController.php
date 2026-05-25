@@ -98,7 +98,7 @@ class InvoiceController extends Controller
         $data = $request->all();
 
         return \DB::transaction(function () use ($invoice, $tenant, $data) {
-            // Update client data if provided
+            // Actualizar datos del cliente si se proporcionan
             if (! empty($data['cliente'])) {
                 $client = $data['cliente'];
                 $invoice->fill([
@@ -117,7 +117,7 @@ class InvoiceController extends Controller
                 ]);
             }
 
-            // Update simple fields if provided
+            // Actualizar campos simples si se proporcionan
             $simpleFields = ['fecha_vencimiento', 'tipo_operacion', 'tipo_moneda', 'forma_pago', 'observacion'];
             foreach ($simpleFields as $field) {
                 if (array_key_exists($field, $data)) {
@@ -125,7 +125,7 @@ class InvoiceController extends Controller
                 }
             }
 
-            // Recalculate items if provided
+            // Recalcular ítems si se proporcionan
             if (! empty($data['items'])) {
                 $calcService = new \App\Services\DocumentCalculationService();
                 $calculatedItems = $calcService->calculateItems($data['items']);
@@ -140,7 +140,7 @@ class InvoiceController extends Controller
                     $data['tipo_moneda'] ?? $invoice->tipo_moneda ?? 'PEN'
                 );
 
-                // Replace items
+                // Reemplazar ítems
                 $invoice->items()->delete();
                 $invoice->items()->insert(array_map(fn ($item) => [
                     'invoice_id' => $invoice->id,
@@ -164,7 +164,7 @@ class InvoiceController extends Controller
                 ], $calculatedItems));
             }
 
-            // Reset SUNAT status and resend
+            // Reiniciar estado SUNAT y reenviar
             $invoice->fill([
                 'sunat_status' => 'pendiente',
                 'sunat_code' => null,
@@ -259,7 +259,7 @@ class InvoiceController extends Controller
             return $this->error('Formato inválido. Opciones: a4, a5, ticket-80, ticket-58', 422);
         }
 
-        // Try cached PDF first (any format)
+        // Intentar PDF en caché primero (cualquier formato)
         $content = $this->getCachedPdfContent($invoice, $formatStr);
 
         if (! $content) {

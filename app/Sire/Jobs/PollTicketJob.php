@@ -28,7 +28,7 @@ class PollTicketJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 1; // usamos release() para reintentar, no failed retries
+    public int $tries = 1; // usamos release() para reintentar, no reintentos por fallo
 
     public function __construct(
         public readonly int $ticketId,
@@ -80,7 +80,7 @@ class PollTicketJob implements ShouldQueue
                 'ticket'    => $ticket->num_ticket,
                 'exception' => $e->getMessage(),
             ]);
-            // Reencolamos con backoff — un 5xx transitorio no debe matar el polling
+            // Reencolamos con retroceso exponencial — un 5xx transitorio no debe matar el sondeo
             $this->releaseWithBackoff();
             return;
         }

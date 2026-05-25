@@ -12,7 +12,7 @@ class TwoFactorAuthenticationRequest extends FormRequest
     use InteractsWithTwoFactorState;
 
     /**
-     * Determine if the user is authorized to make this request.
+     * Determinar si el usuario está autorizado para realizar esta solicitud.
      */
     public function authorize(): bool
     {
@@ -20,7 +20,7 @@ class TwoFactorAuthenticationRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Obtener las reglas de validación que aplican a la solicitud.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */

@@ -109,7 +109,7 @@ abstract class BaseUploadService
             ],
         );
 
-        // Guarda historial del upload
+        // Guarda historial de la subida
         SireUploadFile::create([
             'tenant_id'      => $tenant->id,
             'sire_ticket_id' => $ticket->id,

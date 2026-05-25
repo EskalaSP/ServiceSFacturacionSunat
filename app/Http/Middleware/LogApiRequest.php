@@ -18,7 +18,7 @@ class LogApiRequest
 
         $duration = (int) ((microtime(true) - $start) * 1000);
 
-        // Only decode/store a truncated summary of the response to avoid memory overhead
+        // Solo decodificar/almacenar un resumen truncado de la respuesta para evitar sobrecarga de memoria
         $responseContent = $response->getContent();
         $responseBody = null;
         if (strlen($responseContent) <= 4096) {

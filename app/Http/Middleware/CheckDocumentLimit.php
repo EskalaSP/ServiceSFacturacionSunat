@@ -28,7 +28,7 @@ class CheckDocumentLimit
             return $next($request);
         }
 
-        // Beta mode: skip document limits for testing
+        // Modo beta: omitir límites de documentos para pruebas
         if ($tenant->environment === 'beta') {
             return $next($request);
         }
@@ -41,7 +41,7 @@ class CheckDocumentLimit
         if ($category === 'sunat') {
             $maxSunat = $plan->getLimit('documents_month', 30);
 
-            // -1 = unlimited
+            // -1 = ilimitado
             if ($maxSunat === -1) {
                 return $next($request);
             }

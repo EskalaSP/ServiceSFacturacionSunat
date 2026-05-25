@@ -108,7 +108,7 @@ class ReportService
         // Top 10 clientes
         $allVentas = $invoices->concat($boletas);
         $topClientes = $allVentas->groupBy('client_num_doc')->map(function ($docs, $numDoc) {
-            $nc = 0; // simplified - NC reduction per client would need doc_afectado linking
+            $nc = 0; // simplificado - la reducción de NC por cliente requeriría vincular doc_afectado
             return [
                 'num_doc' => $numDoc,
                 'razon_social' => $docs->first()->client_razon_social,

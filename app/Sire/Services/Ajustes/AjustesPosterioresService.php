@@ -242,7 +242,7 @@ class AjustesPosterioresService
     }
 
     // ==================================================================
-    // Helpers
+    // Utilidades
     // ==================================================================
 
     private function guardarCopia(Tenant $tenant, PeriodoTributario $periodo, object $built): string

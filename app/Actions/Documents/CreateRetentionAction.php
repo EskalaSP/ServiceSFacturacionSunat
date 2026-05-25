@@ -29,7 +29,7 @@ class CreateRetentionAction
             $correlativo = $serie->nextCorrelativo();
             $tasa = (float) $data['tasa'];
 
-            // Calculate totals from documents
+            // Calcular totales a partir de los documentos
             $totalRetenido = 0;
             $totalPagado = 0;
             foreach ($data['documentos'] as $doc) {
@@ -58,7 +58,7 @@ class CreateRetentionAction
                 'sunat_status' => 'pendiente',
             ]);
 
-            // Create retention items
+            // Crear ítems de retención
             foreach ($data['documentos'] as $doc) {
                 $impTotal = (float) $doc['imp_total'];
                 $impRetenido = (float) ($doc['imp_retenido'] ?? round($impTotal * $tasa / 100, 2));

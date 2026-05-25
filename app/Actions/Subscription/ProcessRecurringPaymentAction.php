@@ -16,7 +16,7 @@ class ProcessRecurringPaymentAction
     ) {}
 
     /**
-     * Process a recurring payment for a subscription due for renewal.
+     * Procesa un pago recurrente para una suscripción próxima a renovarse.
      */
     public function execute(Subscription $subscription): bool
     {
@@ -27,13 +27,13 @@ class ProcessRecurringPaymentAction
             ? (int) ($plan->price_yearly * 100)
             : (int) ($plan->price_monthly * 100);
 
-        // Free plans don't need payment
+        // Los planes gratuitos no requieren pago
         if ($amount <= 0) {
             $this->renewPeriod($subscription);
             return true;
         }
 
-        // If no card on file, mark as past_due
+        // Si no hay tarjeta registrada, marcar como past_due
         if (! $subscription->gateway_card_id && ! $subscription->gateway_customer_id) {
             $subscription->update(['status' => 'past_due']);
             event(new PaymentFailed($subscription, 'No hay método de pago registrado'));
@@ -56,7 +56,7 @@ class ProcessRecurringPaymentAction
                 ],
             ]);
 
-            // Record successful payment
+            // Registrar pago exitoso
             SubscriptionPayment::create([
                 'subscription_id' => $subscription->id,
                 'amount' => $amount / 100,
@@ -75,13 +75,13 @@ class ProcessRecurringPaymentAction
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Recurring payment failed', [
+            Log::error('Fallo en el pago recurrente', [
                 'subscription_id' => $subscription->id,
                 'tenant_id' => $tenant->id,
                 'error' => $e->getMessage(),
             ]);
 
-            // Record failed payment
+            // Registrar pago fallido
             SubscriptionPayment::create([
                 'subscription_id' => $subscription->id,
                 'amount' => $amount / 100,

@@ -18,7 +18,7 @@ class CreateSubscriptionAction
     ) {}
 
     /**
-     * Create a new subscription for a tenant.
+     * Crea una nueva suscripción para un tenant.
      *
      * @param array{
      *   plan_slug: string,
@@ -35,7 +35,7 @@ class CreateSubscriptionAction
         $token = $data['token'] ?? null;
 
         return DB::transaction(function () use ($tenant, $plan, $billingCycle, $trialDays, $token) {
-            // Cancel any existing active subscription
+            // Cancelar cualquier suscripción activa existente
             $tenant->subscriptions()
                 ->whereIn('status', ['active', 'trialing'])
                 ->update(['status' => 'cancelled', 'cancelled_at' => now()]);
@@ -46,14 +46,14 @@ class CreateSubscriptionAction
             $subscription->billing_cycle = $billingCycle;
 
             if ($trialDays > 0 || ($plan->slug !== 'free' && ! $token)) {
-                // Start trial
+                // Iniciar período de prueba
                 $days = $trialDays > 0 ? $trialDays : 14;
                 $subscription->status = 'trialing';
                 $subscription->trial_ends_at = now()->addDays($days);
                 $subscription->current_period_start = now();
                 $subscription->current_period_end = now()->addDays($days);
             } elseif ($plan->price_monthly > 0 && $token) {
-                // Paid subscription with payment
+                // Suscripción de pago con cobro
                 $chargeResult = $this->chargeWithCulqi($tenant, $plan, $billingCycle, $token);
 
                 $subscription->status = 'active';
@@ -67,7 +67,7 @@ class CreateSubscriptionAction
                 $subscription->card_last_four = $chargeResult['card_last_four'] ?? null;
                 $subscription->card_brand = $chargeResult['card_brand'] ?? null;
             } else {
-                // Free plan
+                // Plan gratuito
                 $subscription->status = 'active';
                 $subscription->current_period_start = now();
                 $subscription->current_period_end = now()->addYear();
@@ -75,7 +75,7 @@ class CreateSubscriptionAction
 
             $subscription->save();
 
-            // Record payment if charged
+            // Registrar pago si se realizó un cobro
             if (isset($chargeResult) && ($chargeResult['charge_id'] ?? null)) {
                 SubscriptionPayment::create([
                     'subscription_id' => $subscription->id,
@@ -90,7 +90,7 @@ class CreateSubscriptionAction
                 ]);
             }
 
-            // Update tenant plan
+            // Actualizar plan del tenant
             $tenant->update([
                 'plan' => $plan->slug,
                 'max_documents_month' => $plan->getLimit('documents_month', 30),
@@ -115,10 +115,10 @@ class CreateSubscriptionAction
         try {
             $culqi = new \Culqi\Culqi(['api_key' => config('services.culqi.secret_key')]);
 
-            // Step 1: Create or reuse Culqi Customer
+            // Paso 1: Crear o reutilizar cliente en Culqi
             $customerId = $this->getOrCreateCulqiCustomer($culqi, $tenant, $email);
 
-            // Step 2: Create Culqi Card (saves token for recurring charges)
+            // Paso 2: Crear tarjeta en Culqi (guarda el token para cobros recurrentes)
             $card = $culqi->Cards->create([
                 'customer_id' => $customerId,
                 'token_id' => $token,
@@ -130,7 +130,7 @@ class CreateSubscriptionAction
 
             $cardId = $card->id;
 
-            // Step 3: Charge using the saved card (not the one-time token)
+            // Paso 3: Cobrar usando la tarjeta guardada (no el token de un solo uso)
             $charge = $culqi->Charges->create([
                 'amount' => $amount,
                 'currency_code' => 'PEN',
@@ -160,7 +160,7 @@ class CreateSubscriptionAction
         } catch (\RuntimeException $e) {
             throw $e;
         } catch (\Exception $e) {
-            Log::error('Culqi charge failed', [
+            Log::error('Fallo en el cobro con Culqi', [
                 'tenant_id' => $tenant->id,
                 'plan' => $plan->slug,
                 'error' => $e->getMessage(),
@@ -171,11 +171,11 @@ class CreateSubscriptionAction
     }
 
     /**
-     * Find existing Culqi customer by email or create a new one.
+     * Busca un cliente existente en Culqi por email o crea uno nuevo.
      */
     private function getOrCreateCulqiCustomer(\Culqi\Culqi $culqi, Tenant $tenant, string $email): string
     {
-        // Check if tenant already has a Culqi customer from a previous subscription
+        // Verificar si el tenant ya tiene un cliente en Culqi de una suscripción anterior
         $existingCustomerId = $tenant->subscriptions()
             ->whereNotNull('gateway_customer_id')
             ->latest()
@@ -185,7 +185,7 @@ class CreateSubscriptionAction
             return $existingCustomerId;
         }
 
-        // Create new Culqi customer
+        // Crear nuevo cliente en Culqi
         $names = explode(' ', $tenant->razon_social ?? 'Cliente', 2);
         $customer = $culqi->Customers->create([
             'first_name' => $names[0] ?? 'Cliente',

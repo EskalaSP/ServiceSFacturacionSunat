@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 class HandleAppearance
 {
     /**
-     * Handle an incoming request.
+     * Manejar una solicitud entrante.
      *
      * @param  Closure(Request): (Response)  $next
      */

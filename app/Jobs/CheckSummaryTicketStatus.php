@@ -51,7 +51,7 @@ class CheckSummaryTicketStatus implements ShouldQueue
                 'sunat_notes' => $result['notes'] ?? null,
             ];
 
-            // Store CDR zip
+            // Guardar CDR zip
             if (! empty($result['cdr_zip'])) {
                 $cdrPath = str_replace('/xml/', '/cdr/', $summary->xml_path ?? '');
                 $cdrPath = $cdrPath ? preg_replace('/\.xml$/', '.zip', $cdrPath) : null;

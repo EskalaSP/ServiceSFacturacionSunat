@@ -30,7 +30,7 @@ class UpdateDispatchGuideAction
                 'vehiculo' => $data['vehiculo'] ?? null,
                 'conductor' => $data['conductor'] ?? $data['conductores'] ?? null,
                 'items' => $data['items'],
-                // Reset SUNAT state
+                // Reiniciar estado SUNAT
                 'sunat_status' => 'pendiente',
                 'sunat_code' => null,
                 'sunat_description' => null,

@@ -14,7 +14,7 @@ class StoreDispatchGuideRequest extends FormRequest
     }
 
     /**
-     * Normalizar payload antes de validar:
+     * Normaliza el payload antes de validar:
      *  1. Si la ruta es /guias-remision-transportista → forzar tipo_documento=31
      *  2. Si doc_relacionado viene como objeto único → envolver en array
      */
@@ -35,7 +35,7 @@ class StoreDispatchGuideRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // tipo_documento: '09' Guía Remitente (default) o '31' Guía Transportista
+            // tipo_documento: '09' Guía Remitente (por defecto) o '31' Guía Transportista
             'tipo_documento' => 'sometimes|string|in:09,31',
             'serie' => 'required|string|size:4',
             'fecha_emision' => 'required|date',

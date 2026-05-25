@@ -25,7 +25,7 @@ use Illuminate\Validation\Rules\Password;
 class AppServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * Registra los servicios de la aplicación.
      */
     public function register(): void
     {
@@ -34,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Bootstrap any application services.
+     * Inicializa los servicios de la aplicación.
      */
     public function boot(): void
     {
@@ -52,12 +52,12 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Configure default behaviors for production-ready applications.
+     * Configura los comportamientos predeterminados para aplicaciones en producción.
      */
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('api', function (Request $request) {
-            // Bypass rate limit for internal server-to-server requests
+            // Omitir límite de velocidad para peticiones internas entre servidores
             $internalToken = config('services.internal_token');
             if ($internalToken && $request->header('X-Internal-Token') === $internalToken) {
                 return Limit::none();

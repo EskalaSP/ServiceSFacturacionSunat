@@ -19,7 +19,7 @@ class ReversionController extends Controller
     use ApiResponse;
 
     /**
-     * Create a Reversion (RR) to annul Retentions (20) or Perceptions (40).
+     * Crea una Reversión (RR) para anular Retenciones (20) o Percepciones (40).
      */
     public function store(Request $request): JsonResponse
     {
@@ -38,7 +38,7 @@ class ReversionController extends Controller
         $fechaCom = $validated['fecha_comunicacion'] ?? now()->format('Y-m-d');
         $enviarAuto = $request->boolean('enviar_automatico', true);
 
-        // Validate documents exist and are accepted
+        // Validar que los documentos existan y estén aceptados
         $errors = $this->validateDetalles($tenant->id, $validated['detalles']);
         if (! empty($errors)) {
             return response()->json([
@@ -68,7 +68,7 @@ class ReversionController extends Controller
                 'sunat_status' => 'pendiente',
             ]);
 
-            // Mark documents as in annulment process
+            // Marcar documentos como en proceso de anulación
             $this->markDocumentsAsProcessing($tenant->id, $validated['detalles']);
 
             if ($enviarAuto) {
@@ -135,7 +135,7 @@ class ReversionController extends Controller
                 continue;
             }
 
-            // Check no duplicate reversion in process
+            // Verificar que no exista una reversión duplicada en proceso
             $duplicate = VoidedDocument::where('tenant_id', $tenantId)
                 ->where('identifier', 'like', 'RR-%')
                 ->whereIn('sunat_status', ['pendiente', 'enviado', 'aceptado'])

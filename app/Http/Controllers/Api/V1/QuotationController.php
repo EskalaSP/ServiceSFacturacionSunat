@@ -98,7 +98,7 @@ class QuotationController extends Controller
         $data = $request->all();
 
         return \DB::transaction(function () use ($quotation, $tenant, $data) {
-            // Update client data if provided
+            // Actualizar datos del cliente si se proporcionan
             if (! empty($data['cliente'])) {
                 $client = $data['cliente'];
                 $quotation->fill([
@@ -117,7 +117,7 @@ class QuotationController extends Controller
                 ]);
             }
 
-            // Update simple fields if provided
+            // Actualizar campos simples si se proporcionan
             $simpleFields = ['fecha_emision', 'fecha_vencimiento', 'tipo_moneda', 'observacion'];
             foreach ($simpleFields as $field) {
                 if (array_key_exists($field, $data)) {
@@ -125,7 +125,7 @@ class QuotationController extends Controller
                 }
             }
 
-            // Recalculate items if provided
+            // Recalcular ítems si se proporcionan
             if (! empty($data['items'])) {
                 $calcService = new \App\Services\DocumentCalculationService();
                 $calculatedItems = $calcService->calculateItems($data['items']);
@@ -133,7 +133,7 @@ class QuotationController extends Controller
 
                 $quotation->fill($totals);
 
-                // Replace items
+                // Reemplazar ítems
                 $quotation->items()->delete();
                 $quotation->items()->insert(array_map(fn ($item) => [
                     'internal_document_id' => $quotation->id,
@@ -157,7 +157,7 @@ class QuotationController extends Controller
                 ], $calculatedItems));
             }
 
-            // Clear cached PDF
+            // Limpiar PDF en caché
             $quotation->pdf_path = null;
             $quotation->save();
 

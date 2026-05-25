@@ -78,7 +78,7 @@ class NotaDebitoController extends Controller
         );
 
         $data = $request->all();
-        // CreateDebitNoteAction expects doc_afectado_correlativo
+        // CreateDebitNoteAction espera doc_afectado_correlativo
         if (isset($data['doc_afectado_corr'])) {
             $data['doc_afectado_correlativo'] = $data['doc_afectado_corr'];
         }

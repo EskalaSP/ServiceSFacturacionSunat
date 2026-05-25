@@ -9,7 +9,7 @@ trait CachesPdf
 {
     protected function getCachedPdfContent(Model $document, string $formatStr): ?string
     {
-        // Default format: use stored pdf_path
+        // Formato predeterminado: usar pdf_path almacenado
         $defaultFormat = config('pdf.default_format', 'a4');
         if ($formatStr === $defaultFormat && $document->pdf_path) {
             $content = (new DocumentStorageService())->getPdfContent($document);
@@ -18,7 +18,7 @@ trait CachesPdf
             }
         }
 
-        // Any format: check file cache (1 hour TTL)
+        // Cualquier formato: verificar caché en disco (TTL de 1 hora)
         $cachePath = $this->buildPdfCachePath($document, $formatStr);
         if (file_exists($cachePath) && filemtime($cachePath) > time() - 3600) {
             return file_get_contents($cachePath);

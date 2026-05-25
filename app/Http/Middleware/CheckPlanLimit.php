@@ -52,11 +52,11 @@ class CheckPlanLimit
     ) {}
 
     /**
-     * Handle plan limit checks.
+     * Maneja las verificaciones de límite del plan.
      *
-     * Usage in routes:
-     *   ->middleware('plan:feature:crm')           — gate a feature
-     *   ->middleware('plan:usage:ai_messages_month') — check usage limit
+     * Uso en rutas:
+     *   ->middleware('plan:feature:crm')           — restringe una funcionalidad
+     *   ->middleware('plan:usage:ai_messages_month') — verifica límite de uso
      */
     public function handle(Request $request, Closure $next, string $type, string $key): Response
     {

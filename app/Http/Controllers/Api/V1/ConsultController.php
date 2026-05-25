@@ -54,7 +54,7 @@ class ConsultController extends Controller
         $tipo = $request->input('tipo');
         $numero = $request->input('numero');
 
-        // 1. Buscar en la BD local (uses composite index tenant_id + tipo_documento + numero_documento)
+        // 1. Buscar en la BD local (usa índice compuesto tenant_id + tipo_documento + numero_documento)
         $tipoDocMap = ['1' => '1', '6' => '6', '4' => '4', '7' => '7'];
         $tipoDoc = $tipoDocMap[$tipo] ?? $tipo;
         $client = Client::where('tenant_id', $tenant->id)

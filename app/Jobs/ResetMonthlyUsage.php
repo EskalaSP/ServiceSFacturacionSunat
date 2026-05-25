@@ -26,6 +26,6 @@ class ResetMonthlyUsage implements ShouldQueue
                 'usage_reset_month' => $currentMonth,
             ]);
 
-        Log::info("Reset monthly usage for {$count} tenants");
+        Log::info("Uso mensual reiniciado para {$count} tenants");
     }
 }

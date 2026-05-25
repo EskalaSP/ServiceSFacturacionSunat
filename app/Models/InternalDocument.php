@@ -17,13 +17,13 @@ class InternalDocument extends Model implements Documentable
 
     protected $table = 'internal_documents';
 
-    // STI: map type → model class
+    // STI: mapeo tipo → clase de modelo
     protected static array $typeMap = [
         'quotation' => Quotation::class,
         'sale_note' => SaleNote::class,
     ];
 
-    // Tipo documento codes for PDF
+    // Códigos de tipo de documento para PDF
     protected static array $tipoDocMap = [
         'quotation' => 'COT',
         'sale_note' => 'NV',
@@ -60,7 +60,7 @@ class InternalDocument extends Model implements Documentable
         ];
     }
 
-    // STI: auto-resolve model class from 'type' column
+    // STI: resolver automáticamente la clase de modelo desde la columna 'type'
     public function newFromBuilder($attributes = [], $connection = null): static
     {
         $attributes = (array) $attributes;
@@ -117,8 +117,8 @@ class InternalDocument extends Model implements Documentable
     }
 
     /**
-     * Generate next sequential number for a given tenant+type.
-     * Format: PREFIX-YYYYMM-NNNNNN
+     * Genera el siguiente número secuencial para un tenant+tipo dado.
+     * Formato: PREFIJO-YYYYMM-NNNNNN
      */
     public static function generateNumero(int $tenantId, string $type): string
     {

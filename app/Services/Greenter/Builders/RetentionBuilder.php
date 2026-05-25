@@ -50,7 +50,7 @@ class RetentionBuilder
         }
         $retention->setDetails($details);
 
-        // Calculate totals if not provided
+        // Calcular totales si no se proporcionaron
         if (empty($data['imp_retenido']) || empty($data['imp_pagado'])) {
             $totalRetenido = 0;
             $totalPagado = 0;
@@ -72,7 +72,7 @@ class RetentionBuilder
         $moneda = $doc['moneda'] ?? 'PEN';
         $impTotal = (float) $doc['imp_total'];
 
-        // Calculate retention if not provided
+        // Calcular la retención si no se proporcionó
         $impRetenido = (float) ($doc['imp_retenido'] ?? round($impTotal * $tasa / 100, 2));
         $impPagar = (float) ($doc['imp_pagar'] ?? round($impTotal - $impRetenido, 2));
 
@@ -96,7 +96,7 @@ class RetentionBuilder
         }
         $detail->setPagos($pagos);
 
-        // Tipo de cambio (required if moneda != PEN)
+        // Tipo de cambio (requerido si moneda != PEN)
         if (! empty($doc['tipo_cambio'])) {
             $tc = $doc['tipo_cambio'];
             $detail->setTipoCambio(

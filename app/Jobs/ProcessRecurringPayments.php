@@ -21,13 +21,13 @@ class ProcessRecurringPayments implements ShouldQueue
             ->dueForRenewal()
             ->get();
 
-        Log::info("Processing {$subscriptions->count()} recurring payments");
+        Log::info("Procesando {$subscriptions->count()} pagos recurrentes");
 
         foreach ($subscriptions as $subscription) {
             try {
                 $action->execute($subscription);
             } catch (\Exception $e) {
-                Log::error("Failed to process recurring payment for subscription {$subscription->id}", [
+                Log::error("Error al procesar pago recurrente para la suscripción {$subscription->id}", [
                     'error' => $e->getMessage(),
                 ]);
             }

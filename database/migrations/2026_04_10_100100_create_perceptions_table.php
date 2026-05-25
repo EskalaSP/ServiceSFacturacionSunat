@@ -34,7 +34,7 @@ return new class extends Migration
 
             $table->text('observacion')->nullable();
 
-            // SUNAT integration
+            // Integración SUNAT
             $table->string('xml_path')->nullable();
             $table->string('cdr_path')->nullable();
             $table->string('pdf_path')->nullable();

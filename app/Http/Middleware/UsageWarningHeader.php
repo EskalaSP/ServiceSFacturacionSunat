@@ -25,7 +25,7 @@ class UsageWarningHeader
 
         $plan = $this->planService->getActivePlan($tenant);
 
-        // Documents usage
+        // Uso de documentos
         $docLimit = $plan->getLimit('documents_month', 30);
         if ($docLimit !== -1) {
             $current = $tenant->documents_this_month ?? 0;
@@ -37,7 +37,7 @@ class UsageWarningHeader
             }
         }
 
-        // AI messages usage
+        // Uso de mensajes de IA
         $aiLimit = $plan->getLimit('ai_messages_month', 10);
         if ($aiLimit !== -1) {
             $aiCurrent = $tenant->ai_messages_this_month ?? 0;

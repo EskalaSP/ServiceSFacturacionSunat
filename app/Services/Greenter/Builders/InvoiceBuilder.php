@@ -126,7 +126,7 @@ class InvoiceBuilder
         }
         if (! empty($data['mto_isc'])) {
             $invoice->setMtoISC((float) $data['mto_isc']);
-            // SUNAT 3296: document-level ISC base must match sum of line ISC bases
+            // SUNAT 3296: la base de ISC a nivel de documento debe coincidir con la suma de bases de ISC de cada línea
             $invoice->setMtoBaseIsc((float) ($data['mto_base_isc'] ?? $data['mto_oper_gravadas'] ?? 0));
         }
         if (! empty($data['mto_icbper'])) {
@@ -212,7 +212,7 @@ class InvoiceBuilder
         if (! empty($data['percepcion'])) {
             $per = $data['percepcion'];
             $invoice->setTipoOperacion($per['tipo_operacion'] ?? '2001');
-            // SUNAT expects MultiplierFactorNumeric as decimal factor (0.02 for 2%), not percentage
+            // SUNAT espera MultiplierFactorNumeric como factor decimal (0.02 para 2%), no como porcentaje
             $porcentaje = (float) $per['porcentaje'];
             if ($porcentaje > 1) {
                 $porcentaje = $porcentaje / 100;
@@ -253,7 +253,7 @@ class InvoiceBuilder
                     ->setMonto((float) $desc['monto']);
             }
         }
-        // SUNAT 3287: anticipos require descuento global tipo 04
+        // SUNAT 3287: los anticipos requieren descuento global tipo 04
         if ($totalAnticipos > 0) {
             $hasTipo04 = false;
             foreach ($descuentos as $desc) {
@@ -392,15 +392,15 @@ class InvoiceBuilder
         $isc = (float) ($item['isc'] ?? 0);
         $icbper = (float) ($item['icbper'] ?? 0);
 
-        // Determine default baseIgv
+        // Determinar la base IGV por defecto
         if ($isGratuitoGravado) {
-            // For gratuita gravada: base IGV = reference amount (not valorVenta which is 0)
+            // Para gratuita gravada: base IGV = monto referencial (no valorVenta que es 0)
             $defaultBaseIgv = isset($igvBase) ? $igvBase : round(((float) ($item['mto_valor_unitario'] ?? $precioUnitario)) * $cantidad, 2);
         } else {
             $defaultBaseIgv = $valorVenta;
         }
 
-        // When ISC is present, IGV base = valor_venta + ISC (SUNAT rule)
+        // Cuando hay ISC, la base del IGV = valor_venta + ISC (regla SUNAT)
         if ($isc > 0 && ! isset($item['mto_base_igv']) && ! isset($item['igv'])) {
             $baseIgv = round($defaultBaseIgv + $isc, 2);
             $igv = round($baseIgv * $porcentajeIgv / 100, 2);
@@ -414,7 +414,7 @@ class InvoiceBuilder
             $baseIgv = $valorVenta;
         }
 
-        // totalImpuestos = IGV + ISC + ICBPER (SUNAT 3292 requires all taxes summed)
+        // totalImpuestos = IGV + ISC + ICBPER (SUNAT 3292 requiere sumar todos los impuestos)
         $totalImpuestos = (float) ($item['total_impuestos'] ?? ($igv + $isc + $icbper));
 
         $detail
@@ -431,7 +431,7 @@ class InvoiceBuilder
             ->setTotalImpuestos($totalImpuestos);
 
         if ($isGratuito || $isGratuitoGravado) {
-            // Gratuito: SUNAT requires AlternativeConditionPrice con PriceTypeCode=02
+            // Gratuito: SUNAT requiere AlternativeConditionPrice con PriceTypeCode=02
             // SUNAT 2640: Price/PriceAmount DEBE ser 0 para gratuita (no el valor referencial)
             $mtoValorGratuito = (float) ($item['mto_valor_unitario'] ?? 0);
             if ($mtoValorGratuito <= 0 && $cantidad > 0) {

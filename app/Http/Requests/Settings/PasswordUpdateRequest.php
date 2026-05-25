@@ -11,7 +11,7 @@ class PasswordUpdateRequest extends FormRequest
     use PasswordValidationRules;
 
     /**
-     * Get the validation rules that apply to the request.
+     * Obtener las reglas de validación que aplican a la solicitud.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */

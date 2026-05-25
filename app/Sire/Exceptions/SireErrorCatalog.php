@@ -30,7 +30,7 @@ class SireErrorCatalog
         '1012' => 'El código de tipo de CDP no existe o no es válido.',
         '1104' => 'El código de tipo de comprobante de pago no es válido.',
 
-        // Archivos y upload
+        // Archivos y carga
         '1022' => 'Nombre del archivo no enviado o está vacío.',
         '1024' => 'El archivo fue previamente enviado.',
         '1044' => 'Error en el formato del nombre del archivo plano. Corregir según la convención SUNAT.',

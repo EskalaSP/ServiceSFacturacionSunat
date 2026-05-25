@@ -14,8 +14,8 @@ enum PdfFormatConfig: string
         return match ($this) {
             self::A4 => 'a4',
             self::A5 => 'a5',
-            self::TICKET_80 => [0, 0, 226.77, 841.89],  // 80mm width
-            self::TICKET_58 => [0, 0, 164.41, 841.89],  // 58mm width
+            self::TICKET_80 => [0, 0, 226.77, 841.89],  // ancho 80mm
+            self::TICKET_58 => [0, 0, 164.41, 841.89],  // ancho 58mm
         };
     }
 

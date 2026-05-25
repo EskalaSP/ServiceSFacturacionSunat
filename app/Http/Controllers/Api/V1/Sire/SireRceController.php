@@ -181,7 +181,7 @@ class SireRceController extends Controller
     }
 
     // ======================================================================
-    // Helpers privados
+    // Utilidades privadas
     // ======================================================================
 
     private function parsePeriodo(string $periodo): PeriodoTributario

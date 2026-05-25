@@ -275,7 +275,7 @@ class BoletaController extends Controller
             return $this->error('Formato inválido. Opciones: a4, a5, ticket-80, ticket-58', 422);
         }
 
-        // Try cached PDF first (any format)
+        // Intentar PDF en caché primero (cualquier formato)
         $content = $this->getCachedPdfContent($boleta, $formatStr);
 
         if (! $content) {

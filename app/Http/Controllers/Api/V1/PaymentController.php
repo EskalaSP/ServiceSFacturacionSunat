@@ -90,7 +90,7 @@ class PaymentController extends Controller
 
     private function detectDocType(Request $request): string
     {
-        // URL: /api/v1/{docType}/{id}/pagos  → segmento en índice 2
+        // URL: /api/v1/{docType}/{id}/pagos  → segmento en el índice 2
         return $request->segment(3) ?? '';
     }
 

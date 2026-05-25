@@ -102,7 +102,7 @@ class DebitNoteController extends Controller
         $data = $request->all();
 
         return \DB::transaction(function () use ($debitNote, $tenant, $data) {
-            // Update client data if provided
+            // Actualizar datos del cliente si se proporcionan
             if (! empty($data['cliente'])) {
                 $client = $data['cliente'];
                 $debitNote->fill([
@@ -121,7 +121,7 @@ class DebitNoteController extends Controller
                 ]);
             }
 
-            // Update simple fields if provided
+            // Actualizar campos simples si se proporcionan
             $simpleFields = ['tipo_moneda', 'observacion', 'doc_afectado_tipo', 'doc_afectado_serie', 'doc_afectado_correlativo', 'cod_motivo', 'des_motivo'];
             foreach ($simpleFields as $field) {
                 if (array_key_exists($field, $data)) {
@@ -129,7 +129,7 @@ class DebitNoteController extends Controller
                 }
             }
 
-            // Recalculate items if provided
+            // Recalcular ítems si se proporcionan
             if (! empty($data['items'])) {
                 $calcService = new \App\Services\DocumentCalculationService();
                 $calculatedItems = $calcService->calculateItems($data['items']);
@@ -141,7 +141,7 @@ class DebitNoteController extends Controller
                     $data['tipo_moneda'] ?? $debitNote->tipo_moneda ?? 'PEN'
                 );
 
-                // Replace items
+                // Reemplazar ítems
                 $debitNote->items()->delete();
                 $debitNote->items()->insert(array_map(fn ($item) => [
                     'debit_note_id' => $debitNote->id,
@@ -166,7 +166,7 @@ class DebitNoteController extends Controller
                 ], $calculatedItems));
             }
 
-            // Reset SUNAT status and resend
+            // Reiniciar estado SUNAT y reenviar
             $debitNote->fill([
                 'sunat_status' => 'pendiente',
                 'sunat_code' => null,

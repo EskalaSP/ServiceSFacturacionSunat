@@ -140,11 +140,11 @@ class SendDocumentToSunat implements ShouldQueue
 
     private function isRetryableError(string $errorCode): bool
     {
-        // SUNAT Formato 1.3.4 error ranges:
-        // 0: Aceptado (shouldn't reach here, but treat as retryable if it does — transport-level ambiguity)
-        // 100-1999: Excepciones de servidor → algunos son temporales (100=timeout, 109=service down, 500=internal)
+        // SUNAT Formato 1.3.4 rangos de error:
+        // 0: Aceptado (no debería llegar aquí, pero se trata como reintentable por ambigüedad de transporte)
+        // 100-1999: Excepciones de servidor → algunos son temporales (100=timeout, 109=servicio caído, 500=interno)
         // 2000-3999: Errores de validación → permanentes, excepto 2800 (correlativo duplicado por concurrencia)
-        // 4000+: Observaciones → aceptado con advertencias (handled in success branch)
+        // 4000+: Observaciones → aceptado con advertencias (manejado en la rama de éxito)
         $retryableCodes = ['0', '100', '109', '500', '1033', '2800'];
 
         return in_array($errorCode, $retryableCodes, true);

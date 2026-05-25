@@ -43,7 +43,7 @@ return new class extends Migration
             $table->string('leyenda', 500)->nullable();
             $table->text('observacion')->nullable();
 
-            // JSON fields (boleta-specific)
+            // Campos JSON (específicos de boleta)
             $table->json('cuotas')->nullable();
             $table->json('guias')->nullable();
 

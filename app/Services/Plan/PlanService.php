@@ -12,7 +12,7 @@ class PlanService
     private const TIER_ORDER = ['free' => 0, 'starter' => 1, 'growth' => 2, 'business' => 3];
 
     /**
-     * Get the active plan for a tenant (from subscription or fallback to free).
+     * Obtiene el plan activo de un tenant (desde la suscripción o con fallback a free).
      */
     public function getActivePlan(Tenant $tenant): Plan
     {
@@ -33,7 +33,7 @@ class PlanService
     }
 
     /**
-     * Get a specific limit value for the tenant's plan.
+     * Obtiene un valor de límite específico del plan del tenant.
      */
     public function getLimit(Tenant $tenant, string $key, mixed $default = 0): mixed
     {
@@ -43,7 +43,7 @@ class PlanService
     }
 
     /**
-     * Check if a feature is available in the tenant's plan.
+     * Verifica si una funcionalidad está disponible en el plan del tenant.
      */
     public function canUseFeature(Tenant $tenant, string $feature): bool
     {
@@ -53,8 +53,8 @@ class PlanService
     }
 
     /**
-     * Check if tenant has reached a usage limit.
-     * Returns [allowed, current, limit] array.
+     * Verifica si el tenant ha alcanzado un límite de uso.
+     * Retorna un array [allowed, current, limit].
      */
     public function checkUsageLimit(Tenant $tenant, string $limitKey): array
     {
@@ -62,7 +62,7 @@ class PlanService
 
         $limit = $this->getLimit($tenant, $limitKey);
 
-        // -1 means unlimited
+        // -1 significa ilimitado
         if ($limit === -1) {
             return ['allowed' => true, 'current' => 0, 'limit' => -1];
         }
@@ -81,7 +81,7 @@ class PlanService
     }
 
     /**
-     * Increment a usage counter for the tenant.
+     * Incrementa un contador de uso del tenant.
      */
     public function incrementUsage(Tenant $tenant, string $type, int $amount = 1): void
     {
@@ -100,7 +100,7 @@ class PlanService
     }
 
     /**
-     * Reset monthly usage counters for a tenant.
+     * Reinicia los contadores de uso mensual de un tenant.
      */
     public function resetMonthlyUsage(Tenant $tenant): void
     {
@@ -114,11 +114,11 @@ class PlanService
     }
 
     /**
-     * Find the cheapest plan above the current one that satisfies a feature or usage key.
+     * Encuentra el plan más barato por encima del actual que satisface una funcionalidad o límite de uso.
      *
-     * @param string $key   The feature name or limit key
-     * @param string $type  'feature' or 'usage'
-     * @return array|null   ['slug' => 'growth', 'price' => 99, 'label' => '...', 'trial_days' => 14] or null
+     * @param string $key   El nombre de la funcionalidad o clave de límite
+     * @param string $type  'feature' o 'usage'
+     * @return array|null   ['slug' => 'growth', 'price' => 99, 'label' => '...', 'trial_days' => 14] o null
      */
     public function getNextPlanFor(Tenant $tenant, string $key, string $type): ?array
     {
@@ -132,7 +132,7 @@ class PlanService
         foreach ($plans as $plan) {
             $planTier = self::TIER_ORDER[$plan->slug] ?? 0;
 
-            // Only consider plans above current tier
+            // Solo considerar planes por encima del nivel actual
             if ($planTier <= $currentTier) {
                 continue;
             }
@@ -159,7 +159,7 @@ class PlanService
     }
 
     /**
-     * Get full usage report for a tenant.
+     * Obtiene el reporte completo de uso de un tenant.
      */
     public function getUsageReport(Tenant $tenant): array
     {
@@ -208,7 +208,7 @@ class PlanService
     }
 
     /**
-     * Ensure usage counters are reset if we're in a new month.
+     * Asegura que los contadores de uso se reinicien si estamos en un mes nuevo.
      */
     private function ensureUsageResetCurrent(Tenant $tenant): void
     {
@@ -221,7 +221,7 @@ class PlanService
     }
 
     /**
-     * Get the next plan above current tier (generic upgrade suggestion).
+     * Obtiene el siguiente plan por encima del nivel actual (sugerencia de actualización genérica).
      */
     private function getNextUpgrade(Tenant $tenant): ?array
     {
@@ -244,7 +244,7 @@ class PlanService
     }
 
     /**
-     * Build a fallback free plan if none exists in DB.
+     * Construye un plan free de respaldo si no existe ninguno en la BD.
      */
     private function buildFreePlan(): Plan
     {
@@ -275,7 +275,7 @@ class PlanService
     }
 
     /**
-     * Clear cached plan data for a tenant.
+     * Limpia los datos de plan en caché de un tenant.
      */
     public function clearCache(Tenant $tenant): void
     {

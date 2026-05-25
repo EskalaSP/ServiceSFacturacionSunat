@@ -50,7 +50,7 @@ class CheckVoidedTicketStatus implements ShouldQueue
                 'sunat_notes' => $result['notes'] ?? null,
             ]);
 
-            // Update original documents status when voided is accepted
+            // Actualizar el estado de los documentos originales cuando la baja es aceptada
             if ($accepted) {
                 $this->updateOriginalDocuments($voided);
             }
@@ -81,7 +81,7 @@ class CheckVoidedTicketStatus implements ShouldQueue
     }
 
     /**
-     * Mark the original documents as 'anulado' based on the voided details.
+     * Marca los documentos originales como 'anulado' según los detalles de la baja.
      */
     private function updateOriginalDocuments(VoidedDocument $voided): void
     {

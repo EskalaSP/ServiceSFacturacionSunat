@@ -80,7 +80,7 @@ class TusUploader
             return ['numTicket' => $ticketFromCreate];
         }
 
-        // Location header apunta al recurso recién creado
+        // El encabezado Location apunta al recurso recién creado
         $location = $createResponse->getHeaderLine('Location');
         if (empty($location)) {
             throw new SireException(
@@ -138,7 +138,7 @@ class TusUploader
     }
 
     /**
-     * Ejecuta un request TUS y traduce errores.
+     * Ejecuta una petición TUS y traduce errores.
      */
     private function safeRequest(Tenant $tenant, \Closure $fn, array $context): \Psr\Http\Message\ResponseInterface
     {

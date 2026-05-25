@@ -409,7 +409,7 @@ class DocumentDataMapper
             'des_motivo' => null,
 
             'logo_base64' => $this->getLogoBase64($tenant),
-            'qr_base64' => '', // Internal docs don't have QR
+            'qr_base64' => '', // Los documentos internos no tienen código QR
             'moneda_simbolo' => $this->getMonedaSimbolo($document->tipo_moneda ?? 'PEN'),
             ...$this->getBusinessConfig($tenant),
         ];
@@ -484,7 +484,7 @@ class DocumentDataMapper
             ]);
         }
 
-        // Cache by QR data string (deterministic)
+        // Caché por cadena de datos QR (determinista)
         if (isset(self::$qrCache[$qrData])) {
             return self::$qrCache[$qrData];
         }

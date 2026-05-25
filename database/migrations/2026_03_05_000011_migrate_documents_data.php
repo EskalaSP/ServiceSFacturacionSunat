@@ -8,18 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Skip if no documents to migrate
+        // Omitir si no hay documentos para migrar
         if (! DB::table('documents')->exists()) {
             return;
         }
 
-        // Skip if destination tables already have data (idempotent)
+        // Omitir si las tablas destino ya tienen datos (idempotente)
         if (DB::table('invoices')->exists() || DB::table('boletas')->exists()
             || DB::table('credit_notes')->exists() || DB::table('debit_notes')->exists()) {
             return;
         }
 
-        // Base columns present in ALL new tables
+        // Columnas base presentes en TODAS las nuevas tablas
         $baseColumns = [
             'tenant_id', 'client_id', 'serie', 'correlativo', 'cod_local',
             'fecha_emision', 'tipo_moneda',
@@ -33,7 +33,7 @@ return new class extends Migration
             'ticket', 'sent_at', 'created_at', 'updated_at', 'deleted_at',
         ];
 
-        // Columns only on invoices and boletas (not on notes)
+        // Columnas solo en facturas y boletas (no en notas)
         $invoiceBoleta = ['fecha_vencimiento', 'tipo_operacion', 'forma_pago'];
 
         $invoiceExtra = array_merge($invoiceBoleta, [
@@ -76,7 +76,7 @@ return new class extends Migration
 
                         $newId = DB::table($config['table'])->insertGetId($data);
 
-                        // Migrate items
+                        // Migrar ítems
                         $items = DB::table('document_items')
                             ->where('document_id', $doc->id)
                             ->get();

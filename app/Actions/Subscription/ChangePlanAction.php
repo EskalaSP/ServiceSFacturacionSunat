@@ -16,8 +16,8 @@ class ChangePlanAction
     ) {}
 
     /**
-     * Change to a different plan.
-     * Upgrades take effect immediately; downgrades at end of period.
+     * Cambia a un plan distinto.
+     * Las mejoras de plan tienen efecto inmediato; las reducciones al final del período.
      */
     public function execute(Tenant $tenant, array $data): Subscription
     {
@@ -25,14 +25,14 @@ class ChangePlanAction
         $currentSubscription = $tenant->subscriptions()->whereIn('status', ['active', 'trialing'])->latest()->first();
         $currentPlan = $currentSubscription?->plan;
 
-        // If no active subscription or upgrading, create new subscription immediately
+        // Si no hay suscripción activa o es una mejora de plan, crear nueva suscripción de inmediato
         if (! $currentSubscription || ($currentPlan && $newPlan->sort_order > $currentPlan->sort_order)) {
             return $this->createAction->execute($tenant, $data);
         }
 
-        // Downgrade: schedule change at end of current period (keep current plan active)
+        // Reducción de plan: programar cambio al final del período actual (mantener plan actual activo)
         return DB::transaction(function () use ($tenant, $currentSubscription, $newPlan) {
-            // Create pending subscription starting at end of current period
+            // Crear suscripción pendiente que inicia al final del período actual
             $subscription = Subscription::create([
                 'tenant_id' => $tenant->id,
                 'plan_id' => $newPlan->id,
@@ -44,8 +44,8 @@ class ChangePlanAction
                     : $currentSubscription->current_period_end->addMonth(),
             ]);
 
-            // Keep current plan active until period ends — ProcessRecurringPayments
-            // will activate the pending subscription and update tenant.plan
+            // Mantener el plan actual activo hasta que termine el período — ProcessRecurringPayments
+            // activará la suscripción pendiente y actualizará tenant.plan
 
             $this->planService->clearCache($tenant);
 

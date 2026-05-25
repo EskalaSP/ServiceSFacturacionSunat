@@ -71,7 +71,7 @@ class ReportController extends Controller
         $tenant = $request->get('tenant');
         $filters = $request->validated();
 
-        // PDFs are not cached
+        // Los PDFs no se cachean
         if (($filters['formato'] ?? 'json') === 'pdf') {
             $data = $this->reportService->{$serviceMethod}($tenant, $filters);
             return $this->pdfResponse(
@@ -80,7 +80,7 @@ class ReportController extends Controller
             );
         }
 
-        // Cache JSON report data for 5 minutes
+        // Cachear datos del reporte JSON por 5 minutos
         $cacheKey = "report:{$tenant->id}:{$serviceMethod}:" . md5(json_encode($filters));
         $data = Cache::remember($cacheKey, 300, fn () => $this->reportService->{$serviceMethod}($tenant, $filters));
 

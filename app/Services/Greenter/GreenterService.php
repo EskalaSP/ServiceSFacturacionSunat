@@ -357,7 +357,7 @@ class GreenterService
                 return $nodes->item(0)->nodeValue;
             }
         } catch (\Throwable) {
-            // fallback
+            // valor de respaldo
         }
 
         return null;

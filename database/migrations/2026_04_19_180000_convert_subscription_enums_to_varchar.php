@@ -28,7 +28,7 @@ return new class extends Migration
     {
         // ENUM → VARCHAR es una operación portable via Laravel Schema.
         // En MySQL: ALTER TABLE MODIFY COLUMN.
-        // En PostgreSQL: drop check constraint + ALTER TABLE ALTER COLUMN TYPE.
+        // En PostgreSQL: elimina check constraint + ALTER TABLE ALTER COLUMN TYPE.
         // En SQL Server: ALTER TABLE ALTER COLUMN.
 
         Schema::table('subscriptions', function (Blueprint $t) {
@@ -45,7 +45,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Rollback: volver a ENUM. Normalizar cualquier "pending" a "trialing"
+        // Revertir: volver a ENUM. Normalizar cualquier "pending" a "trialing"
         // porque "pending" no es parte del ENUM original.
         \DB::table('subscriptions')->where('status', 'pending')->update(['status' => 'trialing']);
 

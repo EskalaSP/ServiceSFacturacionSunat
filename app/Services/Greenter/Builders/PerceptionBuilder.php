@@ -49,7 +49,7 @@ class PerceptionBuilder
         }
         $perception->setDetails($details);
 
-        // Auto-calculate totals if not provided
+        // Auto-calcular totales si no se proporcionaron
         if (empty($data['imp_percibido']) || empty($data['imp_cobrado'])) {
             $totalPercibido = 0;
             $totalCobrado = 0;

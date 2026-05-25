@@ -14,7 +14,7 @@ class ClientResolverService
             'direccion' => $clientData['direccion'] ?? null,
         ];
 
-        // Only update email/telefono if provided (don't overwrite existing with null)
+        // Solo actualizar email/telefono si se proporcionan (no sobreescribir existentes con null)
         if (! empty($clientData['email'])) {
             $updateData['email'] = $clientData['email'];
         }

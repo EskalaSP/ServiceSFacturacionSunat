@@ -15,7 +15,7 @@ class CancelSubscriptionAction
     ) {}
 
     /**
-     * Cancel a subscription at end of current period.
+     * Cancela una suscripción al final del período actual.
      */
     public function execute(Tenant $tenant): Subscription
     {
@@ -29,7 +29,7 @@ class CancelSubscriptionAction
             'cancelled_at' => now(),
         ]);
 
-        // If trial or period already ended, downgrade now. Otherwise keep access until period end.
+        // Si la prueba o el período ya terminó, degradar ahora. De lo contrario, mantener acceso hasta el fin del período.
         $periodEnd = $subscription->current_period_end ?? now();
         if (now()->gte($periodEnd) || $subscription->isTrialing()) {
             $freePlan = Plan::where('slug', 'free')->first();
@@ -38,7 +38,7 @@ class CancelSubscriptionAction
                 'max_documents_month' => $freePlan?->getLimit('documents_month', 30) ?? 30,
             ]);
         }
-        // Otherwise: ProcessRecurringPayments job will downgrade when period expires
+        // De lo contrario: el job ProcessRecurringPayments degradará cuando expire el período
 
         $this->planService->clearCache($tenant);
 

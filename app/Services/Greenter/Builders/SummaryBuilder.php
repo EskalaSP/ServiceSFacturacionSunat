@@ -24,7 +24,7 @@ class SummaryBuilder
         $summary = new Summary();
 
         $summary
-            // Greenter mapea: fecGeneracion → ReferenceDate (fecha docs), fecResumen → IssueDate (fecha envío)
+            // Greenter mapea: fecGeneracion → ReferenceDate (fecha de los documentos), fecResumen → IssueDate (fecha de envío)
             ->setFecGeneracion(new DateTime($data['fecha_referencia'], new DateTimeZone('America/Lima')))
             ->setFecResumen(new DateTime($data['fecha_envio'], new DateTimeZone('America/Lima')))
             ->setCorrelativo($data['correlativo'])

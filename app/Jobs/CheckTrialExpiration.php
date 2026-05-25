@@ -19,7 +19,7 @@ class CheckTrialExpiration implements ShouldQueue
 
     public function handle(PlanService $planService): void
     {
-        // Notify trials expiring in 3 days
+        // Notificar pruebas que vencen en 3 días
         Subscription::with(['tenant', 'plan'])
             ->trialExpiring(3)
             ->get()
@@ -27,13 +27,13 @@ class CheckTrialExpiration implements ShouldQueue
                 event(new TrialExpiring($subscription));
             });
 
-        // Expire overdue trials
+        // Vencer pruebas vencidas
         $expired = Subscription::with('tenant')
             ->where('status', 'trialing')
             ->where('trial_ends_at', '<', now())
             ->get();
 
-        Log::info("Expiring {$expired->count()} trials");
+        Log::info("Expirando {$expired->count()} pruebas");
 
         $freePlan = Plan::where('slug', 'free')->first();
 

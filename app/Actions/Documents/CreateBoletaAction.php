@@ -115,7 +115,7 @@ class CreateBoletaAction
                 SendDocumentToSunat::dispatch(Boleta::class, $boleta->id);
                 $boleta->update(['sunat_status' => 'enviado']);
             }
-            // else: stays 'pendiente' for manual send via POST /boletas/{id}/enviar
+            // else: permanece 'pendiente' para envío manual via POST /boletas/{id}/enviar
 
             if (! empty($data['pagos'])) {
                 $this->paymentAction->execute($boleta, $data['pagos']);

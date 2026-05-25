@@ -15,7 +15,7 @@ class CreateDispatchGuideAction
     public function execute(Tenant $tenant, array $data, bool $enviarAutomatico = true): DispatchGuide
     {
         return DB::transaction(function () use ($tenant, $data, $enviarAutomatico) {
-            // tipo_documento: '09' (GRR) default o '31' (GRT)
+            // tipo_documento: '09' (GRR) por defecto o '31' (GRT)
             $tipoDocumento = $data['tipo_documento'] ?? '09';
 
             $serie = Serie::with('sucursal')

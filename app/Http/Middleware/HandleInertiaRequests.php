@@ -8,7 +8,7 @@ use Inertia\Middleware;
 class HandleInertiaRequests extends Middleware
 {
     /**
-     * The root template that's loaded on the first page visit.
+     * La plantilla raíz que se carga en la primera visita a la página.
      *
      * @see https://inertiajs.com/server-side-setup#root-template
      *
@@ -17,7 +17,7 @@ class HandleInertiaRequests extends Middleware
     protected $rootView = 'app';
 
     /**
-     * Determines the current asset version.
+     * Determina la versión actual de los assets.
      *
      * @see https://inertiajs.com/asset-versioning
      */
@@ -27,7 +27,7 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Define the props that are shared by default.
+     * Define las props que se comparten por defecto.
      *
      * @see https://inertiajs.com/shared-data
      *

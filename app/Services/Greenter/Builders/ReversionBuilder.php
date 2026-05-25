@@ -21,8 +21,8 @@ class ReversionBuilder
     }
 
     /**
-     * Build a Reversion document for annulling Retentions (20) or Perceptions (40).
-     * Uses RR-YYYYMMDD-NNN identifier format.
+     * Construye un documento de Reversión para anular Retenciones (20) o Percepciones (40).
+     * Usa el formato de identificador RR-YYYYMMDD-NNN.
      */
     public function build(array $data): Reversion
     {

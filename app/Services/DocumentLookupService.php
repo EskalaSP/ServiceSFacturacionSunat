@@ -39,7 +39,7 @@ class DocumentLookupService
     private function lookupRuc(string $ruc): ?array
     {
         try {
-            // apis.net.pe v1: GET /v1/ruc?numero={ruc}  Authorization: Bearer {token}
+            // apis.net.pe v1: GET /v1/ruc?numero={ruc}  Autorización: Bearer {token}
             $response = Http::timeout(8)
                 ->withToken($this->token)
                 ->acceptJson()
@@ -80,7 +80,7 @@ class DocumentLookupService
     private function lookupDni(string $dni): ?array
     {
         try {
-            // apis.net.pe v1: GET /v1/dni?numero={dni}  Authorization: Bearer {token}
+            // apis.net.pe v1: GET /v1/dni?numero={dni}  Autorización: Bearer {token}
             $response = Http::timeout(8)
                 ->withToken($this->token)
                 ->acceptJson()

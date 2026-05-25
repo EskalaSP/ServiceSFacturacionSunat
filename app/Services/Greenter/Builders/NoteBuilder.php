@@ -216,7 +216,7 @@ class NoteBuilder
             // Gratuita gravada (11-17): lleva IGV
             $valorGratuito = (float) ($item['mto_valor_unitario'] ?? $precioUnitario);
             $valorUnitario = 0;
-            // LineExtensionAmount = 0 for free items (SUNAT 3271)
+            // LineExtensionAmount = 0 para ítems gratuitos (SUNAT 3271)
             $valorVenta = 0;
             $igvBase = round($valorGratuito * $cantidad, 2);
             $igv = (float) ($item['igv'] ?? round($igvBase * $porcentajeIgv / 100, 2));
@@ -237,7 +237,7 @@ class NoteBuilder
         if (! $isGratuito) {
             $valorUnitario = (float) ($item['mto_valor_unitario'] ?? $valorUnitario);
         }
-        // For gratuitas, LineExtensionAmount must be 0 regardless of DB value
+        // Para gratuitas, LineExtensionAmount debe ser 0 independientemente del valor en BD
         if ($isGratuito || $isGratuitoGravado) {
             $valorVenta = 0;
         } else {
@@ -248,14 +248,14 @@ class NoteBuilder
         $isc = (float) ($item['isc'] ?? 0);
         $icbper = (float) ($item['icbper'] ?? 0);
 
-        // Determine default baseIgv
+        // Determinar la base IGV por defecto
         if ($isGratuitoGravado) {
             $defaultBaseIgv = isset($igvBase) ? $igvBase : round(((float) ($item['mto_valor_unitario'] ?? $precioUnitario)) * $cantidad, 2);
         } else {
             $defaultBaseIgv = $valorVenta;
         }
 
-        // When ISC is present, IGV base = valor_venta + ISC (SUNAT rule)
+        // Cuando hay ISC, la base del IGV = valor_venta + ISC (regla SUNAT)
         if ($isc > 0 && ! isset($item['mto_base_igv']) && ! isset($item['igv'])) {
             $baseIgv = round($defaultBaseIgv + $isc, 2);
             $igv = round($baseIgv * $porcentajeIgv / 100, 2);
@@ -264,7 +264,7 @@ class NoteBuilder
             $baseIgv = (float) ($item['mto_base_igv'] ?? $defaultBaseIgv);
         }
 
-        // totalImpuestos = IGV + ISC + ICBPER (SUNAT 3292 requires all taxes summed)
+        // totalImpuestos = IGV + ISC + ICBPER (SUNAT 3292 requiere sumar todos los impuestos)
         $totalImpuestos = (float) ($item['total_impuestos'] ?? ($igv + $isc + $icbper));
 
         $detail
@@ -289,7 +289,7 @@ class NoteBuilder
             $detail->setMtoPrecioUnitario(0);
             $detail->setMtoValorGratuito($mtoValorGratuito);
         } else {
-            // SUNAT 3270: PriceAmount must reflect effective price after line discount
+            // SUNAT 3270: PriceAmount debe reflejar el precio efectivo después del descuento por línea
             if ($descuentoConIgv > 0 && $cantidad > 0) {
                 $effectiveTotal = round($precioUnitario * $cantidad, 2) - $descuentoConIgv;
                 $detail->setMtoPrecioUnitario(round($effectiveTotal / $cantidad, 2));

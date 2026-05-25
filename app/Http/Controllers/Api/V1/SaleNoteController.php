@@ -104,7 +104,7 @@ class SaleNoteController extends Controller
         $data = $request->all();
 
         return \DB::transaction(function () use ($saleNote, $tenant, $data) {
-            // Update client data if provided
+            // Actualizar datos del cliente si se proporcionan
             if (! empty($data['cliente'])) {
                 $client = $data['cliente'];
                 $saleNote->fill([
@@ -123,7 +123,7 @@ class SaleNoteController extends Controller
                 ]);
             }
 
-            // Update simple fields if provided
+            // Actualizar campos simples si se proporcionan
             $simpleFields = ['fecha_emision', 'fecha_vencimiento', 'tipo_moneda', 'forma_pago', 'observacion'];
             foreach ($simpleFields as $field) {
                 if (array_key_exists($field, $data)) {
@@ -131,7 +131,7 @@ class SaleNoteController extends Controller
                 }
             }
 
-            // Recalculate items if provided
+            // Recalcular ítems si se proporcionan
             if (! empty($data['items'])) {
                 $calcService = new \App\Services\DocumentCalculationService();
                 $calculatedItems = $calcService->calculateItems($data['items']);
@@ -139,7 +139,7 @@ class SaleNoteController extends Controller
 
                 $saleNote->fill($totals);
 
-                // Replace items
+                // Reemplazar ítems
                 $saleNote->items()->delete();
                 $saleNote->items()->insert(array_map(fn ($item) => [
                     'internal_document_id' => $saleNote->id,
@@ -162,7 +162,7 @@ class SaleNoteController extends Controller
                     'updated_at' => now(),
                 ], $calculatedItems));
 
-                // Recalculate payment status if total changed
+                // Recalcular estado de pago si el total cambió
                 $totalPagado = $saleNote->payments->sum('monto');
                 $nuevoTotal = $totals['mto_imp_venta'];
                 $saleNote->monto_pagado = $totalPagado;
@@ -175,7 +175,7 @@ class SaleNoteController extends Controller
                 }
             }
 
-            // Clear cached PDF
+            // Limpiar PDF en caché
             $saleNote->pdf_path = null;
             $saleNote->save();
 
