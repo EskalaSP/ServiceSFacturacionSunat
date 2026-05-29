@@ -21,31 +21,27 @@
 @else
     <table class="info-section">
         <tr>
-            <td class="info-label">Señor(es)</td>
-            <td class="info-value" style="text-transform: uppercase;">: {{ $receptor['razon_social'] }}</td>
-            <td class="info-label" style="padding-left: 12px;">Fecha Emisión</td>
-            <td class="info-value">: {{ $fecha_emision }}</td>
+            <td class="info-label">Cliente:</td>
+            <td>{{ $receptor['razon_social'] }}</td>
+            <td class="info-label">Fecha Emisión:</td>
+            <td>{{ $fecha_emision }}</td>
         </tr>
         <tr>
-            <td class="info-label">{{ $tipoDocLabel }}</td>
-            <td class="info-value-mono">: {{ $receptor['num_doc'] ?? '' }}</td>
-            <td class="info-label" style="padding-left: 12px;">Tipo de Moneda</td>
-            <td class="info-value">: {{ $tipo_moneda }}</td>
-        </tr>
-        <tr>
-            <td class="info-label">Forma de Pago</td>
-            <td class="info-value">: {{ $forma_pago ?? 'Contado' }}</td>
-            @if(!empty($fecha_vencimiento))
-            <td class="info-label" style="padding-left: 12px;">Fec. Vencimiento</td>
-            <td class="info-value">: {{ $fecha_vencimiento }}</td>
-            @else
-            <td colspan="2"></td>
-            @endif
+            <td class="info-label">{{ !empty($receptor['num_doc']) ? $tipoDocLabel.':' : '' }}</td>
+            <td>{{ $receptor['num_doc'] ?? '' }}</td>
+            <td class="info-label">Moneda:</td>
+            <td>{{ $tipo_moneda }}</td>
         </tr>
         @if(!empty($receptor['direccion']))
         <tr>
-            <td class="info-label">Dirección</td>
-            <td colspan="3" class="info-value">: {{ $receptor['direccion'] }}</td>
+            <td class="info-label">Dirección:</td>
+            <td colspan="3">{{ $receptor['direccion'] }}</td>
+        </tr>
+        @endif
+        @if(!empty($fecha_vencimiento))
+        <tr>
+            <td class="info-label">Fecha Vencimiento:</td>
+            <td colspan="3">{{ $fecha_vencimiento }}</td>
         </tr>
         @endif
     </table>

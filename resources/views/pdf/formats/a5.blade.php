@@ -43,10 +43,7 @@
             </td>
             @endif
             <td class="emitter-cell">
-                <div class="emitter-name">{{ $emisor['razon_social'] }}</div>
-                @if(!empty($emisor['nombre_comercial']) && $emisor['nombre_comercial'] !== $emisor['razon_social'])
-                <div class="emitter-comercial">{{ $emisor['nombre_comercial'] }}</div>
-                @endif
+                <div class="emitter-name">{{ $emisor['nombre_comercial'] }}</div>
                 <div class="emitter-ruc">RUC: {{ $emisor['ruc'] }}</div>
                 <div class="emitter-address">{{ $emisor['direccion'] }}</div>
                 @if($emisor['cod_local'] !== '0000')
