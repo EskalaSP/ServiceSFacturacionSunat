@@ -182,7 +182,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::apiResource('clientes', ClientController::class);
 
     // Series
-    Route::apiResource('series', SerieController::class)->except(['destroy']);
+    Route::apiResource('series', SerieController::class);
     Route::post('series/init-defaults', [SerieController::class, 'initDefaults']);
 
     // === Documentos internos (sin SUNAT) ===

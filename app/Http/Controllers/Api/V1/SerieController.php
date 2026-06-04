@@ -20,6 +20,10 @@ class SerieController extends Controller
 
         $query = Serie::forTenant($tenant->id)->with('sucursal');
 
+        if (! $request->boolean('include_inactive')) {
+            $query->where('is_active', true);
+        }
+
         if ($request->filled('sucursal_id')) {
             $query->where('sucursal_id', $request->input('sucursal_id'));
         }
@@ -115,26 +119,36 @@ class SerieController extends Controller
                     continue;
                 }
 
-                // Verificar duplicado
-                $exists = Serie::where('tenant_id', $tenant->id)
+                // Verificar duplicado. Si la serie existe inactiva, se reactiva en vez de fallar.
+                $existing = Serie::where('tenant_id', $tenant->id)
                     ->where('tipo_documento', $tipoCodigo)
                     ->where('serie', $serieValue)
-                    ->exists();
+                    ->first();
 
-                if ($exists) {
+                if ($existing && $existing->is_active) {
                     $errores[] = "#{$index} ({$serieValue}): ya existe para {$tipo}.";
                     continue;
                 }
 
-                $serie = Serie::create([
-                    'tenant_id' => $tenant->id,
-                    'tipo_documento' => $tipoCodigo,
-                    'serie' => $serieValue,
-                    'correlativo' => $correlativoInicial,
-                    'sucursal_id' => $sucursal->id,
-                    'sucursal_nombre' => $sucursal->nombre,
-                    'is_active' => true,
-                ]);
+                if ($existing) {
+                    $existing->update([
+                        'correlativo' => $correlativoInicial,
+                        'sucursal_id' => $sucursal->id,
+                        'sucursal_nombre' => $sucursal->nombre,
+                        'is_active' => true,
+                    ]);
+                    $serie = $existing->fresh();
+                } else {
+                    $serie = Serie::create([
+                        'tenant_id' => $tenant->id,
+                        'tipo_documento' => $tipoCodigo,
+                        'serie' => $serieValue,
+                        'correlativo' => $correlativoInicial,
+                        'sucursal_id' => $sucursal->id,
+                        'sucursal_nombre' => $sucursal->nombre,
+                        'is_active' => true,
+                    ]);
+                }
 
                 $serie->setRelation('sucursal', $sucursal);
                 $creadas[] = $this->formatSerie($serie);
@@ -191,6 +205,16 @@ class SerieController extends Controller
         $serie->update($data);
 
         return $this->success($this->formatSerie($serie->load('sucursal')), 'Serie actualizada.');
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $serie = Serie::forTenant($tenant->id)->findOrFail($id);
+
+        $serie->update(['is_active' => false]);
+
+        return $this->success(null, 'Serie desactivada.');
     }
 
     /**
