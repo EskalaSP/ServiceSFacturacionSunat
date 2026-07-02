@@ -30,6 +30,26 @@ class StoreDispatchGuideRequest extends FormRequest
         if (is_array($doc) && isset($doc['tipo_codigo'])) {
             $this->merge(['doc_relacionado' => [$doc]]);
         }
+
+        // conductor puede venir como objeto único o como lista. Internamente
+        // usamos conductores para listas, así no dispara reglas conductor.tipo_doc.
+        $conductor = $this->input('conductor');
+        if (is_array($conductor) && array_is_list($conductor)) {
+            $data = $this->all();
+            if (empty($data['conductores'])) {
+                $data['conductores'] = $conductor;
+            }
+            unset($data['conductor']);
+            $this->replace($data);
+        }
+
+        if ($this->filled('fecha_de_entrega_al_transportista') && ! $this->filled('fecha_entrega_transportista')) {
+            $this->merge(['fecha_entrega_transportista' => $this->input('fecha_de_entrega_al_transportista')]);
+        }
+
+        if ($this->filled('fecha_entrega_al_transportista') && ! $this->filled('fecha_entrega_transportista')) {
+            $this->merge(['fecha_entrega_transportista' => $this->input('fecha_entrega_al_transportista')]);
+        }
     }
 
     public function rules(): array
@@ -62,6 +82,7 @@ class StoreDispatchGuideRequest extends FormRequest
             'cod_traslado' => 'required|string|max:2',
             'mod_traslado' => 'required|string|in:01,02',
             'fecha_traslado' => 'required|date',
+            'fecha_entrega_transportista' => 'nullable|date',
             'peso_total' => 'required|numeric|gt:0',
             'und_peso_total' => 'nullable|string|max:3',
             'num_bultos' => 'nullable|integer|min:1',
@@ -89,9 +110,13 @@ class StoreDispatchGuideRequest extends FormRequest
 
             // Vehículo (transporte privado)
             'vehiculo' => 'nullable|array',
-            'vehiculo.placa' => 'required_with:vehiculo|string|max:10',
+            'vehiculo.placa' => 'required_with:vehiculo|string|regex:/^[A-Z0-9]{6,8}$/',
+            'vehiculo.nro_circulacion' => 'nullable|string|regex:/^[A-Z0-9]{10,15}$/',
+            'vehiculo.tuc' => 'nullable|string|regex:/^[A-Z0-9]{10,15}$/',
             'vehiculo.secundarios' => 'nullable|array',
-            'vehiculo.secundarios.*.placa' => 'required|string|max:10',
+            'vehiculo.secundarios.*.placa' => 'required|string|regex:/^[A-Z0-9]{6,8}$/',
+            'vehiculo.secundarios.*.nro_circulacion' => 'nullable|string|regex:/^[A-Z0-9]{10,15}$/',
+            'vehiculo.secundarios.*.tuc' => 'nullable|string|regex:/^[A-Z0-9]{10,15}$/',
 
             // Conductor único
             'conductor' => 'nullable|array',
@@ -198,6 +223,23 @@ class StoreDispatchGuideRequest extends FormRequest
                     );
                 }
 
+                foreach ($this->input('doc_relacionado', []) as $index => $docRelacionado) {
+                    $tipoRelacionado = $docRelacionado['tipo_codigo'] ?? null;
+                    if ($tipoRelacionado && ! in_array($tipoRelacionado, ['01', '03', '09', '31', '50', '52'], true)) {
+                        $validator->errors()->add(
+                            "doc_relacionado.$index.tipo_codigo",
+                            'Tipo de documento relacionado inválido para GRT. Use 01=factura, 03=boleta, 09=guía remitente, 31=guía transportista, 50=DAM o 52=DS.'
+                        );
+                    }
+
+                    if (in_array($tipoRelacionado, ['09', '31'], true) && empty($docRelacionado['ruc_emisor'])) {
+                        $validator->errors()->add(
+                            "doc_relacionado.$index.ruc_emisor",
+                            'Para relacionar una guía en GRT debe informar el RUC emisor del documento relacionado.'
+                        );
+                    }
+                }
+
                 // GRT exige vehículo + conductor (el transportista es el que emite)
                 if (empty($this->input('vehiculo'))) {
                     $validator->errors()->add('vehiculo', 'La Guía Transportista requiere datos del vehículo.');
@@ -231,6 +273,37 @@ class StoreDispatchGuideRequest extends FormRequest
                 if ($modTraslado === '01' && ! $esM1L) {
                     if (empty($this->input('transportista'))) {
                         $validator->errors()->add('transportista', 'El transportista es requerido para transporte público.');
+                    }
+
+                    if (
+                        $this->filled('fecha_emision')
+                        && $this->date('fecha_emision')?->format('Y-m-d') >= '2026-06-01'
+                        && empty($this->input('fecha_entrega_transportista'))
+                    ) {
+                        $validator->errors()->add(
+                            'fecha_entrega_transportista',
+                            'La fecha de entrega de bienes al transportista es requerida para GRE Remitente con transporte público desde el 2026-06-01.'
+                        );
+                    }
+
+                    if (
+                        $this->filled('fecha_entrega_transportista')
+                        && $this->filled('fecha_traslado')
+                        && $this->date('fecha_entrega_transportista') < $this->date('fecha_traslado')
+                    ) {
+                        $validator->errors()->add(
+                            'fecha_entrega_transportista',
+                            'La fecha de entrega de bienes al transportista no puede ser anterior a fecha_traslado.'
+                        );
+                    }
+
+                    $tenant = $this->get('tenant');
+                    $transportistaNumDoc = $this->input('transportista.num_doc');
+                    if ($tenant && $transportistaNumDoc === $tenant->ruc) {
+                        $validator->errors()->add(
+                            'transportista.num_doc',
+                            'Para transporte público (mod_traslado=01), el transportista debe ser una empresa tercera distinta al RUC emisor. Si el traslado lo realiza la misma empresa, use mod_traslado=02 e informe vehículo y conductor.'
+                        );
                     }
                 }
 

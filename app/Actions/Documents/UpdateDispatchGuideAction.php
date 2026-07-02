@@ -19,6 +19,7 @@ class UpdateDispatchGuideAction
                 'cod_traslado' => $data['cod_traslado'],
                 'mod_traslado' => $data['mod_traslado'],
                 'fecha_traslado' => $data['fecha_traslado'],
+                'fecha_entrega_transportista' => $data['fecha_entrega_transportista'] ?? null,
                 'peso_total' => $data['peso_total'],
                 'und_peso_total' => $data['und_peso_total'] ?? 'KGM',
                 'num_bultos' => $data['num_bultos'] ?? null,

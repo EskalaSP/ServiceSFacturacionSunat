@@ -62,8 +62,12 @@ class CheckTicketStatus implements ShouldQueue
         } else {
             $errorCode = $result['error_code'] ?? '';
 
-            // Codigo 0 o 187 = SUNAT aún procesando → reintentar
-            if (in_array($errorCode, ['0', '187', 0, 187], true)) {
+            // Codigo 0 o 187 = SUNAT aún procesando.
+            // 401 Token NO existe = token GRE beta inválido/expirado; reintentar con token fresco.
+            if (
+                in_array($errorCode, ['0', '187', '401', 0, 187, 401], true)
+                && ! $this->attemptsExhausted()
+            ) {
                 $this->release($this->nextBackoff());
                 return;
             }
@@ -85,5 +89,10 @@ class CheckTicketStatus implements ShouldQueue
     {
         $attempt = $this->attempts();
         return $this->backoff[$attempt - 1] ?? 600;
+    }
+
+    private function attemptsExhausted(): bool
+    {
+        return $this->attempts() >= $this->tries;
     }
 }

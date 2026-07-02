@@ -1,10 +1,11 @@
 {
   "info": {
-    "_postman_id": "25968692-d7b6-4fac-816f-0ad2e132ed7a",
+    "_postman_id": "71465656-ba21-4171-8d96-fa48cb35b69c",
     "name": "API FACTURACION SUNAT PERU ✅✅✅✅✅",
     "description": "Colección completa en español para API SUNAT PRO — facturación electrónica Perú.\n\n**Cobertura**: todas las rutas /api/v1 con ejemplos realistas, agrupado por flujo de uso.\n\n**Formato de respuestas**:\n```json\n{\n  \"estado\": \"exito\" | \"error\",\n  \"mensaje\": \"texto\",\n  \"datos\": {...} | [...],\n  \"meta\": {...}         (paginación — opcional),\n  \"errores\": {...}      (detalles de validación — solo en errores)\n}\n```\n\n**Variables de entorno requeridas**:\n- `base_url` → `https://api.kodevo.es/sunat-api/api/v1` (producción) o `http://api-pro.test/api/v1` (local)\n- `api_key` → X-Api-Key de la empresa\n- `api_secret` → X-Api-Secret de la empresa\n\n**Documentación completa**: `documentacion/README.md`",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "20633485"
+    "_exporter_id": "20633485",
+    "_collection_link": "https://go.postman.co/collection/20633485-71465656-ba21-4171-8d96-fa48cb35b69c?source=collection_link"
   },
   "item": [
     {
@@ -43,7 +44,7 @@
                 },
                 {
                   "key": "razon_social",
-                  "value": "LOBITO  SAC",
+                  "value": "DEMO 3 API SUNAT SAC",
                   "type": "text"
                 },
                 {
@@ -122,12 +123,6 @@
                   "value": "test-Hty/M6QshYvPgItX2P0+Kw==",
                   "type": "text",
                   "uuid": "cef69b94-12e4-4d7e-b1a2-c9d10243a8b5"
-                },
-                {
-                  "key": "emails[]",
-                  "value": "djjmygm160399@gmail.com",
-                  "type": "text",
-                  "uuid": "8728ce79-483e-4e21-82ee-d791d8983bbe"
                 }
               ]
             },
@@ -240,7 +235,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"ruc\": \"20161515648\",\n    \"razon_social\": \"MI EMPRESA SAC\",\n    \"nombre_comercial\": \"MI EMPRESA\",\n    \"direccion\": \"AV. PRINCIPAL 456\",\n    \"ubigeo\": \"150101\",\n    \"departamento\": \"LIMA\",\n    \"provincia\": \"LIMA\",\n    \"distrito\": \"LIMA\",\n    \"telefonos\": [\n        \"+51 999 888 777\"\n    ],\n    \"emails\": [\n        \"djjmygm160399@gmail.com\"\n    ],\n    \"mensaje_agradecimiento\": \"Gracias por su compra\",\n    \"webhook_url\": \"https://miempresa.pe/sunat-webhook\",\n    \"entorno\": \"beta\" // production\n}",
+              "raw": "{\n    \"ruc\": \"20161515648\",\n    \"razon_social\": \"MI EMPRESA SAC\",\n    \"nombre_comercial\": \"MI EMPRESA\",\n    \"direccion\": \"AV. PRINCIPAL 456\",\n    \"ubigeo\": \"150101\",\n    \"departamento\": \"LIMA\",\n    \"provincia\": \"LIMA\",\n    \"distrito\": \"LIMA\",\n    \"telefonos\": [\n        \"+51 999 888 777\"\n    ],\n    \"emails\": [\n        \"contacto@miempresa.pe\"\n    ],\n    \"mensaje_agradecimiento\": \"Gracias por su compra\",\n    \"webhook_url\": \"https://miempresa.pe/sunat-webhook\",\n    \"entorno\": \"beta\", // production\n    \"client_id\": \"test-85e5b0ae-255c-4891-a595-0b98c65c9854\",\n    \"client_secret\": \"test-Hty/M6QshYvPgItX2P0+Kw==\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -435,41 +430,7 @@
           "response": []
         },
         {
-          "name": "Recuperar credencial",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"ruc\": \"20161515641\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/credenciales/recuperar",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "credenciales",
-                "recuperar"
-              ]
-            },
-            "description": "Consulta local + SUNAT/RENIEC. Si existe en BD lo devuelve; si no, llama a SUNAT/RENIEC y lo guarda. Params: tipo (1=DNI, 4=CE, 6=RUC, 7=Pasaporte) + numero."
-          },
-          "response": []
-        },
-        {
-          "name": "Verificar token de resuperacion",
+          "name": "Genera uno nuevo api key y api secret",
           "request": {
             "method": "POST",
             "header": [
@@ -481,19 +442,17 @@
               {
                 "key": "X-Api-Key",
                 "value": "{{api_key}}",
-                "type": "text",
-                "disabled": true
+                "type": "text"
               },
               {
                 "key": "X-Api-Secret",
                 "value": "{{api_secret}}",
-                "type": "text",
-                "disabled": true
+                "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"token\": \"NjWJJJjNFs3ECKFCasavTKwInZkyLANSfL1kF1PmAPS92vDQtriFfxpzJXGMFhN2\"\r\n}",
+              "raw": "",
               "options": {
                 "raw": {
                   "language": "json"
@@ -501,14 +460,14 @@
               }
             },
             "url": {
-              "raw": "{{base_url}}/credenciales/recuperar/verificar",
+              "raw": "{{base_url}}/empresa/credenciales/regenerar",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
+                "empresa",
                 "credenciales",
-                "recuperar",
-                "verificar"
+                "regenerar"
               ]
             },
             "description": "Consulta local + SUNAT/RENIEC. Si existe en BD lo devuelve; si no, llama a SUNAT/RENIEC y lo guarda. Params: tipo (1=DNI, 4=CE, 6=RUC, 7=Pasaporte) + numero."
@@ -798,7 +757,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"series\": [\n        {\n            \"tipo\": \"factura\",\n            \"serie\": \"F001\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"boleta\",\n            \"serie\": \"B001\",\n            \"sucursal_id\": 1,\n            \"correlativo_inicial\": 20\n        },\n        {\n            \"tipo\": \"nota_credito\",\n            \"serie\": \"FC01\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"nota_debito\",\n            \"serie\": \"FD01\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"guia_remision\",\n            \"serie\": \"T001\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"guia_transportista\",\n            \"serie\": \"V001\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"retencion\",\n            \"serie\": \"R001\",\n            \"sucursal_id\": 1\n        },\n        {\n            \"tipo\": \"percepcion\",\n            \"serie\": \"P001\",\n            \"sucursal_id\": 1\n        }\n    ]\n}",
+              "raw": "{\n  \"series\": [\n    {\n      \"tipo\": \"factura\",\n      \"serie\": \"F001\",  \n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"boleta\",\n      \"serie\": \"B001\",\n      \"sucursal_id\": 1,\n      \"correlativo_inicial\": 1000\n    },\n    {\n      \"tipo\": \"nota_credito\",\n      \"serie\": \"FC01\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"nota_debito\",\n      \"serie\": \"FD01\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"guia_remision\",\n      \"serie\": \"T001\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"guia_transportista\",\n      \"serie\": \"V001\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"retencion\",\n      \"serie\": \"R001\",\n      \"sucursal_id\": 1\n    },\n    {\n      \"tipo\": \"percepcion\",\n      \"serie\": \"P001\",\n      \"sucursal_id\": 1\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1832,7 +1791,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-06-01\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE DEMO SAC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Laptop HP 15.6 pulgadas\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 1800,\n            \"tip_afe_igv\": \"10\"\n        },\n        {\n            \"codigo\": \"P002\",\n            \"descripcion\": \"Mouse inalámbrico Logitech\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 2,\n            \"precio_unitario\": 59,\n            \"tip_afe_igv\": \"10\"\n        }\n    ]\n}\n\n\n\n\n\n\n",
+              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-06-29\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE DEMO SAC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Laptop HP 15.6 pulgadas\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 100,\n            \"tip_afe_igv\": \"10\"\n        }\n    ]\n}\n\n\n\n\n\n\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1880,7 +1839,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-05-26\",\n    \"fecha_vencimiento\": \"2026-07-26\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Credito\",\n\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE SAC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Producto\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 10,\n            \"precio_unitario\": 118,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n\n    \"cuotas\": [\n        {\n            \"monto\": 590,\n            \"fecha_pago\": \"2026-06-26\"\n        },\n        {\n            \"monto\": 590,\n            \"fecha_pago\": \"2026-07-26\"\n        }\n    ]\n}\n\n\n\n\n\n\n\n",
+              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-06-21\",\n    \"fecha_vencimiento\": \"2026-08-21\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Credito\",\n\n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE SAC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Producto\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 10,\n            \"precio_unitario\": 118,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n\n    \"cuotas\": [\n        {\n            \"monto\": 590,\n            \"fecha_pago\": \"2026-07-21\"\n        },\n        {\n            \"monto\": 590,\n            \"fecha_pago\": \"2026-08-21\"\n        }\n    ]\n}\n\n\n\n\n\n\n\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1927,7 +1886,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-05-26\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE SAC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"SERV001\",\n            \"descripcion\": \"Consulta médica especializada\",\n            \"unidad\": \"ZZ\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 200,\n            \"tip_afe_igv\": \"20\"\n        }\n    ]\n}\n\n",
+              "raw": "{\n    \"serie\": \"F001\",\n    \"fecha_emision\": \"2026-05-13\",\n    \"tipo_operacion\": \"0101\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \n    \"cliente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"CLIENTE SAC\",\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"SERV001\",\n            \"descripcion\": \"Consulta médica especializada\",\n            \"unidad\": \"ZZ\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 200,\n            \"tip_afe_igv\": \"20\"\n        }\n    ]\n}\n\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2060,7 +2019,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-05-24\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\",\r\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"Mause Razer\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 0,\r\n            \"mto_valor_unitario\": 100,\r\n            \"tip_afe_igv\": \"11\",\r\n            \"porcentaje_igv\": 18\r\n        }\r\n    ]\r\n}\r\n\r\n\r\n",
+              "raw": "{\r\n    \"serie\": \"F001\",\r\n    \"fecha_emision\": \"2026-06-21\",\r\n    \"tipo_operacion\": \"0101\",\r\n    \"tipo_moneda\": \"PEN\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA X SAC\",\r\n        \"direccion\": \"AV. AREQUIPA 1234, LIMA\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"P001\",\r\n            \"descripcion\": \"Mause Razer\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 0,\r\n            \"mto_valor_unitario\": 100,\r\n            \"tip_afe_igv\": \"11\",\r\n            \"porcentaje_igv\": 18\r\n        }\r\n    ]\r\n}\r\n\r\n\r\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2823,7 +2782,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/facturas?sucursal_id=2&?por_pagina=15",
+              "raw": "{{base_url}}/facturas?sucursal_id=11&?por_pagina=15",
               "host": [
                 "{{base_url}}"
               ],
@@ -2833,7 +2792,7 @@
               "query": [
                 {
                   "key": "sucursal_id",
-                  "value": "2"
+                  "value": "11"
                 },
                 {
                   "key": "?por_pagina",
@@ -3404,7 +3363,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"B001\",\n    \"fecha_emision\": \"2026-06-01\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \"cliente\": {\n        \"tipo_doc\": \"1\",\n        \"num_doc\": \"12345678\",\n        \"razon_social\": \"JUAN PEREZ LOPEZ\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Menú\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 1,\n            \"precio_unitario\": 35,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n    \"solo_registro\": true\n}\n\n\n\n\n\n\n\n\n\n\n\n\n",
+              "raw": "{\n    \"serie\": \"B001\",\n    \"fecha_emision\": \"2026-06-27\",\n    \"tipo_moneda\": \"PEN\",\n    \"forma_pago\": \"Contado\",\n    \"cliente\": {\n        \"tipo_doc\": \"0\",\n        \"num_doc\": \"99999999\",\n        \"razon_social\": \"VARIOS CLIENTES\"\n    },\n    \"items\": [\n        {\n            \"codigo\": \"P001\",\n            \"descripcion\": \"Arroz tonderito A1\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 5,\n            \"precio_unitario\": 5,\n            \"tip_afe_igv\": \"10\"\n        }\n    ],\n    \"solo_registro\": false\n}\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3879,13 +3838,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/boletas/1/xml",
+              "raw": "{{base_url}}/boletas/72/xml",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "boletas",
-                "1",
+                "72",
                 "xml"
               ]
             }
@@ -3914,13 +3873,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/boletas/1/cdr",
+              "raw": "{{base_url}}/boletas/72/cdr",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "boletas",
-                "1",
+                "72",
                 "cdr"
               ]
             }
@@ -4206,7 +4165,7 @@
       "name": "06. Notas de Crédito (Tipo 07)",
       "item": [
         {
-          "name": "NC — Anulación total de factura",
+          "name": "NC - Anulación total de factura",
           "request": {
             "method": "POST",
             "header": [
@@ -4228,7 +4187,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"serie\": \"FC01\",\r\n    \"fecha_emision\": \"2026-04-17\",\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"1\",\r\n    \"cod_motivo\": \"01\",\r\n    \"des_motivo\": \"Anulación de la operación\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20512345678\",\r\n        \"razon_social\": \"EMPRESA DEMO SAC\",\r\n        \"direccion\": \"Av. Los Olivos 123, Lima\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"descripcion\": \"Producto de prueba\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 100.00,\r\n            \"tip_afe_igv\": \"10\"\r\n        }\r\n    ]\r\n}",
+              "raw": "{\r\n    \"serie\": \"FC01\",\r\n    \"fecha_emision\": \"2026-04-17\",\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"1\",\r\n    \"cod_motivo\": \"01\",\r\n    \"des_motivo\": \"Anulación de la operación\",\r\n    \"cliente\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20512345678\",\r\n        \"razon_social\": \"EMPRESA DEMO SAC\",\r\n        \"direccion\": \"Av. Los Olivos 123, Lima\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"descripcion\": \"Producto de prueba\",\r\n            \"unidad\": \"NIU\",\r\n            \"cantidad\": 2,\r\n            \"precio_unitario\": 100.00,\r\n            \"tip_afe_igv\": \"10\"\r\n        }\r\n    ]\r\n}\r\n\r\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4248,7 +4207,7 @@
           "response": []
         },
         {
-          "name": "NC — Descuento parcial",
+          "name": "NC - Descuento parcial",
           "request": {
             "method": "POST",
             "header": [
@@ -4270,7 +4229,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "  {\r\n    \"serie\": \"FC01\",\r\n    \"fecha_emision\": \"2026-05-26\",\r\n\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"2\",\r\n\r\n    \"cod_motivo\": \"04\",\r\n    \"des_motivo\": \"Descuento por volumen de compra\",\r\n\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000001\",\r\n      \"razon_social\": \"CLIENTE PRUEBA S.A.C.\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"descripcion\": \"Descuento Producto A\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 80.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }\r\n\r\n\r\n\r\n",
+              "raw": "  {\r\n    \"serie\": \"FC01\",\r\n    \"fecha_emision\": \"2026-06-25\",\r\n\r\n    \"doc_afectado_tipo\": \"01\",\r\n    \"doc_afectado_serie\": \"F001\",\r\n    \"doc_afectado_correlativo\": \"4\",\r\n\r\n    \"cod_motivo\": \"04\",\r\n    \"des_motivo\": \"Descuento por volumen de compra\",\r\n\r\n    \"cliente\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000001\",\r\n      \"razon_social\": \"CLIENTE PRUEBA S.A.C.\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"descripcion\": \"Descuento Producto A\",\r\n        \"unidad\": \"NIU\",\r\n        \"cantidad\": 1,\r\n        \"precio_unitario\": 60.00,\r\n        \"tip_afe_igv\": \"10\"\r\n      }\r\n    ]\r\n  }\r\n\r\n\r\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4290,7 +4249,7 @@
           "response": []
         },
         {
-          "name": "NC — Corrección de precio / devolución parcial",
+          "name": "NC - Corrección de precio / devolución parcial",
           "request": {
             "method": "POST",
             "header": [
@@ -4332,7 +4291,7 @@
           "response": []
         },
         {
-          "name": "NC — En dólares (USD)",
+          "name": "NC - En dólares (USD)",
           "request": {
             "method": "POST",
             "header": [
@@ -4374,7 +4333,7 @@
           "response": []
         },
         {
-          "name": "NC — Anulación de boleta",
+          "name": "NC - Anulación de boleta",
           "request": {
             "method": "POST",
             "header": [
@@ -4749,13 +4708,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/notas-credito/1/cdr",
+              "raw": "{{base_url}}/notas-credito/3/cdr",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "notas-credito",
-                "1",
+                "3",
                 "cdr"
               ]
             }
@@ -5360,7 +5319,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"fecha_resumen\": \"2026-06-01\"\n}",
+              "raw": "{\n    \"fecha_resumen\": \"2026-06-21\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5768,7 +5727,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"fecha_generacion\": \"2026-05-24\",\n    \"fecha_comunicacion\": \"2026-05-24\",\n    \"detalles\": [\n        {\n            \"tipo_documento\": \"01\", // Factura\n            \"serie\": \"F001\",\n            \"correlativo\": \"1\",\n            \"motivo\": \"Error en datos del cliente\"\n        }\n    ]\n}",
+              "raw": "{\n    \"fecha_generacion\": \"2026-06-23\",\n    \"fecha_comunicacion\": \"2026-06-23\",\n    \"detalles\": [\n        {\n            \"tipo_documento\": \"01\", // Factura // 01\n            \"serie\": \"F001\",\n            \"correlativo\": \"3\",\n            \"motivo\": \"Error en datos del cliente\"\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6140,7 +6099,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"serie\": \"T001\",\r\n    \"fecha_emision\": \"2026-05-29\",\r\n    \"destinatario\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"EMPRESA DESTINO SAC\"\r\n    },\r\n    \"cod_traslado\": \"01\",\r\n    \"mod_traslado\": \"01\",\r\n    \"fecha_traslado\": \"2026-05-29\",\r\n    \"peso_total\": 12.5,\r\n    \"und_peso_total\": \"KGM\",\r\n    \"partida_ubigeo\": \"150203\",\r\n    \"partida_direccion\": \"AV ITALIA 123, RIMAC\",\r\n    \"llegada_ubigeo\": \"150101\",\r\n    \"llegada_direccion\": \"AV LIMA 456, CERCADO\",\r\n    \"transportista\": {\r\n        \"tipo_doc\": \"6\",\r\n        \"num_doc\": \"20000000002\",\r\n        \"razon_social\": \"TRANSPORTES SAC\",\r\n        \"nro_mtc\": \"0001\"\r\n    },\r\n    \"items\": [\r\n        {\r\n            \"codigo\": \"PROD1\",\r\n            \"descripcion\": \"Producto de prueba\",\r\n            \"cantidad\": 2,\r\n            \"unidad\": \"NIU\"\r\n        }\r\n    ]\r\n}",
+              "raw": "  {\r\n    \"serie\": \"T001\",\r\n    \"fecha_emision\": \"2026-07-01\",\r\n    \"destinatario\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000002\",\r\n      \"razon_social\": \"EMPRESA DESTINO SAC\"\r\n    },\r\n    \"cod_traslado\": \"01\",\r\n    \"mod_traslado\": \"01\",\r\n    \"fecha_traslado\": \"2026-07-01\",\r\n    \"fecha_de_entrega_al_transportista\": \"2026-07-01\",\r\n    \"peso_total\": 12.5,\r\n    \"und_peso_total\": \"KGM\",\r\n    \"partida_ubigeo\": \"150203\",\r\n    \"partida_direccion\": \"AV ITALIA 123, RIMAC\",\r\n    \"llegada_ubigeo\": \"150101\",\r\n    \"llegada_direccion\": \"AV LIMA 456, CERCADO\",\r\n    \"transportista\": {\r\n      \"tipo_doc\": \"6\",\r\n      \"num_doc\": \"20000000002\",\r\n      \"razon_social\": \"TRANSPORTES SAC\",\r\n      \"nro_mtc\": \"0001\"\r\n    },\r\n    \"items\": [\r\n      {\r\n        \"codigo\": \"PROD1\",\r\n        \"descripcion\": \"Producto de prueba\",\r\n        \"cantidad\": 2,\r\n        \"unidad\": \"NIU\"\r\n      }\r\n    ]\r\n  }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6182,7 +6141,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": " {\r\n      \"serie\": \"T001\",\r\n      \"fecha_emision\": \"2026-04-17\",\r\n      \"destinatario\": {\r\n          \"tipo_doc\": \"6\",\r\n          \"num_doc\": \"20000000002\",\r\n          \"razon_social\": \"EMPRESA DESTINO SAC\"\r\n      },\r\n      \"cod_traslado\": \"01\",\r\n      \"mod_traslado\": \"02\",\r\n      \"fecha_traslado\": \"2026-04-17\",\r\n      \"peso_total\": 50.0,\r\n      \"und_peso_total\": \"KGM\",\r\n      \"num_bultos\": 5,\r\n      \"partida_ubigeo\": \"150203\",\r\n      \"partida_direccion\": \"AV ITALIA 123, RIMAC\",\r\n      \"llegada_ubigeo\": \"150101\",\r\n      \"llegada_direccion\": \"AV LIMA 456, CERCADO\",\r\n      \"vehiculo\": {\r\n          \"placa\": \"ABC123\",\r\n          \"secundarios\": [\r\n              { \"placa\": \"XYZ789\" }\r\n          ]\r\n      },\r\n      \"conductor\": {\r\n          \"tipo\": \"Principal\",\r\n          \"tipo_doc\": \"1\",\r\n          \"num_doc\": \"44004400\",\r\n          \"nombres\": \"ROBERTO\",\r\n          \"apellidos\": \"RODRIGUEZ VALENCIA\",\r\n          \"licencia\": \"0001122020\"\r\n      },\r\n      \"items\": [\r\n          {\r\n              \"codigo\": \"PROD1\",\r\n              \"descripcion\": \"Laptop HP ProBook 450\",\r\n              \"cantidad\": 10,\r\n              \"unidad\": \"NIU\"\r\n          }\r\n      ]\r\n  }",
+              "raw": " {\r\n      \"serie\": \"T001\",\r\n      \"fecha_emision\": \"2026-07-01\",\r\n      \"destinatario\": {\r\n          \"tipo_doc\": \"6\",\r\n          \"num_doc\": \"20000000002\",\r\n          \"razon_social\": \"EMPRESA DESTINO SAC\"\r\n      },\r\n      \"cod_traslado\": \"01\",\r\n      \"mod_traslado\": \"02\",\r\n      \"fecha_traslado\": \"2026-07-01\",\r\n      \"peso_total\": 50.0,\r\n      \"und_peso_total\": \"KGM\",\r\n      \"num_bultos\": 5,\r\n      \"partida_ubigeo\": \"150203\",\r\n      \"partida_direccion\": \"AV ITALIA 123, RIMAC\",\r\n      \"llegada_ubigeo\": \"150101\",\r\n      \"llegada_direccion\": \"AV LIMA 456, CERCADO\",\r\n      \"vehiculo\": {\r\n          \"placa\": \"ABC123\",\r\n          \"secundarios\": [\r\n              { \"placa\": \"XYZ789\" }\r\n          ]\r\n      },\r\n      \"conductor\": {\r\n          \"tipo\": \"Principal\",\r\n          \"tipo_doc\": \"1\",\r\n          \"num_doc\": \"44004400\",\r\n          \"nombres\": \"ROBERTO\",\r\n          \"apellidos\": \"RODRIGUEZ VALENCIA\",\r\n          \"licencia\": \"0001122020\"\r\n      },\r\n      \"items\": [\r\n          {\r\n              \"codigo\": \"PROD1\",\r\n              \"descripcion\": \"Laptop HP ProBook 450\",\r\n              \"cantidad\": 10,\r\n              \"unidad\": \"NIU\"\r\n          }\r\n      ]\r\n  }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6572,6 +6531,9 @@
         },
         {
           "name": "Descargar PDF",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
           "request": {
             "method": "GET",
             "header": [
@@ -6591,6 +6553,15 @@
                 "type": "text"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{base_url}}/guias-remision/{{id_guia}}/pdf?format=a4",
               "host": [
@@ -6681,7 +6652,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"serie\": \"V001\",\n    \"fecha_emision\": \"2026-04-19\",\n    \"remitente\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20512345678\",\n        \"razon_social\": \"EMPRESA REMITENTE SAC\"\n    },\n    \"destinatario\": {\n        \"tipo_doc\": \"6\",\n        \"num_doc\": \"20987654321\",\n        \"razon_social\": \"EMPRESA DESTINATARIA SAC\"\n    },\n    \"doc_relacionado\": {\n        \"tipo_codigo\": \"04\",\n        \"numero\": \"T001-1\"\n    },\n    \"cod_traslado\": \"01\",\n    \"mod_traslado\": \"01\",\n    \"fecha_traslado\": \"2026-04-20\",\n    \"peso_total\": 500,\n    \"und_peso_total\": \"KGM\",\n    \"num_bultos\": 5,\n    \"partida_ubigeo\": \"150101\",\n    \"partida_direccion\": \"AV. ALMACEN 100, LIMA\",\n    \"llegada_ubigeo\": \"040101\",\n    \"llegada_direccion\": \"AV. DESTINO 200, AREQUIPA\",\n    \"vehiculo\": {\n        \"placa\": \"ABC-123\",\n        \"nro_circulacion\": \"TUC-12345\"\n    },\n    \"conductor\": [\n        {\n            \"tipo_doc\": \"1\",\n            \"num_doc\": \"12345678\",\n            \"nombres\": \"JUAN\",\n            \"apellidos\": \"PEREZ\",\n            \"licencia\": \"Q12345678\"\n        }\n    ],\n    \"items\": [\n        {\n            \"codigo\": \"M001\",\n            \"descripcion\": \"Mercancia transportada\",\n            \"unidad\": \"NIU\",\n            \"cantidad\": 10\n        }\n    ]\n}",
+              "raw": " {\n    \"serie\": \"V001\",\n    \"fecha_emision\": \"2026-07-01\",\n    \"remitente\": {\n      \"tipo_doc\": \"6\",\n      \"num_doc\": \"20512345678\",\n      \"razon_social\": \"EMPRESA REMITENTE SAC\"\n    },\n    \"destinatario\": {\n      \"tipo_doc\": \"6\",\n      \"num_doc\": \"20987654321\",\n      \"razon_social\": \"EMPRESA DESTINATARIA SAC\"\n    },\n    \"doc_relacionado\": {\n      \"tipo_codigo\": \"09\",\n      \"numero\": \"T001-2\",\n      \"ruc_emisor\": \"20512345678\"\n    },\n    \"cod_traslado\": \"01\",\n    \"mod_traslado\": \"01\",\n    \"fecha_traslado\": \"2026-07-01\",\n    \"peso_total\": 500,\n    \"und_peso_total\": \"KGM\",\n    \"num_bultos\": 5,\n    \"partida_ubigeo\": \"150101\",\n    \"partida_direccion\": \"AV. ALMACEN 100, LIMA\",\n    \"llegada_ubigeo\": \"040101\",\n    \"llegada_direccion\": \"AV. DESTINO 200, AREQUIPA\",\n    \"vehiculo\": {\n      \"placa\": \"ABC123\",\n      \"nro_circulacion\": \"ABC321981R\"\n    },\n    \"conductor\": [\n      {\n        \"tipo_doc\": \"1\",\n        \"num_doc\": \"12345678\",\n        \"nombres\": \"JUAN\",\n        \"apellidos\": \"PEREZ\",\n        \"licencia\": \"Q12345678\"\n      }\n    ],\n    \"items\": [\n      {\n        \"codigo\": \"M001\",\n        \"descripcion\": \"Mercancia transportada\",\n        \"unidad\": \"NIU\",\n        \"cantidad\": 10\n      }\n    ]\n  }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7119,13 +7090,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/guias-remision/1/pdf?format=a4",
+              "raw": "{{base_url}}/guias-remision/{{id_guia_t}}/pdf?format=a4",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "guias-remision",
-                "1",
+                "{{id_guia_t}}",
                 "pdf"
               ],
               "query": [
@@ -7160,13 +7131,13 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/guias-remision/1/estado",
+              "raw": "{{base_url}}/guias-remision/{{id_guia_t}}/estado",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "guias-remision",
-                "1",
+                "{{id_guia_t}}",
                 "estado"
               ]
             }

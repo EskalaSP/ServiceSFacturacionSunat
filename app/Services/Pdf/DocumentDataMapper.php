@@ -226,11 +226,14 @@ class DocumentDataMapper
 
     private function mapDispatchGuide(DispatchGuide $guide, Tenant $tenant): array
     {
+        $tipoDocumento = $guide->tipo_documento ?? '09';
+
         $items = collect($guide->items ?? [])->map(fn ($item) => [
             'codigo' => $item['codigo'] ?? '-',
             'descripcion' => $item['descripcion'] ?? $item['nombre'] ?? '',
             'unidad' => $item['unidad'] ?? 'NIU',
             'cantidad' => (float) ($item['cantidad'] ?? 0),
+            'valor_unitario' => 0,
             'precio_unitario' => 0,
             'igv' => 0,
             'importe' => 0,
@@ -242,8 +245,8 @@ class DocumentDataMapper
         $conductor = $guide->conductor ?? [];
 
         return [
-            'tipo_documento' => '09',
-            'titulo' => DocumentTypeConfig::titulo('09'),
+            'tipo_documento' => $tipoDocumento,
+            'titulo' => DocumentTypeConfig::titulo($tipoDocumento),
             'serie' => $guide->serie,
             'correlativo' => $guide->correlativo,
             'numero_completo' => $guide->numero_completo,

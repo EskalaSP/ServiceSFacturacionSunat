@@ -183,36 +183,74 @@ class DispatchGuideController extends Controller
         $guide = DispatchGuide::forTenant($tenant->id)->findOrFail($id);
 
         if (! $guide->ticket) {
-            return $this->error('No hay ticket disponible para consultar', 404);
+            $isWaitingForSend = in_array($guide->sunat_status, ['pendiente', 'enviado'], true);
+            $statusCode = $isWaitingForSend ? 202 : 409;
+
+            return response()->json([
+                'estado' => $isWaitingForSend ? 'pendiente' : 'error',
+                'mensaje' => $isWaitingForSend
+                    ? 'La guía todavía no tiene ticket SUNAT. Primero debe ejecutarse el envío inicial de la guía.'
+                    : 'La guía no tiene ticket SUNAT porque el envío inicial falló antes de recibir ticket.',
+                'guia' => [
+                    'id' => $guide->id,
+                    'numero_completo' => $guide->numero_completo,
+                    'estado_sunat' => $guide->sunat_status,
+                    'codigo_sunat' => $guide->sunat_code,
+                    'descripcion_sunat' => $guide->sunat_description,
+                    'tiene_ticket' => false,
+                ],
+                'siguiente_accion' => ! $isWaitingForSend
+                    ? "Corrija el error indicado y use POST /guias-remision/{$guide->id}/enviar para reintentar."
+                    : ($guide->sunat_status === 'pendiente'
+                    ? "Use POST /guias-remision/{$guide->id}/enviar para enviar la guía a SUNAT."
+                    : 'Verifique que el worker de colas esté ejecutándose: php artisan queue:work --queue=default'),
+            ], $statusCode);
         }
 
-        if (in_array($guide->sunat_status, ['aceptado', 'rechazado'])) {
+        $isRetryableTokenError = $guide->sunat_status === 'rechazado'
+            && $guide->sunat_code === 'API'
+            && str_contains((string) $guide->sunat_description, 'Token NO existe');
+
+        if (in_array($guide->sunat_status, ['aceptado', 'rechazado']) && ! $isRetryableTokenError) {
             return $this->success(new DispatchGuideResource($guide), 'Estado ya resuelto.');
         }
 
         try {
             $service = new GreenterService($tenant);
             $storage = new DocumentStorageService;
-            $api = $service->createApi();
-            $result = $api->getStatus($guide->ticket);
+            $result = $service->getGreStatus($guide->ticket);
 
-            if ($result->isSuccess()) {
-                $cdr = $result->getCdrResponse();
+            if ($result['success']) {
+                $accepted = $result['accepted'] ?? true;
                 $guide->update([
-                    'sunat_status' => $cdr->isAccepted() ? 'aceptado' : 'rechazado',
-                    'sunat_code' => $cdr->getCode(),
-                    'sunat_description' => $cdr->getDescription(),
+                    'sunat_status' => $accepted ? 'aceptado' : 'rechazado',
+                    'sunat_code' => isset($result['code']) ? substr((string) $result['code'], 0, 20) : null,
+                    'sunat_description' => isset($result['description']) ? substr($result['description'], 0, 500) : null,
                     'sent_at' => now(),
                 ]);
 
-                // Guardar CDR en disco
-                $cdrZip = $result->getCdrZip();
-                if ($cdrZip) {
-                    $storage->storeCdr($guide, $tenant, $cdrZip);
+                if (! empty($result['cdr_zip'])) {
+                    $storage->storeCdr($guide, $tenant, $result['cdr_zip']);
                 }
+
+                return $this->success(new DispatchGuideResource($guide->fresh()));
             }
 
-            return $this->success(new DispatchGuideResource($guide->fresh()));
+            $errorCode = (string) ($result['error_code'] ?? '');
+            if (in_array($errorCode, ['0', '187', '401'], true)) {
+                return $this->error(
+                    'Error al consultar estado: ' . ($result['error_message'] ?? 'Respuesta inválida de SUNAT.'),
+                    202
+                );
+            }
+
+            $guide->update([
+                'sunat_status' => 'rechazado',
+                'sunat_code' => substr($errorCode, 0, 20),
+                'sunat_description' => isset($result['error_message']) ? substr($result['error_message'], 0, 500) : null,
+            ]);
+
+            return $this->success(new DispatchGuideResource($guide->fresh()), 'Estado ya resuelto.');
         } catch (\Throwable $e) {
             return $this->error('Error al consultar estado: '.$e->getMessage(), 500);
         }

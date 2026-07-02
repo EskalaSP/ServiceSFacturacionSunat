@@ -1,5 +1,5 @@
 {{-- Totales completos para tickets (tabla) --}}
-@if($tipo_documento !== '09')
+@if($tipo_documento !== '09' && $tipo_documento !== '31')
 @php
     $moneda_prefix = $tipo_moneda !== 'PEN' ? $tipo_moneda : $moneda_simbolo;
     $igv_pct = (isset($tipo_operacion) && str_starts_with($tipo_operacion, '02')) ? 0

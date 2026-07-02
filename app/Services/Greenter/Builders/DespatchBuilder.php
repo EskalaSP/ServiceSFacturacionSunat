@@ -206,12 +206,19 @@ class DespatchBuilder
             $shipment->setVehiculo($this->buildVehicle($data['vehiculo']));
         }
 
-        // Conductores
-        if (! empty($data['conductor'])) {
-            $shipment->setChoferes([$this->buildDriver($data['conductor'])]);
-        }
+        // Conductores: aceptar objeto único o lista, por compatibilidad con
+        // payloads que mandan "conductor": [{...}].
+        $driversData = [];
         if (! empty($data['conductores'])) {
-            $drivers = array_map(fn ($c) => $this->buildDriver($c), $data['conductores']);
+            $driversData = $data['conductores'];
+        } elseif (! empty($data['conductor'])) {
+            $driversData = array_is_list($data['conductor'])
+                ? $data['conductor']
+                : [$data['conductor']];
+        }
+
+        if (! empty($driversData)) {
+            $drivers = array_map(fn ($c) => $this->buildDriver($c), $driversData);
             $shipment->setChoferes($drivers);
         }
 
@@ -270,9 +277,9 @@ class DespatchBuilder
     {
         $driver = (new Driver())
             ->setTipoDoc($cond['tipo_doc'])
-            ->setNroDoc($cond['num_doc']);
+            ->setNroDoc($cond['num_doc'])
+            ->setTipo($cond['tipo'] ?? 'Principal');
 
-        if (! empty($cond['tipo']))      $driver->setTipo($cond['tipo']);
         if (! empty($cond['nombres']))   $driver->setNombres($cond['nombres']);
         if (! empty($cond['apellidos'])) $driver->setApellidos($cond['apellidos']);
         if (! empty($cond['licencia']))  $driver->setLicencia($cond['licencia']);

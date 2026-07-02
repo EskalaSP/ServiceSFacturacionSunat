@@ -24,6 +24,7 @@ class DispatchGuideResource extends JsonResource
                 'cod_traslado' => $this->cod_traslado,
                 'mod_traslado' => $this->mod_traslado,
                 'fecha_traslado' => $this->fecha_traslado->format('Y-m-d'),
+                'fecha_entrega_transportista' => $this->fecha_entrega_transportista?->format('Y-m-d'),
                 'peso_total' => (float) $this->peso_total,
                 'und_peso_total' => $this->und_peso_total,
             ],

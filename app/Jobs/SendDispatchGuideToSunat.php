@@ -34,6 +34,7 @@ class SendDispatchGuideToSunat implements ShouldQueue
         // Fechas como string plano (Y-m-d) para evitar desfase por timezone UTC→Lima
         $data['fecha_emision'] = $guide->fecha_emision->format('Y-m-d');
         $data['fecha_traslado'] = $guide->fecha_traslado->format('Y-m-d');
+        $data['fecha_entrega_transportista'] = $guide->fecha_entrega_transportista?->format('Y-m-d');
         $data['destinatario'] = [
             'tipo_doc' => $guide->destinatario_tipo_doc,
             'num_doc' => $guide->destinatario_num_doc,
@@ -41,8 +42,7 @@ class SendDispatchGuideToSunat implements ShouldQueue
         ];
 
         try {
-            if ($guide->tipo_documento === '31') {
-                // GRT — flujo custom (inyectar DespatchParty antes de firmar).
+            if ($guide->tipo_documento === '31' && empty($data['remitente'])) {
                 // Si no se especificó remitente explícito, asumir que el tenant = remitente
                 // (caso poco común, pero evita errores).
                 $data['remitente'] = $guide->remitente ?? [
@@ -50,17 +50,13 @@ class SendDispatchGuideToSunat implements ShouldQueue
                     'num_doc' => $tenant->ruc,
                     'razon_social' => $tenant->razon_social,
                 ];
-
-                $grtResult = $service->sendGrt($data);
-                $result = $grtResult['result'];
-                $xml = $grtResult['xml'];
-            } else {
-                // GRR — flujo normal Greenter
-                $despatch = $service->buildDespatch($data);
-                $api = $service->createApi();
-                $result = $api->send($despatch);
-                $xml = $api->getLastXml();
             }
+
+            // GRE 2022 requiere inyecciones XML antes de firmar en algunos casos:
+            // - GRT: DespatchParty
+            $sendResult = $service->sendDespatch($data);
+            $result = $sendResult['result'];
+            $xml = $sendResult['xml'];
         } catch (\Throwable $e) {
             // Error de conexión REST API (GRE caído, timeout) → reintentar
             if ($this->isConnectionError($e)) {
@@ -81,6 +77,8 @@ class SendDispatchGuideToSunat implements ShouldQueue
             $guide->update([
                 'ticket' => $ticket,
                 'sunat_status' => 'enviado',
+                'sunat_code' => null,
+                'sunat_description' => null,
             ]);
 
             if (config('pdf.auto_generate', true)) {

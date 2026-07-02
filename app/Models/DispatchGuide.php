@@ -25,6 +25,7 @@ class DispatchGuide extends Model
         'cod_traslado',
         'mod_traslado',
         'fecha_traslado',
+        'fecha_entrega_transportista',
         'peso_total',
         'und_peso_total',
         'num_bultos',
@@ -66,6 +67,7 @@ class DispatchGuide extends Model
         return [
             'fecha_emision' => 'datetime',
             'fecha_traslado' => 'date',
+            'fecha_entrega_transportista' => 'date',
             'correlativo' => 'integer',
             'peso_total' => 'decimal:3',
             'num_bultos' => 'integer',

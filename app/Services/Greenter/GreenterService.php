@@ -8,6 +8,7 @@ use App\Services\Greenter\Builders\InvoiceBuilder;
 use App\Services\Greenter\Builders\NoteBuilder;
 use App\Services\Greenter\Builders\SummaryBuilder;
 use App\Services\Greenter\Builders\VoidedBuilder;
+use Greenter\Api\ApiFactory;
 use Greenter\Factory\XmlBuilderResolver;
 use Greenter\Model\DocumentInterface;
 use Greenter\Model\Response\BillResult;
@@ -15,8 +16,12 @@ use Greenter\Model\Response\SummaryResult;
 use Greenter\Model\Sale\Invoice;
 use Greenter\Model\Sale\Note;
 use Greenter\See;
+use Greenter\Sunat\GRE\Api\AuthApi;
+use Greenter\Sunat\GRE\ApiException;
+use Greenter\Sunat\GRE\Configuration;
 use Greenter\Ws\Services\SunatEndpoints;
 use Greenter\XMLSecLibs\Sunat\SignedXml;
+use GuzzleHttp\Client;
 
 class GreenterService
 {
@@ -72,11 +77,20 @@ class GreenterService
     public function createApi(): \Greenter\Api
     {
         $env = $this->tenant->environment;
-
-        $api = new \Greenter\Api([
+        $endpoints = [
             'auth' => config("facturacion.sunat.{$env}.guias_auth"),
             'cpe' => config("facturacion.sunat.{$env}.guias_cpe"),
-        ]);
+        ];
+        $client = new Client();
+        $configuration = new Configuration();
+        $factory = new ApiFactory(
+            new AuthApi($client, $configuration->setHost($endpoints['auth'])),
+            $client,
+            new LaravelCacheTokenStore($this->greTokenNamespace()),
+            $endpoints['cpe'],
+        );
+
+        $api = new \Greenter\Api($endpoints, $factory);
 
         $api->setBuilderOptions([
             'strict_variables' => true,
@@ -110,6 +124,55 @@ class GreenterService
         return $api;
     }
 
+    private function greTokenNamespace(): string
+    {
+        $env = $this->tenant->environment;
+
+        return implode('|', [
+            $env,
+            config("facturacion.sunat.{$env}.guias_auth"),
+            config("facturacion.sunat.{$env}.guias_cpe"),
+            $this->tenant->ruc,
+            $this->tenant->sol_user,
+        ]);
+    }
+
+    private function greClientId(): ?string
+    {
+        $env = $this->tenant->environment;
+
+        return $this->tenant->client_id ?: config("facturacion.sunat.{$env}.gre_client_id");
+    }
+
+    private function forgetGreToken(): void
+    {
+        (new LaravelCacheTokenStore($this->greTokenNamespace()))->forget($this->greClientId());
+    }
+
+    private function isMissingGreTokenError(\Throwable $e): bool
+    {
+        return $e instanceof ApiException
+            && (int) $e->getCode() === 401
+            && str_contains($e->getMessage(), 'Token NO existe');
+    }
+
+    private function isMissingGreTokenResult(mixed $result): bool
+    {
+        if (! is_object($result) || ! method_exists($result, 'isSuccess') || $result->isSuccess()) {
+            return false;
+        }
+
+        if (! method_exists($result, 'getError')) {
+            return false;
+        }
+
+        $error = $result->getError();
+
+        return $error
+            && (string) $error->getCode() === 'API'
+            && str_contains((string) $error->getMessage(), 'Token NO existe');
+    }
+
     public function buildInvoice(array $data): Invoice
     {
         return (new InvoiceBuilder($this->tenant))->build($data);
@@ -138,6 +201,19 @@ class GreenterService
      */
     public function sendGrt(array $data): array
     {
+        return $this->sendDespatch($data);
+    }
+
+    /**
+     * Envía una GRE con ajustes XML que Greenter aún no modela en su API pública.
+     *
+     * GRT (tipo 31):
+     *   - Inyecta cac:DespatchParty dentro de cac:Despatch.
+     *
+     * @return array{result: mixed, xml: string}
+     */
+    public function sendDespatch(array $data): array
+    {
         $despatch = $this->buildDespatch($data);
 
         // 1. XML no firmado
@@ -150,17 +226,46 @@ class GreenterService
         $xmlBuilder = $resolver->find(get_class($despatch));
         $unsignedXml = $xmlBuilder->build($despatch);
 
-        // 2. Inyectar DespatchParty (remitente) para GRT
-        $unsignedXml = $this->injectDespatchPartyGrt($unsignedXml, $data['remitente'] ?? null);
+        $tipoDocumento = $data['tipo_documento'] ?? '09';
+        $modTraslado = $data['mod_traslado'] ?? null;
 
-        // 3. Firmar
-        $signer = new \Greenter\Xml\Signed\SignedXml();
+        // 2. Inyectar nodos requeridos por SUNAT no cubiertos por Greenter.
+        if ($tipoDocumento === '09' && $modTraslado === '01' && ! empty($data['fecha_entrega_transportista'])) {
+            $unsignedXml = $this->injectCarrierDeliveryDate(
+                $unsignedXml,
+                $data['fecha_entrega_transportista']
+            );
+        }
+
+        if ($tipoDocumento === '31') {
+            $unsignedXml = $this->injectDespatchPartyGrt($unsignedXml, $data['remitente'] ?? null);
+        }
+
+        // 3. Firmar después de toda modificación del XML.
+        $signer = new SignedXml();
         $signer->setCertificate($this->resolveCertificatePem());
         $signedXml = $signer->signXml($unsignedXml);
 
-        // 4. Enviar
-        $api = $this->createApi();
-        $result = $api->sendXml($despatch->getName(), $signedXml);
+        // 4. Enviar. Nubefact beta puede invalidar tokens del cache; reintentar
+        // una vez con token fresco cuando responde "Token NO existe".
+        try {
+            $api = $this->createApi();
+            $result = $api->sendXml($despatch->getName(), $signedXml);
+        } catch (\Throwable $e) {
+            if (! $this->isMissingGreTokenError($e)) {
+                throw $e;
+            }
+
+            $this->forgetGreToken();
+            $api = $this->createApi();
+            $result = $api->sendXml($despatch->getName(), $signedXml);
+        }
+
+        if ($this->isMissingGreTokenResult($result)) {
+            $this->forgetGreToken();
+            $api = $this->createApi();
+            $result = $api->sendXml($despatch->getName(), $signedXml);
+        }
 
         return [
             'result' => $result,
@@ -169,10 +274,35 @@ class GreenterService
     }
 
     /**
+     * SUNAT/Nubefact exige desde 2026-06-01 la fecha de entrega de bienes al
+     * transportista para GRE remitente con transporte publico.
+     *
+     * Greenter 5.3.0 modela este campo como envio.fecEntregaBienes y lo emite
+     * en cac:LoadingTransportEvent/cbc:OccurrenceDate. La version instalada
+     * aun no tiene ese setter, por eso se inyecta antes de firmar.
+     */
+    private function injectCarrierDeliveryDate(string $xml, string $date): string
+    {
+        $deliveryDate = (new \DateTime($date))->format('Y-m-d');
+        $block = '<cac:LoadingTransportEvent>'
+            . '<cbc:OccurrenceDate>' . $deliveryDate . '</cbc:OccurrenceDate>'
+            . '</cac:LoadingTransportEvent>';
+
+        $pattern = '/(<\/cac:CarrierParty>)/';
+        $replaced = preg_replace($pattern, '$1' . $block, $xml, 1, $count);
+
+        if ($count === 0) {
+            throw new \RuntimeException('No se encontró cac:CarrierParty para inyectar fecha_entrega_transportista.');
+        }
+
+        return $replaced;
+    }
+
+    /**
      * Inyecta el bloque cac:DespatchParty dentro de cac:Despatch.
      *
      * Path SUNAT: /DespatchAdvice/cac:Shipment/cac:Delivery/cac:Despatch/cac:DespatchParty
-     * Se inserta ANTES de cac:DespatchAddress (que Greenter sí emite).
+     * En UBL cac:DespatchAddress debe ir antes de cac:DespatchParty.
      */
     private function injectDespatchPartyGrt(string $xml, ?array $remitente): string
     {
@@ -196,9 +326,9 @@ class GreenterService
             . '</cac:PartyLegalEntity>'
             . '</cac:DespatchParty>';
 
-        // Insertar antes de <cac:DespatchAddress> (primer ocurrencia dentro de cac:Despatch)
-        $pattern = '/(<cac:Despatch>\s*)(<cac:DespatchAddress>)/';
-        $replaced = preg_replace($pattern, '$1' . $block . '$2', $xml, 1, $count);
+        // Insertar despues de </cac:DespatchAddress> (primer ocurrencia dentro de cac:Despatch).
+        $pattern = '/(<cac:Despatch>\s*<cac:DespatchAddress>.*?<\/cac:DespatchAddress>)/s';
+        $replaced = preg_replace($pattern, '$1' . $block, $xml, 1, $count);
         if ($count === 0) {
             throw new \RuntimeException('No se encontró el nodo cac:Despatch > cac:DespatchAddress en el XML para inyectar DespatchParty.');
         }
@@ -353,12 +483,38 @@ class GreenterService
 
         try {
             $result = $api->getStatus($ticket);
-        } catch (\Greenter\Sunat\GRE\ApiException $e) {
+        } catch (ApiException $e) {
+            if ($this->isMissingGreTokenError($e)) {
+                try {
+                    $this->forgetGreToken();
+                    $api = $this->createApi();
+                    $result = $api->getStatus($ticket);
+                } catch (ApiException $retryException) {
+                    return [
+                        'success' => false,
+                        'error_code' => (string) $retryException->getCode(),
+                        'error_message' => $this->sanitizeUtf8($retryException->getMessage()),
+                    ];
+                }
+            } else {
+                return [
+                    'success' => false,
+                    'error_code' => (string) $e->getCode(),
+                    'error_message' => $this->sanitizeUtf8($e->getMessage()),
+                ];
+            }
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'error_code' => (string) $e->getCode(),
                 'error_message' => $this->sanitizeUtf8($e->getMessage()),
             ];
+        }
+
+        if ($this->isMissingGreTokenResult($result)) {
+            $this->forgetGreToken();
+            $api = $this->createApi();
+            $result = $api->getStatus($ticket);
         }
 
         if (! $result->isSuccess()) {

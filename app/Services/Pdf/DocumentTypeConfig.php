@@ -45,6 +45,14 @@ class DocumentTypeConfig
                 'bank-accounts', 'qr-code', 'footer',
             ],
         ],
+        '31' => [
+            'titulo' => 'GUÍA DE REMISIÓN TRANSPORTISTA ELECTRÓNICA',
+            'sections' => [
+                'header', 'document-badge', 'emitter', 'receiver',
+                'dispatch-info', 'items',
+                'bank-accounts', 'qr-code', 'footer',
+            ],
+        ],
         'COT' => [
             'titulo' => 'COTIZACIÓN',
             'sections' => [
