@@ -192,7 +192,7 @@ Las más usadas:
 | Requiere `doc_relacionado`? | No | **SÍ** — factura/GRR que origina el transporte |
 | Serie ejemplo | T001 | V001 |
 
-**Importante**: GRT funciona SOLO en producción de SUNAT. La beta no lo valida bien.
+**Importante**: GRT funciona SOLO en producción de SUNAT. La beta no lo valida bien. Cuando emitas GRT con `entorno=beta`, la respuesta incluye `advertencias: [{codigo: "grt_beta_no_soportado", ...}]` — mostralo en UI para que el usuario sepa que la validación no es 100% real.
 
 ---
 
@@ -250,9 +250,14 @@ En `POST /registro` o `PUT /empresa`:
 
 ## 15. Cosas que NO puedes hacer
 
-- ❌ Emitir factura con tipo_doc `0` o `1` en el cliente (debe ser RUC `6`)
-- ❌ Modificar una factura **aceptada** por SUNAT (usar NC o comunicación de baja)
-- ❌ Anular boleta con comunicación de baja (SUNAT obliga a usar **resumen diario de anulación**)
-- ❌ Anular comprobante con más de **7 días** desde emisión
+Estas reglas las **valida la API antes** de enviar a SUNAT — devuelve 422 con `codigo_error` + `siguiente_accion` (ver `RESPONSE-FORMAT.md`), no te deja pegarte contra SUNAT innecesariamente:
+
+- ❌ Emitir factura con `cliente.tipo_doc` distinto de `6` (RUC) → 422 sugiriendo `POST /boletas`
+- ❌ Modificar una factura/boleta **aceptada** → 422 `codigo_error=documento_aceptado_no_editable`, `siguiente_accion` con endpoint de NC + `doc_afectado`
+- ❌ Modificar una NC/ND **aceptada** → 422 con `siguiente_accion` apuntando a `POST /anulaciones`
+- ❌ Anular boleta con comunicación de baja → 422 `codigo_error=boletas_no_soportadas_en_ra`, `siguiente_accion` apunta a `POST /resumenes` con `{"anular":[...]}`
+- ❌ Anular comprobante con más de **7 días** desde emisión (validado en `VoidedController`)
 - ❌ Emitir NC contra factura si el tenant es NRUS (NRUS no emite facturas ni NC)
 - ❌ Repetir correlativo en la misma serie (la API lo previene con lock, pero si pasa → código 2800)
+
+**Regla del cliente**: cuando veas `siguiente_accion`, no muestres el mensaje seco — renderízalo como CTA (botón "Emitir Nota de Crédito", "Anular por Resumen Diario", etc.) porque el body ya trae los datos del doc afectado listos para el siguiente request.

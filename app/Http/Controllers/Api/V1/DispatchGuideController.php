@@ -25,16 +25,17 @@ class DispatchGuideController extends Controller
     public function store(StoreDispatchGuideRequest $request, CreateDispatchGuideAction $action): JsonResponse
     {
         $tenant = $request->get('tenant');
+        $data = $request->validated();
         $enviarAuto = $request->boolean('enviar_automatico', true);
 
         try {
-            $guide = $action->execute($tenant, $request->validated(), $enviarAuto);
+            $guide = $action->execute($tenant, $data, $enviarAuto);
 
             $msg = $enviarAuto
                 ? 'Guía de remisión creada y encolada para envío a SUNAT.'
                 : 'Guía de remisión creada en estado pendiente. Use POST /guias-remision/{id}/enviar para enviarla a SUNAT.';
 
-            return $this->created(new DispatchGuideResource($guide), $msg);
+            return $this->createdWithGrtWarning(new DispatchGuideResource($guide), $msg, $tenant, $data['tipo_documento'] ?? '09');
         } catch (\Throwable $e) {
             return $this->error('Error al crear guía: '.$e->getMessage(), 500);
         }
@@ -58,10 +59,32 @@ class DispatchGuideController extends Controller
                 ? 'Guía de Remisión Transportista creada y encolada para envío a SUNAT.'
                 : 'Guía de Remisión Transportista creada en estado pendiente. Use POST /guias-remision/{id}/enviar para enviarla a SUNAT.';
 
-            return $this->created(new DispatchGuideResource($guide), $msg);
+            return $this->createdWithGrtWarning(new DispatchGuideResource($guide), $msg, $tenant, '31');
         } catch (\Throwable $e) {
             return $this->error('Error al crear guía transportista: '.$e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Envuelve la respuesta 201 agregando advertencia cuando se emite una GRT
+     * (tipo 31) contra el entorno beta de SUNAT, que no valida GRT completamente.
+     */
+    private function createdWithGrtWarning(DispatchGuideResource $resource, string $mensaje, $tenant, string $tipoDocumento): JsonResponse
+    {
+        $cuerpo = [
+            'estado' => 'exito',
+            'mensaje' => $mensaje,
+            'datos' => $resource,
+        ];
+
+        if ($tipoDocumento === '31' && ($tenant->environment ?? null) === 'beta') {
+            $cuerpo['advertencias'] = [[
+                'codigo' => 'grt_beta_no_soportado',
+                'mensaje' => 'SUNAT beta no valida completamente las Guías de Remisión Transportista. Para pruebas realistas cambia entorno a "production" en PUT /empresa.',
+            ]];
+        }
+
+        return response()->json($cuerpo, 201);
     }
 
     public function enviar(Request $request, int $id): JsonResponse

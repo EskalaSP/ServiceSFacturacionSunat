@@ -159,8 +159,14 @@ class StoreInvoiceRequest extends FormRequest
             $tipoDoc = $this->input('cliente.tipo_doc');
             $numDoc = $this->input('cliente.num_doc', '');
 
-            if ($tipoDoc === '1' && strlen($numDoc) !== 8) {
-                $v->errors()->add('cliente.num_doc', 'El DNI debe tener exactamente 8 dígitos.');
+            // Factura: SUNAT solo acepta cliente con RUC (tipo_doc=6). DNI/CE/pasaporte → boleta.
+            if ($tipoDoc !== null && $tipoDoc !== '6') {
+                $v->errors()->add(
+                    'cliente.tipo_doc',
+                    'Las facturas requieren cliente con RUC (tipo_doc=6). Para clientes con DNI u otros documentos use POST /boletas.'
+                );
+
+                return;
             }
 
             if ($tipoDoc === '6' && strlen($numDoc) !== 11) {

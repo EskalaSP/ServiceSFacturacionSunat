@@ -51,4 +51,23 @@ trait ApiResponse
 
         return response()->json($cuerpo, $codigo);
     }
+
+    protected function errorAccionable(
+        string $mensaje,
+        string $codigoError,
+        ?array $siguienteAccion = null,
+        int $codigo = 422,
+    ): JsonResponse {
+        $cuerpo = [
+            'estado' => 'error',
+            'mensaje' => $mensaje,
+            'codigo_error' => $codigoError,
+        ];
+
+        if ($siguienteAccion !== null) {
+            $cuerpo['siguiente_accion'] = $siguienteAccion;
+        }
+
+        return response()->json($cuerpo, $codigo);
+    }
 }

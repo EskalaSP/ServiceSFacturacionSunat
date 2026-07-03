@@ -163,7 +163,19 @@ class InvoiceController extends Controller
         $invoice = Invoice::with(['items', 'payments'])->forTenant($tenant->id)->findOrFail($id);
 
         if ($invoice->sunat_status === 'aceptado') {
-            return $this->error('No se puede editar una factura aceptada por SUNAT.', 422);
+            return $this->errorAccionable(
+                'No se puede editar una factura aceptada por SUNAT. Emita una Nota de Crédito para corregir o anular.',
+                'documento_aceptado_no_editable',
+                [
+                    'operacion' => 'emitir_nota_credito',
+                    'endpoint' => 'POST /api/v1/notas-credito',
+                    'doc_afectado' => [
+                        'tipo' => '01',
+                        'serie' => $invoice->serie,
+                        'correlativo' => $invoice->correlativo,
+                    ],
+                ],
+            );
         }
 
         $data = $request->all();

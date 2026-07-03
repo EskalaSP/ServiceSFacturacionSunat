@@ -64,25 +64,25 @@
 }
 
 :root {
-    /* ── Zaresk Design System ────────────────────────── */
-    --background:           hsl(0, 0%, 90%);      /* #E5E5E5 */
+    /* ── Modo claro · blanco suave ───────────────────── */
+    --background:           hsl(0, 0%, 97%);      /* #F7F7F7 - blanco suave */
     --foreground:           hsl(206, 9%, 14%);    /* #212528 */
-    --card:                 hsl(0, 0%, 100%);     /* #FFFFFF */
-    --card-foreground:      hsl(206, 9%, 14%);    /* #212528 */
+    --card:                 hsl(0, 0%, 100%);     /* #FFFFFF - cards blancas puras */
+    --card-foreground:      hsl(206, 9%, 14%);
     --popover:              hsl(0, 0%, 100%);
     --popover-foreground:   hsl(206, 9%, 14%);
-    --primary:              hsl(158, 18%, 40%);   /* #52796A  verde teal */
-    --primary-foreground:   hsl(0, 0%, 98%);      /* #FAFAFA */
-    --secondary:            hsl(0, 0%, 94%);      /* #F0F0F0 */
+    --primary:              hsl(158, 18%, 40%);   /* #52796A verde teal */
+    --primary-foreground:   hsl(0, 0%, 98%);
+    --secondary:            hsl(0, 0%, 95%);      /* #F2F2F2 */
     --secondary-foreground: hsl(206, 9%, 14%);
-    --muted:                hsl(0, 0%, 93%);      /* #EDEDED */
+    --muted:                hsl(0, 0%, 96%);      /* #F5F5F5 */
     --muted-foreground:     hsl(150, 5%, 42%);    /* #6B7B73 */
-    --accent:               hsl(88, 18%, 73%);    /* #BAC5AC  salvia */
+    --accent:               hsl(88, 18%, 73%);    /* #BAC5AC salvia */
     --accent-foreground:    hsl(206, 9%, 14%);
-    --destructive:          hsl(0, 65%, 48%);     /* #DC2626 */
+    --destructive:          hsl(0, 65%, 48%);
     --destructive-foreground: hsl(0, 0%, 98%);
-    --border:               hsl(0, 0%, 88%);      /* #E0E0E0 */
-    --input:                hsl(0, 0%, 91%);      /* #E8E8E8 */
+    --border:               hsl(0, 0%, 91%);      /* #E8E8E8 borde visible pero suave */
+    --input:                hsl(0, 0%, 96%);      /* #F5F5F5 */
     --ring:                 hsl(158, 18%, 40%);
     --radius:               1rem;
 
@@ -94,39 +94,50 @@
     --chart-5:              hsl(0, 0%, 70%);
 
     /* Sidebar */
-    --sidebar:              hsl(0, 0%, 93%);      /* #EBEBEB */
-    --sidebar-foreground:   hsl(206, 9%, 20%);   /* #333A40 */
+    --sidebar:              hsl(0, 0%, 98%);      /* #FAFAFA casi blanco */
+    --sidebar-foreground:   hsl(206, 9%, 20%);
     --sidebar-primary:      hsl(158, 18%, 40%);
     --sidebar-primary-foreground: hsl(0, 0%, 98%);
-    --sidebar-accent:       hsl(0, 0%, 88%);
+    --sidebar-accent:       hsl(0, 0%, 95%);      /* #F2F2F2 hover */
     --sidebar-accent-foreground: hsl(206, 9%, 14%);
-    --sidebar-border:       hsl(0, 0%, 85%);
+    --sidebar-border:       hsl(0, 0%, 91%);      /* #E8E8E8 */
     --sidebar-ring:         hsl(158, 18%, 40%);
 
     /* Custom brand tokens */
-    --beige:                hsl(88, 18%, 73%);    /* == accent */
-    --olive:                hsl(158, 18%, 40%);   /* == primary */
+    --beige:                hsl(88, 18%, 73%);
+    --olive:                hsl(158, 18%, 40%);
+
+    color-scheme: light;
 }
 
 .dark {
-    --background:           hsl(206, 9%, 14%);   /* #1A1F24 */
-    --foreground:           hsl(0, 0%, 90%);     /* #E5E5E5 */
-    --card:                 hsl(206, 8%, 18%);   /* #24292F */
-    --card-foreground:      hsl(0, 0%, 90%);
-    --popover:              hsl(206, 8%, 18%);
-    --popover-foreground:   hsl(0, 0%, 90%);
-    --primary:              hsl(158, 18%, 42%);  /* #557071 */
+    /* ── Base: #010202 · cards máximo en #020303 ────────────────── */
+    --background:           hsl(180, 33%, 1%);   /* #010202 base */
+    --foreground:           hsl(0, 0%, 92%);     /* #EAEAEA texto */
+
+    --card:                 hsl(180, 20%, 1.5%); /* #020303 cards (mínimo permitido) */
+    --card-foreground:      hsl(0, 0%, 92%);
+
+    --popover:              hsl(180, 25%, 2%);   /* #030505 popovers/modales */
+    --popover-foreground:   hsl(0, 0%, 92%);
+
+    --primary:              hsl(158, 18%, 42%);  /* #557071 verde teal */
     --primary-foreground:   hsl(0, 0%, 98%);
-    --secondary:            hsl(206, 8%, 22%);   /* #2E3841 */
-    --secondary-foreground: hsl(0, 0%, 90%);
-    --muted:                hsl(206, 7%, 20%);   /* #272E37 */
-    --muted-foreground:     hsl(88, 10%, 68%);   /* #A4B89C */
-    --accent:               hsl(88, 18%, 73%);   /* #BAC5AC  igual en dark */
-    --accent-foreground:    hsl(206, 9%, 14%);
+
+    --secondary:            hsl(180, 20%, 3.5%); /* #070909 hover/secondary */
+    --secondary-foreground: hsl(0, 0%, 92%);
+
+    --muted:                hsl(180, 22%, 2.5%); /* #050707 fondos muted */
+    --muted-foreground:     hsl(0, 0%, 55%);     /* #8C8C8C texto secundario */
+
+    --accent:               hsl(88, 18%, 73%);   /* mantener salvia */
+    --accent-foreground:    hsl(180, 33%, 1%);
+
     --destructive:          hsl(0, 60%, 45%);
     --destructive-foreground: hsl(0, 65%, 65%);
-    --border:               hsl(206, 8%, 26%);   /* #3A4555 */
-    --input:                hsl(206, 8%, 22%);
+
+    --border:               hsl(180, 8%, 10%);   /* #171B1B borde sutil pero visible */
+    --input:                hsl(180, 22%, 2.5%); /* #050707 fondo input */
     --ring:                 hsl(158, 22%, 48%);  /* #5F8577 */
 
     --chart-1:              hsl(158, 18%, 42%);
@@ -135,17 +146,20 @@
     --chart-4:              hsl(158, 14%, 32%);
     --chart-5:              hsl(0, 0%, 55%);
 
-    --sidebar:              hsl(206, 9%, 12%);   /* #16191E */
-    --sidebar-foreground:   hsl(0, 0%, 90%);
+    /* Sidebar — mismo que background para look flat */
+    --sidebar:              hsl(180, 33%, 1%);   /* #010202 mismo que bg */
+    --sidebar-foreground:   hsl(0, 0%, 92%);
     --sidebar-primary:      hsl(158, 18%, 42%);
     --sidebar-primary-foreground: hsl(0, 0%, 98%);
-    --sidebar-accent:       hsl(206, 8%, 20%);
-    --sidebar-accent-foreground: hsl(0, 0%, 90%);
-    --sidebar-border:       hsl(206, 8%, 26%);
+    --sidebar-accent:       hsl(180, 20%, 3.5%); /* #070909 hover items */
+    --sidebar-accent-foreground: hsl(0, 0%, 92%);
+    --sidebar-border:       hsl(180, 8%, 10%);   /* #171B1B separadores */
     --sidebar-ring:         hsl(158, 22%, 48%);
 
     --beige:                hsl(88, 18%, 73%);
     --olive:                hsl(158, 18%, 42%);
+
+    color-scheme: dark;
 }
 
 @layer base {
@@ -165,16 +179,72 @@
         box-shadow: 0 4px 24px -4px rgba(33, 37, 40, 0.07),
                     0 2px 8px -2px rgba(33, 37, 40, 0.04);
     }
+
+    /* Input/textarea custom con misma apariencia que <Input> — cross-theme */
+    .form-input {
+        background-color: var(--input);
+        color: var(--foreground);
+        border: 1px solid var(--input);
+        border-radius: var(--radius-md);
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        transition: border-color 150ms;
+        outline: none;
+        width: 100%;
+    }
+    .form-input:focus-visible {
+        border-color: var(--ring);
+    }
+    .form-input::placeholder {
+        color: var(--muted-foreground);
+    }
+    .form-input:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Select nativo unificado — misma apariencia que <Input>, con chevron custom */
+    .form-select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-color: var(--input);
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239CA3AF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.6rem center;
+        background-size: 1.1em;
+        padding-right: 2.25rem;
+        color: var(--foreground);
+        border: 1px solid var(--input);
+        border-radius: var(--radius-md);
+        height: 2.25rem;
+        padding-left: 0.75rem;
+        font-size: 0.875rem;
+        transition: border-color 150ms;
+        outline: none;
+        width: 100%;
+    }
+    .form-select:focus-visible {
+        border-color: var(--ring);
+    }
+    .form-select:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .form-select option {
+        background-color: var(--popover);
+        color: var(--popover-foreground);
+    }
     .dashboard-surface {
         background:
-            radial-gradient(900px 480px at 50% -10%, rgba(82, 121, 106, 0.08), transparent 65%),
-            radial-gradient(700px 400px at 100% 0%, rgba(186, 197, 172, 0.10), transparent 55%),
-            hsl(0, 0%, 90%);
+            radial-gradient(900px 480px at 50% -10%, rgba(82, 121, 106, 0.06), transparent 65%),
+            radial-gradient(700px 400px at 100% 0%, rgba(186, 197, 172, 0.08), transparent 55%),
+            hsl(0, 0%, 97%);
     }
     .dark .dashboard-surface {
         background:
-            radial-gradient(900px 480px at 50% -10%, rgba(82, 121, 106, 0.12), transparent 65%),
-            radial-gradient(700px 400px at 100% 0%, rgba(186, 197, 172, 0.08), transparent 55%),
-            hsl(206, 9%, 14%);
+            radial-gradient(900px 480px at 50% -10%, rgba(82, 121, 106, 0.10), transparent 65%),
+            radial-gradient(700px 400px at 100% 0%, rgba(186, 197, 172, 0.05), transparent 55%),
+            hsl(180, 33%, 1%);
     }
 }

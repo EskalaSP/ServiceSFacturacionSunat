@@ -55,12 +55,12 @@ X-Api-Secret: {api_secret}
 | Método | Ruta | Body | Descripción |
 |---|---|---|---|
 | GET | `/clientes` | `?buscar=&tipo_documento=&por_pagina=` | Listar con filtros |
-| POST | `/clientes` | `tipo_documento`, `numero_documento`, `razon_social`, `nombre_comercial`, `direccion`, `email`, `telefono`, `ubigeo` | Crear (idempotente por tipo+numero) |
+| POST | `/clientes` | `tipo_documento`, `numero_documento`, `razon_social`, `nombre_comercial`, `direccion`, `email`, `telefono`, `ubigeo`. Alias soportados: `tipo_doc` → `tipo_documento`, `num_doc` → `numero_documento` | Crear (idempotente por tipo+numero) |
 | GET | `/clientes/{id}` | — | Ver |
 | PUT | `/clientes/{id}` | campos arriba | Actualizar |
 | DELETE | `/clientes/{id}` | — | Eliminar |
 
-> ⚠️ Importante: aquí `tipo_documento` y `numero_documento` (no `tipo_doc`/`num_doc`). Es el único endpoint con esta convención porque aquí "cliente" es un **modelo propio**, no un campo del comprobante.
+> ⚠️ Los nombres canónicos son `tipo_documento`/`numero_documento` (aquí "cliente" es modelo propio). Desde v1 la API también acepta los alias `tipo_doc`/`num_doc` para consistencia con los otros endpoints — internamente se normalizan.
 
 ## 💳 Suscripción
 
@@ -103,8 +103,8 @@ X-Api-Secret: {api_secret}
   "tipo_moneda": "PEN",
   "forma_pago": "Contado",
   "cliente": {
-    "tipo_doc": "6",
-    "num_doc": "20512345678",
+    "tipo_doc": "6",              // obligatorio: RUC. La API rechaza DNI/CE — usar /boletas
+    "num_doc": "20512345678",     // 11 dígitos, prefijo 10/15/17/20
     "razon_social": "CLIENTE DEMO SAC",
     "direccion": "AV. AREQUIPA 1234"
   },

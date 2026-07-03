@@ -2,8 +2,16 @@
 @if($tipo_documento !== '09' && $tipo_documento !== '31')
 @php
     $moneda_prefix = $tipo_moneda !== 'PEN' ? $tipo_moneda : $moneda_simbolo;
-    $igv_pct = (isset($tipo_operacion) && str_starts_with($tipo_operacion, '02')) ? 0
-             : ((($mto_oper_gravadas ?? 0) == 0 && ($mto_igv ?? 0) == 0) ? 0 : 18);
+    // Calcula el % IGV real desde los montos del documento — así respeta
+    // igv_rate_override (10.5% MYPE, 8%, etc.) sin hardcodear 18.
+    if (isset($tipo_operacion) && str_starts_with($tipo_operacion, '02')) {
+        $igv_pct = 0;
+    } elseif (($mto_oper_gravadas ?? 0) > 0 && ($mto_igv ?? 0) > 0) {
+        $_pct = round(($mto_igv / $mto_oper_gravadas) * 100, 2);
+        $igv_pct = ($_pct == floor($_pct)) ? (int) $_pct : rtrim(rtrim(number_format($_pct, 2, '.', ''), '0'), '.');
+    } else {
+        $igv_pct = 0;
+    }
 @endphp
 <div class="totals-section">
     <table class="totals-table-ticket">

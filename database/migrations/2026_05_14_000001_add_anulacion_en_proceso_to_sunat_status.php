@@ -16,8 +16,9 @@ return new class extends Migration
 
     public function up(): void
     {
-        // MySQL usa ENUM (migración 2026_03_10_140826); los CHECK constraints son solo para PostgreSQL
-        if (DB::connection()->getDriverName() === 'mysql') {
+        // MySQL usa ENUM (migración 2026_03_10_140826) y SQLite (tests) no soporta
+        // ALTER TABLE ... DROP CONSTRAINT — los CHECK constraints son solo para PostgreSQL.
+        if (! in_array(DB::connection()->getDriverName(), ['pgsql'], true)) {
             return;
         }
 
@@ -29,7 +30,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (DB::connection()->getDriverName() === 'mysql') {
+        if (! in_array(DB::connection()->getDriverName(), ['pgsql'], true)) {
             return;
         }
 

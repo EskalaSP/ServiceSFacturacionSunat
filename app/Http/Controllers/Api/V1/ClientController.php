@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\StoreClientRequest;
 use App\Http\Resources\Api\V1\ClientResource;
 use App\Http\Traits\ApiResponse;
 use App\Models\Client;
@@ -40,27 +41,18 @@ class ClientController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreClientRequest $request): JsonResponse
     {
-        $request->validate([
-            'tipo_documento' => 'required|string|in:0,1,4,6,7,A',
-            'numero_documento' => 'required|string|max:15',
-            'razon_social' => 'required|string|max:255',
-            'nombre_comercial' => 'nullable|string|max:255',
-            'direccion' => 'nullable|string|max:500',
-            'email' => 'nullable|email',
-            'telefono' => 'nullable|string|max:20',
-        ]);
-
         $tenant = $request->get('tenant');
+        $data = $request->validated();
 
         $client = Client::updateOrCreate(
             [
                 'tenant_id' => $tenant->id,
-                'tipo_documento' => $request->input('tipo_documento'),
-                'numero_documento' => $request->input('numero_documento'),
+                'tipo_documento' => $data['tipo_documento'],
+                'numero_documento' => $data['numero_documento'],
             ],
-            $request->only(['razon_social', 'nombre_comercial', 'direccion', 'email', 'telefono'])
+            collect($data)->only(['razon_social', 'nombre_comercial', 'direccion', 'email', 'telefono', 'ubigeo'])->toArray()
         );
 
         return $this->created(new ClientResource($client));
@@ -74,19 +66,15 @@ class ClientController extends Controller
         return $this->success(new ClientResource($client));
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(StoreClientRequest $request, int $id): JsonResponse
     {
-        $request->validate([
-            'razon_social' => 'sometimes|string|max:255',
-            'nombre_comercial' => 'nullable|string|max:255',
-            'direccion' => 'nullable|string|max:500',
-            'email' => 'nullable|email',
-            'telefono' => 'nullable|string|max:20',
-        ]);
-
         $tenant = $request->get('tenant');
         $client = Client::forTenant($tenant->id)->findOrFail($id);
-        $client->update($request->only(['razon_social', 'nombre_comercial', 'direccion', 'email', 'telefono']));
+        $client->update(
+            collect($request->validated())
+                ->only(['razon_social', 'nombre_comercial', 'direccion', 'email', 'telefono', 'ubigeo'])
+                ->toArray()
+        );
 
         return $this->success(new ClientResource($client), 'Cliente actualizado.');
     }

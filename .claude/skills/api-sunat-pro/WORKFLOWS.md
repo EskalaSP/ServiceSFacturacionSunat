@@ -333,12 +333,16 @@ Restaurantes y hoteles reciben tasa reducida:
 | Problema | Causa | Solución |
 |---|---|---|
 | 422 "El campo cliente.tipo doc seleccionado no es válido" | Mandaste `tipo_doc` fuera del enum | Usar `1`, `4`, `6`, `7`, `0` o `A` |
-| 422 "numero_documento obligatorio" | Estás en `/clientes` (espera `numero_documento` no `num_doc`) | Usar los nombres correctos de cada endpoint |
-| 429 "límite alcanzado" | Plan agotado del mes | Upgrade con `PUT /suscripcion/cambiar-plan` |
+| 422 `codigo_error=documento_aceptado_no_editable` | PUT sobre factura/boleta/NC/ND aceptada | Leer `siguiente_accion` — típicamente `POST /notas-credito` o `POST /anulaciones` |
+| 422 `codigo_error=boletas_no_soportadas_en_ra` | POST /anulaciones con tipo `03` | Reemplazar por `POST /resumenes` con `{"anular":[...]}` |
+| 422 "Las facturas requieren cliente con RUC (tipo_doc=6)" | POST /facturas con DNI/CE | Cambiar a `POST /boletas` para consumidor final |
+| 422 en `/clientes` con `num_doc`/`tipo_doc` | Compatibilidad — el endpoint acepta ambas convenciones | Si sigue fallando, revisar versión de la API — `tipo_doc`/`num_doc` es alias soportado |
+| 429 `codigo_error=limite_alcanzado` | Plan agotado del mes | Upgrade con `PUT /suscripcion/cambiar-plan` |
 | 401 "Credenciales API inválidas" | key/secret mal o expirados | Verificar env vars |
 | SUNAT código 2017 | Cliente RUC no coincide con SUNAT | `GET /buscar-documento` primero |
 | SUNAT código 2800 | Correlativo duplicado (rara) | Reintentar — la API ya maneja con lock |
 | SUNAT código 3208 | Total no coincide con sumatoria items | Revisar cálculos locales antes de enviar |
+| `advertencias: [{codigo:"grt_beta_no_soportado"}]` | GRT emitida en entorno beta | No es error — advertencia. Para pruebas reales cambiar a `entorno=production` |
 | 500 "GD extension not installed" (solo PDF) | Extensión PHP en server | Admin del servidor instala php-gd |
 
 ---

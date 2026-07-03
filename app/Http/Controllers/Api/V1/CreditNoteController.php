@@ -96,7 +96,19 @@ class CreditNoteController extends Controller
         $creditNote = CreditNote::with('items')->forTenant($tenant->id)->findOrFail($id);
 
         if ($creditNote->sunat_status === 'aceptado') {
-            return $this->error('No se puede editar una nota de crédito aceptada por SUNAT.', 422);
+            return $this->errorAccionable(
+                'No se puede editar una nota de crédito aceptada por SUNAT. Si la NC es errónea, anúlela por comunicación de baja.',
+                'documento_aceptado_no_editable',
+                [
+                    'operacion' => 'anular_por_comunicacion_baja',
+                    'endpoint' => 'POST /api/v1/anulaciones',
+                    'doc_afectado' => [
+                        'tipo' => '07',
+                        'serie' => $creditNote->serie,
+                        'correlativo' => $creditNote->correlativo,
+                    ],
+                ],
+            );
         }
 
         $data = $request->all();

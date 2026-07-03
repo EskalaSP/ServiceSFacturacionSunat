@@ -94,7 +94,19 @@ class BoletaController extends Controller
         $boleta = Boleta::with(['items', 'payments'])->forTenant($tenant->id)->findOrFail($id);
 
         if ($boleta->sunat_status === 'aceptado') {
-            return $this->error('No se puede editar una boleta aceptada por SUNAT.', 422);
+            return $this->errorAccionable(
+                'No se puede editar una boleta aceptada por SUNAT. Emita una Nota de Crédito para corregir o anular.',
+                'documento_aceptado_no_editable',
+                [
+                    'operacion' => 'emitir_nota_credito',
+                    'endpoint' => 'POST /api/v1/notas-credito',
+                    'doc_afectado' => [
+                        'tipo' => '03',
+                        'serie' => $boleta->serie,
+                        'correlativo' => $boleta->correlativo,
+                    ],
+                ],
+            );
         }
 
         $data = $request->all();

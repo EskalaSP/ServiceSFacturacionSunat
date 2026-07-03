@@ -96,7 +96,19 @@ class DebitNoteController extends Controller
         $debitNote = DebitNote::with('items')->forTenant($tenant->id)->findOrFail($id);
 
         if ($debitNote->sunat_status === 'aceptado') {
-            return $this->error('No se puede editar una nota de débito aceptada por SUNAT.', 422);
+            return $this->errorAccionable(
+                'No se puede editar una nota de débito aceptada por SUNAT. Si la ND es errónea, anúlela por comunicación de baja.',
+                'documento_aceptado_no_editable',
+                [
+                    'operacion' => 'anular_por_comunicacion_baja',
+                    'endpoint' => 'POST /api/v1/anulaciones',
+                    'doc_afectado' => [
+                        'tipo' => '08',
+                        'serie' => $debitNote->serie,
+                        'correlativo' => $debitNote->correlativo,
+                    ],
+                ],
+            );
         }
 
         $data = $request->all();

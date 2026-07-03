@@ -33,6 +33,22 @@ class VoidedController extends Controller
             $fechaCom = $validated['fecha_comunicacion'] ?? now()->format('Y-m-d');
             $validated['fecha_comunicacion'] = $fechaCom;
 
+            // SUNAT rechaza la comunicación de baja (RA) para boletas (tipo 03).
+            // Se anulan por resumen diario de anulación.
+            foreach ($validated['detalles'] ?? [] as $detalle) {
+                if (($detalle['tipo_documento'] ?? null) === '03') {
+                    return response()->json([
+                        'estado' => 'error',
+                        'mensaje' => 'Las boletas no se anulan por comunicación de baja. Use POST /resumenes con {"anular":[{"id":..., "motivo":"..."}]}',
+                        'codigo_error' => 'boletas_no_soportadas_en_ra',
+                        'siguiente_accion' => [
+                            'operacion' => 'anular_boleta_por_resumen_diario',
+                            'endpoint' => 'POST /api/v1/resumenes',
+                        ],
+                    ], 422);
+                }
+            }
+
             // Pre-validar contra las reglas de SUNAT antes de enviarles.
             $errors = $this->validateDetalles($tenant->id, $validated['detalles']);
             if (! empty($errors)) {

@@ -61,8 +61,7 @@ const rightNavItems: NavItem[] = [
     },
 ];
 
-const activeItemStyles =
-    'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
+const activeItemStyles = 'bg-accent text-accent-foreground';
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();
@@ -168,7 +167,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             {item.title}
                                         </Link>
                                         {isCurrentUrl(item.href) && (
-                                            <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
+                                            <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-foreground"></div>
                                         )}
                                     </NavigationMenuItem>
                                 ))}
@@ -226,7 +225,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             src={auth.user.avatar}
                                             alt={auth.user.name}
                                         />
-                                        <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                        <AvatarFallback className="rounded-lg bg-secondary text-foreground">
                                             {getInitials(auth.user.name)}
                                         </AvatarFallback>
                                     </Avatar>

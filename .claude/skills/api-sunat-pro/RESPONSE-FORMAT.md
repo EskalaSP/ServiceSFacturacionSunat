@@ -10,9 +10,18 @@
   "mensaje": "texto humano en español",
   "datos": { ... } | [ ... ] | null,
   "meta":  { ... },              // opcional (paginación, etc.)
-  "errores": { ... }             // solo cuando estado=error con detalle
+  "errores": { ... },            // solo cuando estado=error con detalle por campo
+  "codigo_error": "slug",        // opcional — código estable machine-readable
+  "siguiente_accion": { ... },   // opcional — endpoint sugerido para desbloquear
+  "advertencias": [ ... ]        // opcional — no bloquean éxito
 }
 ```
+
+### Campos extendidos (opcionales)
+
+- **`codigo_error`** — slug estable en snake_case para mapear en el cliente sin parsear `mensaje`. Ejemplos: `limite_alcanzado`, `caracteristica_no_disponible`, `boletas_no_soportadas_en_ra`, `documento_aceptado_no_editable`.
+- **`siguiente_accion`** — objeto con `operacion`, `endpoint` y (opcional) `doc_afectado`. Le dice al cliente qué llamar después para desbloquear el flujo. Ver más abajo.
+- **`advertencias`** — array de `{codigo, mensaje}`. La API **sí procesó** la request (`estado=exito`), pero avisa de algo que puede salir mal (ej. GRT en beta SUNAT que no valida bien).
 
 ## Éxito (200, 201)
 
@@ -90,6 +99,58 @@
   "mejora_plan": { "slug": "pro", "price": 29 }
 }
 ```
+
+## Error accionable (422) — con `codigo_error` + `siguiente_accion`
+
+Cuando un flujo se bloquea por reglas de negocio SUNAT, la API responde con guía concreta:
+
+```json
+{
+  "estado": "error",
+  "mensaje": "No se puede editar una factura aceptada por SUNAT. Emita una Nota de Crédito para corregir o anular.",
+  "codigo_error": "documento_aceptado_no_editable",
+  "siguiente_accion": {
+    "operacion": "emitir_nota_credito",
+    "endpoint": "POST /api/v1/notas-credito",
+    "doc_afectado": {
+      "tipo": "01",
+      "serie": "F001",
+      "correlativo": "123"
+    }
+  }
+}
+```
+
+**Códigos de error conocidos**:
+
+| `codigo_error` | HTTP | Origen | Siguiente acción sugerida |
+|---|---|---|---|
+| `limite_alcanzado` | 429 | Plan | `PUT /suscripcion/cambiar-plan` |
+| `caracteristica_no_disponible` | 403 | Plan | Upgrade a plan superior |
+| `documento_aceptado_no_editable` | 422 | Edición post-aceptación | `POST /notas-credito` (facturas/boletas) o `POST /anulaciones` (NC/ND) |
+| `boletas_no_soportadas_en_ra` | 422 | Anulación de boleta por RA | `POST /resumenes` con `{"anular":[...]}` |
+
+**Regla del cliente**: si viene `siguiente_accion`, mostrarlo como CTA en UI en vez de un mensaje seco.
+
+## Advertencias en respuestas exitosas
+
+Cuando `estado=exito` incluye `advertencias`, la operación se completó pero hay algo a saber:
+
+```json
+{
+  "estado": "exito",
+  "mensaje": "Guía de Remisión Transportista creada y encolada para envío a SUNAT.",
+  "datos": { "id": 12, "numero_completo": "V001-000005", "sunat": {...} },
+  "advertencias": [
+    {
+      "codigo": "grt_beta_no_soportado",
+      "mensaje": "SUNAT beta no valida completamente las Guías de Remisión Transportista. Para pruebas realistas cambia entorno a \"production\" en PUT /empresa."
+    }
+  ]
+}
+```
+
+Códigos de advertencia conocidos: `grt_beta_no_soportado`.
 
 ## Error 500 (interno)
 
@@ -222,11 +283,17 @@ except SunatAPIError as e:
    return response.datos;
    ```
 
-2. **NO asumir el campo existe**. Ejemplo: `errores` solo aparece en 422, `meta` solo en listados.
+2. **NO asumir el campo existe**. Ejemplo: `errores` solo aparece en 422, `meta` solo en listados, `codigo_error`/`siguiente_accion` solo en errores accionables, `advertencias` solo cuando aplica.
 
 3. **`datos` puede ser `null`** (ej. DELETE exitoso) — aceptar eso.
 
 4. **Los códigos SUNAT (`sunat.codigo`) son strings**, no integers: `"0"`, `"2335"`, `"100"`.
+
+5. **Preferir `codigo_error` sobre `mensaje`** al ramificar la lógica del cliente: el mensaje puede cambiar por localización o tono; el código es contrato.
+
+6. **Renderizar `siguiente_accion` como CTA**: mostrar botón "Emitir Nota de Crédito" en vez del error crudo.
+
+7. **`advertencias` no bloquean éxito**: procesar `datos` normalmente y mostrar los avisos como banner secundario.
 
 5. **`sunat.estado` tiene valores propios** distintos del wrapper:
    - `pendiente` — creado, aún no enviado

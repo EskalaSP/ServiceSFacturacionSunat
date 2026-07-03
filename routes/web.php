@@ -13,14 +13,22 @@ use App\Http\Controllers\Web\Sunat\NotaCreditoController;
 use App\Http\Controllers\Web\Sunat\NotaDebitoController;
 use Illuminate\Support\Facades\Route;
 
-// ── API root status ─────────────────────────────────────────────────────────
-Route::get('/', function () {
-    return response()->json([
-        'api'     => 'SUNAT API',
-        'version' => 'v1',
-        'status'  => 'ok',
-        'docs'    => url('/api/v1'),
-    ]);
+// ── Home root ───────────────────────────────────────────────────────────────
+// - Petición JSON (curl / API) → devuelve status de la API
+// - Petición HTML (navegador)  → redirige a login o dashboard según autenticación
+Route::get('/', function (\Illuminate\Http\Request $request) {
+    if ($request->wantsJson()) {
+        return response()->json([
+            'api'     => 'SUNAT API',
+            'version' => 'v1',
+            'status'  => 'ok',
+            'docs'    => url('/api/v1'),
+        ]);
+    }
+
+    return $request->user()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
 })->name('home');
 
 // ── Auth Bridge (entrada desde el SaaS principal) ───────────────────────────
@@ -30,7 +38,7 @@ Route::get('/auth/from-saas', [SaasAuthController::class, 'login'])->name('auth.
 
 // ── Módulo SUNAT (requiere autenticación) ────────────────────────────────────
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
     // /sunat → redirect inteligente (configuracion si no tiene SOL, facturas si ya tiene)
     Route::prefix('sunat')->name('sunat.')->group(function () {
@@ -72,5 +80,48 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/mi-api-key', [MiApiKeyController::class, 'show'])->name('mi-api-key');
     });
 });
+
+// ── Panel de Administración ─────────────────────────────────────────────────
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        // Empresas (Tenants)
+        Route::get('empresas',                    [\App\Http\Controllers\Admin\TenantController::class, 'index'])->name('empresas.index');
+        Route::get('empresas/nueva',              [\App\Http\Controllers\Admin\TenantController::class, 'create'])->name('empresas.create');
+        Route::post('empresas',                   [\App\Http\Controllers\Admin\TenantController::class, 'store'])->name('empresas.store');
+        Route::get('empresas/{tenant}',           [\App\Http\Controllers\Admin\TenantController::class, 'show'])->name('empresas.show');
+        Route::get('empresas/{tenant}/editar',    [\App\Http\Controllers\Admin\TenantController::class, 'edit'])->name('empresas.edit');
+        Route::put('empresas/{tenant}',           [\App\Http\Controllers\Admin\TenantController::class, 'update'])->name('empresas.update');
+        Route::delete('empresas/{tenant}',        [\App\Http\Controllers\Admin\TenantController::class, 'destroy'])->name('empresas.destroy');
+        Route::post('empresas/{tenant}/toggle',   [\App\Http\Controllers\Admin\TenantController::class, 'toggle'])->name('empresas.toggle');
+        Route::post('empresas/{tenant}/regenerar-credenciales', [\App\Http\Controllers\Admin\TenantController::class, 'regenerarCredenciales'])->name('empresas.regenerar');
+
+        // Sucursales anidadas por empresa
+        Route::get('empresas/{tenant}/sucursales',                      [\App\Http\Controllers\Admin\SucursalController::class, 'index'])->name('sucursales.index');
+        Route::get('empresas/{tenant}/sucursales/nueva',                [\App\Http\Controllers\Admin\SucursalController::class, 'create'])->name('sucursales.create');
+        Route::post('empresas/{tenant}/sucursales',                     [\App\Http\Controllers\Admin\SucursalController::class, 'store'])->name('sucursales.store');
+        Route::get('empresas/{tenant}/sucursales/{sucursal}/editar',    [\App\Http\Controllers\Admin\SucursalController::class, 'edit'])->name('sucursales.edit');
+        Route::put('empresas/{tenant}/sucursales/{sucursal}',           [\App\Http\Controllers\Admin\SucursalController::class, 'update'])->name('sucursales.update');
+        Route::delete('empresas/{tenant}/sucursales/{sucursal}',        [\App\Http\Controllers\Admin\SucursalController::class, 'destroy'])->name('sucursales.destroy');
+
+        // Series anidadas por empresa
+        Route::get('empresas/{tenant}/series',                    [\App\Http\Controllers\Admin\SerieController::class, 'index'])->name('series.index');
+        Route::get('empresas/{tenant}/series/nueva',              [\App\Http\Controllers\Admin\SerieController::class, 'create'])->name('series.create');
+        Route::post('empresas/{tenant}/series',                   [\App\Http\Controllers\Admin\SerieController::class, 'store'])->name('series.store');
+        Route::get('empresas/{tenant}/series/{serie}/editar',     [\App\Http\Controllers\Admin\SerieController::class, 'edit'])->name('series.edit');
+        Route::put('empresas/{tenant}/series/{serie}',            [\App\Http\Controllers\Admin\SerieController::class, 'update'])->name('series.update');
+        Route::delete('empresas/{tenant}/series/{serie}',         [\App\Http\Controllers\Admin\SerieController::class, 'destroy'])->name('series.destroy');
+        Route::post('empresas/{tenant}/series/{serie}/toggle',    [\App\Http\Controllers\Admin\SerieController::class, 'toggle'])->name('series.toggle');
+
+        // Planes
+        Route::get('planes',                  [\App\Http\Controllers\Admin\PlanController::class, 'index'])->name('planes.index');
+        Route::get('planes/nuevo',            [\App\Http\Controllers\Admin\PlanController::class, 'create'])->name('planes.create');
+        Route::post('planes',                 [\App\Http\Controllers\Admin\PlanController::class, 'store'])->name('planes.store');
+        Route::get('planes/{plan}/editar',    [\App\Http\Controllers\Admin\PlanController::class, 'edit'])->name('planes.edit');
+        Route::put('planes/{plan}',           [\App\Http\Controllers\Admin\PlanController::class, 'update'])->name('planes.update');
+        Route::delete('planes/{plan}',        [\App\Http\Controllers\Admin\PlanController::class, 'destroy'])->name('planes.destroy');
+        Route::post('planes/{plan}/toggle',   [\App\Http\Controllers\Admin\PlanController::class, 'toggle'])->name('planes.toggle');
+    });
 
 require __DIR__.'/settings.php';
