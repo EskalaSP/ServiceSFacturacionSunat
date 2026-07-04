@@ -50,6 +50,40 @@ Route::get('/', function (\Illuminate\Http\Request $request) {
 Route::get('/auth/from-saas', [SaasAuthController::class, 'login'])->name('auth.from-saas');
 
 // ── Módulo SUNAT (requiere autenticación) ────────────────────────────────────
+// Rutas temporales de mantenimiento
+Route::get('/limpiar-cache-ahora', function () {
+    \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+    
+    // De paso, le creamos el tenant al usuario principal por si acaso
+    $user = \App\Models\User::where('email', 'admin@lu-tec.net')->first();
+    if ($user) {
+        $tenant = \App\Models\Tenant::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'ruc' => '10463838327',
+                'razon_social' => 'SUAREZ ORBEGOSO LUIS ANDRES',
+                'sol_user' => '',
+                'sol_pass' => '',
+                'environment' => 'beta',
+                'plan' => 'free',
+                'is_active' => true,
+            ]
+        );
+    }
+    
+    return "Caché de Laravel y OPcache limpiados con éxito. Empresa creada. Ya puedes ir a configurar tu clave SOL.";
+});
+
+Route::get('/ver-errores', function () {
+    $logFile = storage_path('logs/laravel.log');
+    if (!file_exists($logFile)) return "No hay archivo de log.";
+    
+    // Read the last 200 lines
+    $lines = file($logFile);
+    $lastLines = array_slice($lines, -200);
+    return '<pre>' . htmlspecialchars(implode("", $lastLines)) . '</pre>';
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 

@@ -12,7 +12,31 @@ class ConfiguracionController extends Controller
 {
     public function edit(): Response
     {
-        $tenant = auth()->user()->tenants()->first();
+        $user = auth()->user();
+        $tenant = $user->tenants()->first();
+
+        if (!$tenant) {
+            $tenant = \App\Models\Tenant::create([
+                'user_id' => $user->id,
+                'ruc' => '10463838327', // RUC personal proporcionado por el usuario
+                'razon_social' => 'SUAREZ ORBEGOSO LUIS ANDRES',
+                'sol_user' => '',
+                'sol_pass' => '',
+                'environment' => 'beta',
+                'plan' => 'free',
+                'is_active' => true,
+            ]);
+            
+            \App\Models\Serie::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'tipo_documento' => '01', 'serie' => 'F001'],
+                ['correlativo' => 0, 'is_active' => true]
+            );
+
+            \App\Models\Serie::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'tipo_documento' => '03', 'serie' => 'B001'],
+                ['correlativo' => 0, 'is_active' => true]
+            );
+        }
 
         $series = $tenant
             ? Serie::where('tenant_id', $tenant->id)->where('is_active', true)->get(['id', 'serie', 'tipo_documento', 'correlativo'])
@@ -34,19 +58,38 @@ class ConfiguracionController extends Controller
     {
         $data = $request->validate([
             'sol_user'      => 'required|string|max:20',
-            'sol_pass'      => 'required|string|max:50',
+            'sol_pass'      => 'required|string|max:255',
             'environment'   => 'required|in:beta,produccion',
-            'serie_factura' => ['required', 'string', 'size:4', 'regex:/^F\d{3}$/'],
-            'serie_boleta'  => ['required', 'string', 'size:4', 'regex:/^B\d{3}$/'],
+            'serie_factura' => 'required|string|max:4',
+            'serie_boleta'  => 'required|string|max:4',
+            'certificate'   => 'nullable|file|max:4096',
+            'certificate_password' => 'nullable|string|max:255',
         ]);
 
-        $tenant = auth()->user()->tenants()->firstOrFail();
+        $user = auth()->user();
+        $tenant = $user->tenants()->first();
+
+        if (!$tenant) {
+            return redirect()->route('sunat.configuracion')
+                ->with('error', 'No se ha encontrado ninguna empresa (Tenant) registrada para tu usuario. Primero debes registrar una empresa.');
+        }
 
         $tenant->update([
             'sol_user'    => $data['sol_user'],
             'sol_pass'    => $data['sol_pass'],
             'environment' => $data['environment'],
         ]);
+
+        if ($request->hasFile('certificate')) {
+            $certContent = file_get_contents($request->file('certificate')->getRealPath());
+            $certService = new \App\Services\Storage\DocumentStorageService();
+            $ext = $request->file('certificate')->getClientOriginalExtension();
+            $certPath = $certService->storeCertificate($tenant, $certContent, 'cert.' . $ext);
+            $tenant->update(['certificate_path' => $certPath]);
+        }
+        if ($request->filled('certificate_password')) {
+            $tenant->update(['certificate_password' => $data['certificate_password']]);
+        }
 
         Serie::firstOrCreate(
             ['tenant_id' => $tenant->id, 'tipo_documento' => '01', 'serie' => $data['serie_factura']],
@@ -64,10 +107,10 @@ class ConfiguracionController extends Controller
 
     public function probarConexion(): \Illuminate\Http\JsonResponse
     {
-        $tenant = auth()->user()->tenants()->firstOrFail();
+        $tenant = auth()->user()->tenants()->first();
 
-        if (! $tenant->sol_user || ! $tenant->sol_pass) {
-            return response()->json(['ok' => false, 'mensaje' => 'Credenciales SOL no configuradas.']);
+        if (! $tenant || ! $tenant->sol_user || ! $tenant->sol_pass) {
+            return response()->json(['ok' => false, 'mensaje' => 'Credenciales SOL no configuradas o empresa no registrada.']);
         }
 
         return response()->json([

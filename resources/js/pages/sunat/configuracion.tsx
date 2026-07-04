@@ -27,6 +27,8 @@ export default function Configuracion({ tenant }: Props) {
     const [environment, setEnvironment]   = useState<'beta' | 'produccion'>(tenant?.environment ?? 'beta');
     const [serieFactura, setSerieFactura] = useState(tenant?.serie_factura ?? 'F001');
     const [serieBoleta, setSerieBoleta]   = useState(tenant?.serie_boleta ?? 'B001');
+    const [certificate, setCertificate]   = useState<File | null>(null);
+    const [certificatePassword, setCertificatePassword] = useState('');
     const [saving, setSaving]             = useState(false);
     const [testing, setTesting]           = useState(false);
     const [testResult, setTestResult]     = useState<TestResult>(null);
@@ -46,11 +48,25 @@ export default function Configuracion({ tenant }: Props) {
         e.preventDefault();
         if (!validate()) return;
         setSaving(true);
-        router.put(
-            '/sunat/configuracion',
-            { sol_user: solUser, sol_pass: solPass, environment, serie_factura: serieFactura, serie_boleta: serieBoleta },
-            { onFinish: () => setSaving(false) },
-        );
+        
+        const formData = new FormData();
+        formData.append('sol_user', solUser);
+        formData.append('sol_pass', solPass);
+        formData.append('environment', environment);
+        formData.append('serie_factura', serieFactura);
+        formData.append('serie_boleta', serieBoleta);
+        if (certificate) {
+            formData.append('certificate', certificate);
+        }
+        if (certificatePassword) {
+            formData.append('certificate_password', certificatePassword);
+        }
+        formData.append('_method', 'put'); // Inertia requires POST method to upload files, spoofing PUT
+
+        router.post('/sunat/configuracion', formData, { 
+            onFinish: () => setSaving(false),
+            forceFormData: true 
+        });
     }
 
     async function probarConexion() {
@@ -98,17 +114,15 @@ export default function Configuracion({ tenant }: Props) {
                         </CardHeader>
                         <CardContent className="flex flex-col gap-4">
                             <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="sol_user">Usuario SOL secundario</Label>
+                                <Label htmlFor="solUser">Usuario SOL secundario</Label>
                                 <Input
-                                    id="sol_user"
+                                    id="solUser"
                                     value={solUser}
-                                    onChange={(e) => setSolUser(e.target.value)}
+                                    onChange={e => setSolUser(e.target.value)}
                                     placeholder="ej: EMPRESA20123456"
                                     aria-invalid={!!errors.sol_user}
                                 />
-                                {errors.sol_user && (
-                                    <p className="text-xs text-destructive">{errors.sol_user}</p>
-                                )}
+                                {errors.sol_user && <p className="text-xs text-destructive">{errors.sol_user}</p>}
                             </div>
 
                             <div className="flex flex-col gap-1.5">
@@ -173,6 +187,45 @@ export default function Configuracion({ tenant }: Props) {
                                         </span>
                                     </button>
                                 ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Certificado Digital */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Certificado Digital</CardTitle>
+                            <CardDescription>
+                                Sube tu certificado (.p12 o .pfx) para firmar los comprobantes.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="certificate">Archivo del Certificado</Label>
+                                <Input
+                                    id="certificate"
+                                    type="file"
+                                    accept=".pfx,.p12,.pem"
+                                    onChange={e => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            setCertificate(file);
+                                        } else {
+                                            setCertificate(null);
+                                        }
+                                    }}
+                                />
+                                <p className="text-xs text-muted-foreground">Opcional si ya subiste uno antes.</p>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="certPass">Clave del Certificado</Label>
+                                <Input
+                                    id="certPass"
+                                    type="password"
+                                    value={certificatePassword}
+                                    onChange={e => setCertificatePassword(e.target.value)}
+                                    placeholder="Solo si subes un archivo nuevo o cambiaste la clave"
+                                />
                             </div>
                         </CardContent>
                     </Card>
