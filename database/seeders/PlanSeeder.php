@@ -47,11 +47,11 @@ class PlanSeeder extends Seeder
             [
                 'slug' => 'pro',
                 'name' => 'Profesional',
-                'price_monthly' => 29.00,
-                'price_yearly' => 290.00,
+                'price_monthly' => 49.00,
+                'price_yearly' => 490.00,
                 'sort_order' => 1,
                 'limits' => [
-                    'documents_month' => 200,
+                    'documents_month' => 500,
                     'internal_documents_month' => 100,
                     'ai_messages_month' => 100,
                     'team_members' => 5,
@@ -91,8 +91,8 @@ class PlanSeeder extends Seeder
             [
                 'slug' => 'business',
                 'name' => 'Empresarial',
-                'price_monthly' => 79.00,
-                'price_yearly' => 790.00,
+                'price_monthly' => 99.00,
+                'price_yearly' => 990.00,
                 'sort_order' => 2,
                 'limits' => [
                     'documents_month' => -1,

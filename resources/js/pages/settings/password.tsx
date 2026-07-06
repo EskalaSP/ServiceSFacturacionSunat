@@ -5,8 +5,8 @@ import PasswordController from '@/actions/App/Http/Controllers/Settings/Password
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/user-password';
@@ -66,11 +66,10 @@ export default function Password() {
                                         Contraseña actual
                                     </Label>
 
-                                    <Input
+                                    <PasswordInput
                                         id="current_password"
                                         ref={currentPasswordInput}
                                         name="current_password"
-                                        type="password"
                                         className="mt-1 block w-full"
                                         autoComplete="current-password"
                                         placeholder="Contraseña actual"
@@ -86,11 +85,10 @@ export default function Password() {
                                         Nueva contraseña
                                     </Label>
 
-                                    <Input
+                                    <PasswordInput
                                         id="password"
                                         ref={passwordInput}
                                         name="password"
-                                        type="password"
                                         className="mt-1 block w-full"
                                         autoComplete="new-password"
                                         placeholder="Nueva contraseña"
@@ -104,10 +102,9 @@ export default function Password() {
                                         Confirmar contraseña
                                     </Label>
 
-                                    <Input
+                                    <PasswordInput
                                         id="password_confirmation"
                                         name="password_confirmation"
-                                        type="password"
                                         className="mt-1 block w-full"
                                         autoComplete="new-password"
                                         placeholder="Confirma la nueva contraseña"

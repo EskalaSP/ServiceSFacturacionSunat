@@ -1,10 +1,12 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
+import { ShieldCheck } from 'lucide-react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { register } from '@/routes';
@@ -32,6 +34,29 @@ export default function Login({
             {status && (
                 <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-sm font-medium text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-900/20 dark:text-emerald-300">
                     {status}
+                </div>
+            )}
+
+            {canRegister && (
+                <div className="mb-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-200">
+                    <div className="flex items-start gap-2.5">
+                        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+                        <div className="space-y-2">
+                            <p className="font-semibold">
+                                Aún no hay usuarios registrados
+                            </p>
+                            <p>
+                                Registra al primer usuario. Quedará configurado
+                                automáticamente como <strong>Super administrador</strong>.
+                            </p>
+                            <Link
+                                href={register()}
+                                className="inline-flex items-center rounded-md border border-amber-400 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-800/40 dark:text-amber-100 dark:hover:bg-amber-800/60"
+                            >
+                                Crear super administrador
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -70,9 +95,8 @@ export default function Login({
                                     </TextLink>
                                 )}
                             </div>
-                            <Input
+                            <PasswordInput
                                 id="password"
-                                type="password"
                                 name="password"
                                 required
                                 tabIndex={2}
@@ -104,14 +128,6 @@ export default function Login({
                             Ingresar
                         </Button>
 
-                        {canRegister && (
-                            <div className="text-center text-sm text-muted-foreground">
-                                ¿Aún no tienes cuenta?{' '}
-                                <TextLink href={register()} tabIndex={6}>
-                                    Regístrate
-                                </TextLink>
-                            </div>
-                        )}
                     </>
                 )}
             </Form>

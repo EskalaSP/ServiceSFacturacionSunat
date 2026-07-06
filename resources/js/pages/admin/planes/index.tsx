@@ -16,6 +16,7 @@ type Plan = {
     features_count: number;
     sort_order: number;
     is_active: boolean;
+    subscriptions_count: number;
 };
 
 type Props = {
@@ -35,7 +36,14 @@ export default function PlanesIndex({ planes }: Props) {
         router.post(`/admin/planes/${id}/toggle`, {}, { preserveScroll: true });
     };
 
-    const eliminar = (id: number, name: string) => {
+    const eliminar = (id: number, name: string, subs: number) => {
+        if (subs > 0) {
+            alert(
+                `No se puede eliminar "${name}": tiene ${subs} suscripción(es) asociada(s). ` +
+                'Desactívalo en su lugar.',
+            );
+            return;
+        }
         if (confirm(`¿Eliminar plan "${name}"?`)) {
             router.delete(`/admin/planes/${id}`, { preserveScroll: true });
         }
@@ -78,6 +86,7 @@ export default function PlanesIndex({ planes }: Props) {
                                     <th className="px-4 py-3 text-left font-medium">Anual</th>
                                     <th className="px-4 py-3 text-left font-medium">Docs/mes</th>
                                     <th className="px-4 py-3 text-left font-medium">Features</th>
+                                    <th className="px-4 py-3 text-left font-medium">Empresas</th>
                                     <th className="px-4 py-3 text-left font-medium">Estado</th>
                                     <th className="px-4 py-3 text-right font-medium">Acciones</th>
                                 </tr>
@@ -85,7 +94,7 @@ export default function PlanesIndex({ planes }: Props) {
                             <tbody className="divide-y">
                                 {planes.length === 0 ? (
                                     <tr>
-                                        <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
+                                        <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
                                             Aún no hay planes definidos.
                                         </td>
                                     </tr>
@@ -104,6 +113,13 @@ export default function PlanesIndex({ planes }: Props) {
                                             </td>
                                             <td className="px-4 py-3 text-xs text-muted-foreground">
                                                 {p.features_count} activas
+                                            </td>
+                                            <td className="px-4 py-3 text-xs">
+                                                {p.subscriptions_count > 0 ? (
+                                                    <span className="font-medium">{p.subscriptions_count}</span>
+                                                ) : (
+                                                    <span className="text-muted-foreground">—</span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3">
                                                 {p.is_active ? (
@@ -134,8 +150,14 @@ export default function PlanesIndex({ planes }: Props) {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-red-600 hover:text-red-700"
-                                                        onClick={() => eliminar(p.id, p.name)}
+                                                        className="text-red-600 hover:text-red-700 disabled:opacity-40"
+                                                        onClick={() => eliminar(p.id, p.name, p.subscriptions_count)}
+                                                        disabled={p.subscriptions_count > 0}
+                                                        title={
+                                                            p.subscriptions_count > 0
+                                                                ? 'No se puede eliminar: hay empresas asociadas'
+                                                                : ''
+                                                        }
                                                     >
                                                         Eliminar
                                                     </Button>

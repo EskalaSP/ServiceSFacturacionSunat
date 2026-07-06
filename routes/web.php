@@ -15,7 +15,10 @@ use Illuminate\Support\Facades\Route;
 
 // ── Home root ───────────────────────────────────────────────────────────────
 // - Petición JSON (curl / API) → devuelve status de la API
-// - Petición HTML (navegador)  → redirige a login o dashboard según autenticación
+// - Petición HTML (navegador):
+//     · usuario autenticado         → dashboard
+//     · sin usuarios en la BD       → register (primer super admin)
+//     · con usuarios pero sin login → login
 Route::get('/', function (\Illuminate\Http\Request $request) {
     if ($request->wantsJson()) {
         return response()->json([
@@ -26,9 +29,15 @@ Route::get('/', function (\Illuminate\Http\Request $request) {
         ]);
     }
 
-    return $request->user()
-        ? redirect()->route('dashboard')
-        : redirect()->route('login');
+    if ($request->user()) {
+        return redirect()->route('dashboard');
+    }
+
+    if (! \App\Models\User::query()->exists()) {
+        return redirect('/register');
+    }
+
+    return redirect()->route('login');
 })->name('home');
 
 // ── Auth Bridge (entrada desde el SaaS principal) ───────────────────────────

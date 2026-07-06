@@ -7,8 +7,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\TenantRequest;
 use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\Plan\PlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -67,12 +69,18 @@ class TenantController extends Controller
         ]);
     }
 
-    public function store(TenantRequest $request): RedirectResponse
+    public function store(TenantRequest $request, PlanService $planService): RedirectResponse
     {
         $data = $this->prepararData($request);
 
         $tenant = Tenant::create($data);
         $this->guardarArchivos($request, $tenant);
+
+        // Vincular el plan elegido en el formulario con una Subscription real.
+        // Los middlewares de límites consultan tenant->activeSubscription; sin
+        // esto todo el sistema de planes queda desconectado y todo pasa como
+        // ilimitado por el fallback de PlanService::buildFreePlan().
+        $this->asignarPlan($tenant, $data['plan'] ?? 'free', $planService);
 
         return redirect()
             ->route('admin.empresas.show', $tenant)
@@ -83,6 +91,42 @@ class TenantController extends Controller
                 'ruc' => $tenant->ruc,
                 'razon_social' => $tenant->razon_social,
             ]);
+    }
+
+    /**
+     * Crea/actualiza la suscripción activa del tenant al plan indicado.
+     * Es una asignación administrativa — no hay cobro ni trial.
+     */
+    private function asignarPlan(Tenant $tenant, ?string $planSlug, PlanService $planService): void
+    {
+        $plan = Plan::where('slug', $planSlug ?: 'free')->where('is_active', true)->first()
+            ?? Plan::where('slug', 'free')->where('is_active', true)->first();
+
+        if (! $plan) {
+            return;
+        }
+
+        // Cancelar cualquier suscripción activa/trial previa
+        $tenant->subscriptions()
+            ->whereIn('status', [Subscription::STATUS_ACTIVE, Subscription::STATUS_TRIALING])
+            ->update(['status' => Subscription::STATUS_CANCELLED, 'cancelled_at' => now()]);
+
+        Subscription::create([
+            'tenant_id' => $tenant->id,
+            'plan_id' => $plan->id,
+            'status' => Subscription::STATUS_ACTIVE,
+            'billing_cycle' => Subscription::BILLING_MONTHLY,
+            'current_period_start' => now(),
+            'current_period_end' => now()->addYear(),
+            'payment_gateway' => 'admin',
+        ]);
+
+        $tenant->update([
+            'plan' => $plan->slug,
+            'max_documents_month' => (int) $plan->getLimit('documents_month', 30),
+        ]);
+
+        $planService->clearCache($tenant);
     }
 
     public function show(Tenant $tenant): Response
@@ -215,7 +259,7 @@ class TenantController extends Controller
         ])->all();
     }
 
-    public function update(TenantRequest $request, Tenant $tenant): RedirectResponse
+    public function update(TenantRequest $request, Tenant $tenant, PlanService $planService): RedirectResponse
     {
         $data = $this->prepararData($request);
 
@@ -227,8 +271,16 @@ class TenantController extends Controller
             unset($data['sire_client_secret']);
         }
 
+        $planAnterior = $tenant->activeSubscription?->plan?->slug;
+        $planNuevo = $data['plan'] ?? $planAnterior;
+
         $tenant->update($data);
         $this->guardarArchivos($request, $tenant);
+
+        // Si cambió el plan (o el tenant nunca tuvo suscripción), reasignar.
+        if ($planNuevo && $planNuevo !== $planAnterior) {
+            $this->asignarPlan($tenant->fresh(), $planNuevo, $planService);
+        }
 
         return redirect()->route('admin.empresas.show', $tenant)
             ->with('success', 'Empresa actualizada.');

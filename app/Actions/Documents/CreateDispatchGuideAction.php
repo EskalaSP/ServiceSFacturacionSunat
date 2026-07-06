@@ -2,10 +2,13 @@
 
 namespace App\Actions\Documents;
 
+use App\Events\DocumentCreated;
 use App\Jobs\SendDispatchGuideToSunat;
 use App\Models\DispatchGuide;
 use App\Models\Serie;
 use App\Models\Tenant;
+use App\Services\Plan\PlanService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class CreateDispatchGuideAction
@@ -71,6 +74,10 @@ class CreateDispatchGuideAction
                 'items' => $data['items'],
                 'sunat_status' => 'pendiente',
             ]);
+
+            event(new DocumentCreated($guide));
+            Cache::forget("tenant:{$tenant->id}:sunat_count:" . now()->format('Y-m'));
+            app(PlanService::class)->incrementUsage($tenant, 'documents');
 
             if ($enviarAutomatico) {
                 SendDispatchGuideToSunat::dispatch($guide->id);

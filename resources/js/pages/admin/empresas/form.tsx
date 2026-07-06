@@ -17,6 +17,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { BreadcrumbItem } from '@/types';
@@ -371,9 +372,8 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                         </div>
                         <div>
                             <Label htmlFor="sol_pass">Clave SOL {editando ? '' : '*'}</Label>
-                            <Input
+                            <PasswordInput
                                 id="sol_pass"
-                                type="password"
                                 value={data.sol_pass}
                                 onChange={(e) => setData('sol_pass', e.target.value)}
                                 required={!editando}
@@ -408,9 +408,8 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                         </div>
                         <div>
                             <Label htmlFor="contrasena_certificado">Contraseña del certificado</Label>
-                            <Input
+                            <PasswordInput
                                 id="contrasena_certificado"
-                                type="password"
                                 value={data.contrasena_certificado}
                                 onChange={(e) => setData('contrasena_certificado', e.target.value)}
                                 placeholder="Contraseña del archivo .pfx"
@@ -445,9 +444,8 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                             </div>
                             <div className="md:col-span-2">
                                 <Label htmlFor="sire_client_secret">Client Secret SIRE</Label>
-                                <Input
+                                <PasswordInput
                                     id="sire_client_secret"
-                                    type="password"
                                     value={data.sire_client_secret}
                                     onChange={(e) => setData('sire_client_secret', e.target.value)}
                                     placeholder={editando ? '••••• (dejar vacío = sin cambios)' : 'Client Secret otorgado por SUNAT SIRE'}

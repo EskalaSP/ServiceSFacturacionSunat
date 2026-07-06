@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CheckDocumentLimit;
 use App\Http\Middleware\CheckPlanLimit;
+use App\Http\Middleware\EnsureFirstUserRegistration;
 use App\Http\Middleware\EnsureSireEnabled;
 use App\Http\Middleware\ForceJsonAccept;
 use App\Http\Middleware\UsageWarningHeader;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            EnsureFirstUserRegistration::class,
         ]);
 
         $middleware->alias([

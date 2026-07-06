@@ -24,10 +24,17 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
+        // El primer usuario registrado en la BD queda automáticamente
+        // como super administrador. El resto de registros están bloqueados
+        // por EnsureFirstUserRegistration (los super admin crean usuarios
+        // manualmente desde el panel).
+        $esPrimerUsuario = ! User::query()->exists();
+
         return User::create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
+            'is_admin' => $esPrimerUsuario,
         ]);
     }
 }

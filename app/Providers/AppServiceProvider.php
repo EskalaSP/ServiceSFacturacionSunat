@@ -45,7 +45,11 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureEventListeners(): void
     {
-        Event::listen(DocumentCreated::class, IncrementDocumentUsage::class);
+        // DocumentCreated → IncrementDocumentUsage: DESCONECTADO.
+        // Cada CreateXxxAction ya llama app(PlanService::class)->incrementUsage()
+        // dentro de la misma transacción. Reactivar el listener causaría un
+        // doble conteo (cada documento sumaría 2 al contador del tenant).
+        // El evento se sigue disparando por si otro listener lo necesita.
         Event::listen(SubscriptionCreated::class, SendWelcomeEmail::class);
         Event::listen(PaymentFailed::class, SendPaymentFailedEmail::class);
         Event::listen(TrialExpiring::class, SendTrialEndingEmail::class);
