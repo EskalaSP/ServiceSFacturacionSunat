@@ -71,8 +71,8 @@
     --card-foreground:      hsl(206, 9%, 14%);
     --popover:              hsl(0, 0%, 100%);
     --popover-foreground:   hsl(206, 9%, 14%);
-    --primary:              hsl(158, 18%, 40%);   /* #52796A verde teal */
-    --primary-foreground:   hsl(0, 0%, 98%);
+    --primary:              hsl(39, 96%, 50%);    /* #FAA307 ámbar (marca) */
+    --primary-foreground:   hsl(30, 50%, 10%);    /* texto oscuro sobre ámbar */
     --secondary:            hsl(0, 0%, 95%);      /* #F2F2F2 */
     --secondary-foreground: hsl(206, 9%, 14%);
     --muted:                hsl(0, 0%, 96%);      /* #F5F5F5 */
@@ -83,11 +83,11 @@
     --destructive-foreground: hsl(0, 0%, 98%);
     --border:               hsl(0, 0%, 91%);      /* #E8E8E8 borde visible pero suave */
     --input:                hsl(0, 0%, 96%);      /* #F5F5F5 */
-    --ring:                 hsl(158, 18%, 40%);
+    --ring:                 hsl(39, 96%, 50%);    /* #FAA307 */
     --radius:               1rem;
 
     /* Charts */
-    --chart-1:              hsl(158, 18%, 40%);
+    --chart-1:              hsl(39, 96%, 50%);
     --chart-2:              hsl(88, 18%, 65%);
     --chart-3:              hsl(206, 9%, 35%);
     --chart-4:              hsl(158, 12%, 55%);
@@ -96,16 +96,16 @@
     /* Sidebar */
     --sidebar:              hsl(0, 0%, 98%);      /* #FAFAFA casi blanco */
     --sidebar-foreground:   hsl(206, 9%, 20%);
-    --sidebar-primary:      hsl(158, 18%, 40%);
-    --sidebar-primary-foreground: hsl(0, 0%, 98%);
+    --sidebar-primary:      hsl(39, 96%, 50%);
+    --sidebar-primary-foreground: hsl(30, 50%, 10%);
     --sidebar-accent:       hsl(0, 0%, 95%);      /* #F2F2F2 hover */
     --sidebar-accent-foreground: hsl(206, 9%, 14%);
     --sidebar-border:       hsl(0, 0%, 91%);      /* #E8E8E8 */
-    --sidebar-ring:         hsl(158, 18%, 40%);
+    --sidebar-ring:         hsl(39, 96%, 50%);
 
     /* Custom brand tokens */
     --beige:                hsl(88, 18%, 73%);
-    --olive:                hsl(158, 18%, 40%);
+    --olive:                hsl(39, 96%, 50%);
 
     color-scheme: light;
 }
@@ -121,8 +121,8 @@
     --popover:              hsl(180, 25%, 2%);   /* #030505 popovers/modales */
     --popover-foreground:   hsl(0, 0%, 92%);
 
-    --primary:              hsl(158, 18%, 42%);  /* #557071 verde teal */
-    --primary-foreground:   hsl(0, 0%, 98%);
+    --primary:              hsl(39, 96%, 52%);   /* #FAA307 ámbar (marca) */
+    --primary-foreground:   hsl(30, 50%, 8%);    /* texto oscuro sobre ámbar */
 
     --secondary:            hsl(180, 20%, 3.5%); /* #070909 hover/secondary */
     --secondary-foreground: hsl(0, 0%, 92%);
@@ -138,9 +138,9 @@
 
     --border:               hsl(180, 8%, 10%);   /* #171B1B borde sutil pero visible */
     --input:                hsl(180, 22%, 2.5%); /* #050707 fondo input */
-    --ring:                 hsl(158, 22%, 48%);  /* #5F8577 */
+    --ring:                 hsl(39, 96%, 52%);   /* #FAA307 */
 
-    --chart-1:              hsl(158, 18%, 42%);
+    --chart-1:              hsl(39, 96%, 52%);
     --chart-2:              hsl(88, 18%, 70%);
     --chart-3:              hsl(206, 8%, 35%);
     --chart-4:              hsl(158, 14%, 32%);
@@ -149,15 +149,15 @@
     /* Sidebar — mismo que background para look flat */
     --sidebar:              hsl(180, 33%, 1%);   /* #010202 mismo que bg */
     --sidebar-foreground:   hsl(0, 0%, 92%);
-    --sidebar-primary:      hsl(158, 18%, 42%);
-    --sidebar-primary-foreground: hsl(0, 0%, 98%);
+    --sidebar-primary:      hsl(39, 96%, 52%);
+    --sidebar-primary-foreground: hsl(30, 50%, 8%);
     --sidebar-accent:       hsl(180, 20%, 3.5%); /* #070909 hover items */
     --sidebar-accent-foreground: hsl(0, 0%, 92%);
     --sidebar-border:       hsl(180, 8%, 10%);   /* #171B1B separadores */
-    --sidebar-ring:         hsl(158, 22%, 48%);
+    --sidebar-ring:         hsl(39, 96%, 52%);
 
     --beige:                hsl(88, 18%, 73%);
-    --olive:                hsl(158, 18%, 42%);
+    --olive:                hsl(39, 96%, 52%);
 
     color-scheme: dark;
 }

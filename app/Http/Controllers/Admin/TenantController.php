@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\TenantRequest;
+use App\Mail\TenantCredentialsMail;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -13,10 +14,13 @@ use App\Models\User;
 use App\Services\Plan\PlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class TenantController extends Controller
 {
@@ -25,6 +29,7 @@ class TenantController extends Controller
     public function index(Request $request): Response
     {
         $query = Tenant::query()
+            ->withCount(['sucursales', 'series'])
             ->when($request->filled('buscar'), function ($q) use ($request) {
                 $b = $request->input('buscar');
                 $q->where(fn ($qq) => $qq->where('ruc', 'like', "%{$b}%")
@@ -50,6 +55,8 @@ class TenantController extends Controller
                 'plan' => $t->plan,
                 'is_active' => (bool) $t->is_active,
                 'created_at' => $t->created_at?->toIso8601String(),
+                'sucursales_count' => (int) $t->sucursales_count,
+                'series_count' => (int) $t->series_count,
             ]),
             'filtros' => [
                 'buscar' => $request->input('buscar', ''),
@@ -82,9 +89,15 @@ class TenantController extends Controller
         // ilimitado por el fallback de PlanService::buildFreePlan().
         $this->asignarPlan($tenant, $data['plan'] ?? 'free', $planService);
 
+        // Credenciales: se muestran en el modal (con botón descargar .txt)
+        // Y además se envían por correo con el .txt adjunto a los destinatarios.
+        $envio = $this->enviarCredencialesPorCorreo($tenant, 'creacion');
+
         return redirect()
             ->route('admin.empresas.show', $tenant)
-            ->with('success', 'Empresa registrada correctamente.')
+            ->with('success', $envio['ok']
+                ? "Empresa registrada. Credenciales enviadas a: {$envio['destinos']}. También puedes descargarlas aquí."
+                : 'Empresa registrada. ' . $envio['motivo'] . ' Descárgalas desde el recuadro.')
             ->with('credenciales_nuevas', [
                 'api_key' => $tenant->api_key,
                 'api_secret' => $tenant->api_secret,
@@ -276,6 +289,7 @@ class TenantController extends Controller
 
         $tenant->update($data);
         $this->guardarArchivos($request, $tenant);
+        $this->olvidarCacheTenant($tenant);
 
         // Si cambió el plan (o el tenant nunca tuvo suscripción), reasignar.
         if ($planNuevo && $planNuevo !== $planAnterior) {
@@ -288,6 +302,7 @@ class TenantController extends Controller
 
     public function destroy(Tenant $tenant): RedirectResponse
     {
+        $this->olvidarCacheTenant($tenant);
         $tenant->delete();
 
         return redirect()->route('admin.empresas.index')
@@ -298,24 +313,93 @@ class TenantController extends Controller
     {
         $tenant->update(['is_active' => ! $tenant->is_active]);
 
+        // ResolveTenant cachea el tenant (con su is_active) por api_key durante
+        // 10 min. Sin limpiar el cache, la API seguiría viendo el estado viejo:
+        // al reactivar seguiría respondiendo "Empresa desactivada", y al
+        // desactivar seguiría aceptando requests. Hay que invalidar aquí.
+        $this->olvidarCacheTenant($tenant);
+
         return back()->with('success', 'Estado de la empresa actualizado.');
+    }
+
+    /**
+     * Invalida el cache que usa ResolveTenant (clave por api_key) para que
+     * los cambios de is_active / credenciales tengan efecto inmediato en la API.
+     */
+    private function olvidarCacheTenant(Tenant $tenant): void
+    {
+        \Illuminate\Support\Facades\Cache::forget("tenant:key:{$tenant->api_key}");
     }
 
     public function regenerarCredenciales(Tenant $tenant): RedirectResponse
     {
+        // Invalidar cache de la clave anterior para que el middleware no siga
+        // aceptando el api_key viejo hasta que expire el TTL de 10 min.
+        $this->olvidarCacheTenant($tenant);
+
         $tenant->update([
             'api_key' => Str::random(64),
             'api_secret' => hash('sha256', Str::random(64)),
         ]);
 
+        // Se muestran en el modal (descargar .txt) y se envían con el .txt adjunto.
+        $envio = $this->enviarCredencialesPorCorreo($tenant->fresh(), 'regeneracion');
+
         return redirect()->route('admin.empresas.show', $tenant)
-            ->with('success', 'Credenciales regeneradas. Guárdalas ahora — no se mostrarán de nuevo.')
+            ->with('success', $envio['ok']
+                ? "Credenciales regeneradas y enviadas a: {$envio['destinos']}. También puedes descargarlas aquí."
+                : 'Credenciales regeneradas. ' . $envio['motivo'] . ' Descárgalas ahora — no se mostrarán de nuevo.')
             ->with('credenciales_nuevas', [
                 'api_key' => $tenant->api_key,
                 'api_secret' => $tenant->api_secret,
                 'ruc' => $tenant->ruc,
                 'razon_social' => $tenant->razon_social,
             ]);
+    }
+
+    /**
+     * Envía el api_key + api_secret (como .txt adjunto) a los destinatarios del
+     * tenant: emails del perfil + usuario vinculado. Best-effort — si el SMTP
+     * falla, NO rompe la operación (las credenciales igual se muestran/descargan).
+     * Devuelve ['ok' => bool, 'destinos' => 'a@b, c@d', 'motivo' => string].
+     */
+    private function enviarCredencialesPorCorreo(Tenant $tenant, string $motivo): array
+    {
+        $destinatarios = collect([
+            ...($tenant->emails ?? []),
+            $tenant->user?->email,
+        ])->filter()
+          ->map(fn ($email) => strtolower(trim((string) $email)))
+          ->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL))
+          ->unique()
+          ->values()
+          ->all();
+
+        if (empty($destinatarios)) {
+            return [
+                'ok' => false,
+                'destinos' => '',
+                'motivo' => 'No se envió correo: la empresa no tiene emails ni usuario vinculado.',
+            ];
+        }
+
+        try {
+            Mail::to($destinatarios)->send(new TenantCredentialsMail(
+                $tenant,
+                $tenant->api_key,
+                $tenant->api_secret,
+                $motivo,
+            ));
+
+            return ['ok' => true, 'destinos' => implode(', ', $destinatarios), 'motivo' => ''];
+        } catch (Throwable $e) {
+            Log::error('Fallo al enviar credenciales por correo', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['ok' => false, 'destinos' => '', 'motivo' => 'No se pudo enviar el correo.'];
+        }
     }
 
     private function prepararData(TenantRequest $request): array

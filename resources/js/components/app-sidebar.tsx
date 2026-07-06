@@ -1,12 +1,10 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, CreditCard, LayoutGrid, ShieldCheck } from 'lucide-react';
+import { Building2, CreditCard, Hash, LayoutGrid, MapPin, ShieldCheck } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarGroup,
     SidebarGroupLabel,
     SidebarHeader,
@@ -20,15 +18,17 @@ import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Inicio',
         href: dashboard(),
         icon: LayoutGrid,
     },
 ];
 
 const adminNavItems: NavItem[] = [
-    { title: 'Empresas', href: '/admin/empresas', icon: Building2 },
-    { title: 'Planes',   href: '/admin/planes',   icon: CreditCard },
+    { title: 'Empresas',   href: '/admin/empresas',   icon: Building2 },
+    { title: 'Sucursales', href: '/admin/sucursales', icon: MapPin },
+    { title: 'Series',     href: '/admin/series',     icon: Hash },
+    { title: 'Planes',     href: '/admin/planes',     icon: CreditCard },
 ];
 
 export function AppSidebar() {
@@ -78,10 +78,6 @@ export function AppSidebar() {
                     </SidebarGroup>
                 )}
             </SidebarContent>
-
-            <SidebarFooter>
-                <NavUser />
-            </SidebarFooter>
         </Sidebar>
     );
 }

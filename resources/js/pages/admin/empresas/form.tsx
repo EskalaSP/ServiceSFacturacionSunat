@@ -106,21 +106,23 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
         departamento: tenant.departamento ?? '',
         provincia: tenant.provincia ?? '',
         distrito: tenant.distrito ?? '',
-        telefonos: tenant.telefonos ?? [],
-        emails: tenant.emails ?? [],
+        // Si vienen vacíos en edición, muestro 1 input listo para escribir
+        // en vez de solo el botón "Añadir" — evita el paso extra de clic.
+        telefonos: (tenant.telefonos && tenant.telefonos.length > 0) ? tenant.telefonos : [''],
+        emails: (tenant.emails && tenant.emails.length > 0) ? tenant.emails : [''],
         sol_user: tenant.sol_user ?? 'MODDATOS',
         sol_pass: '',
-        environment: tenant.environment ?? 'beta',
+        environment: tenant.environment || 'beta',
         certificado: null as File | null,
         contrasena_certificado: '',
         sire_enabled: tenant.sire_enabled ?? false,
         sire_client_id: tenant.sire_client_id ?? '',
         sire_client_secret: '',
-        tax_regime: tenant.tax_regime ?? 'general',
+        tax_regime: tenant.tax_regime || 'general',
         igv_rate_override: tenant.igv_rate_override ?? '',
         nrus_categoria: tenant.nrus_categoria ?? '',
-        plan: tenant.plan ?? 'free',
-        max_documents_month: tenant.max_documents_month ?? 20,
+        plan: tenant.plan || 'free',
+        max_documents_month: Number(tenant.max_documents_month) || 20,
         webhook_url: tenant.webhook_url ?? '',
         logo: null as File | null,
         mensaje_agradecimiento: tenant.mensaje_agradecimiento ?? '',
@@ -133,7 +135,11 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        const options = { forceFormData: true } as const;
+        // Solo forzamos multipart cuando realmente hay un archivo — con
+        // JSON el flujo es más simple y evita el PUT+multipart que en
+        // algunos setups deja el body vacío antes de llegar a Laravel.
+        const hayArchivos = data.certificado instanceof File || data.logo instanceof File;
+        const options = hayArchivos ? { forceFormData: true } : {};
         if (editando && tenant.id) {
             put(`/admin/empresas/${tenant.id}`, options);
         } else {
@@ -179,6 +185,14 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                     </Button>
                 </div>
 
+                {editando && (
+                    <div className="rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-300">
+                        <strong>Editando datos existentes.</strong>{' '}
+                        Los campos que ves con texto en gris <em>(Ej: ...)</em> están vacíos en la base de datos —
+                        es solo texto de ejemplo para orientarte. Completa los que quieras y guarda; los campos vacíos quedan vacíos.
+                    </div>
+                )}
+
                 {/* 1. Identidad */}
                 <Section icon={IdCard} title="1. Identidad" subtitle="RUC y datos legales de la empresa">
                     <div className="grid gap-4 md:grid-cols-3">
@@ -221,7 +235,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                                 value={data.nombre_comercial}
                                 onChange={(e) => setData('nombre_comercial', e.target.value)}
                                 maxLength={255}
-                                placeholder="Nombre visible al público (opcional)"
+                                placeholder="Ej: TIENDA MODAS AMÉRICA (opcional)"
                             />
                         </div>
                     </div>
@@ -291,7 +305,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                                             setData('telefonos', arr);
                                         }}
                                         maxLength={20}
-                                        placeholder="+51 999 999 999"
+                                        placeholder="Ej: +51 999 999 999"
                                     />
                                     <Button
                                         type="button"
@@ -329,7 +343,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                                             setData('emails', arr);
                                         }}
                                         maxLength={100}
-                                        placeholder="ventas@empresa.com"
+                                        placeholder="Ej: ventas@empresa.com"
                                     />
                                     <Button
                                         type="button"
@@ -439,7 +453,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                                     value={data.sire_client_id}
                                     onChange={(e) => setData('sire_client_id', e.target.value)}
                                     maxLength={100}
-                                    placeholder="Client ID otorgado por SUNAT SIRE"
+                                    placeholder="Ej: 00abc123-4567-... (Client ID SIRE)"
                                 />
                             </div>
                             <div className="md:col-span-2">
@@ -563,7 +577,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                                 type="url"
                                 value={data.webhook_url}
                                 onChange={(e) => setData('webhook_url', e.target.value)}
-                                placeholder="https://tu-app.com/sunat-webhook"
+                                placeholder="Ej: https://tu-app.com/sunat-webhook (opcional)"
                                 maxLength={500}
                             />
                         </div>
@@ -588,7 +602,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                                 className="form-input"
                                 value={data.mensaje_agradecimiento}
                                 onChange={(e) => setData('mensaje_agradecimiento', e.target.value)}
-                                placeholder="Gracias por su compra. Vuelva pronto."
+                                placeholder="Ej: Gracias por su compra. Vuelva pronto."
                             />
                         </div>
                         <div className="md:col-span-2">
@@ -600,7 +614,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                                 className="form-input"
                                 value={data.mensaje_promocional}
                                 onChange={(e) => setData('mensaje_promocional', e.target.value)}
-                                placeholder="Síguenos en @tuempresa • www.tuempresa.com"
+                                placeholder="Ej: Síguenos en @tuempresa • www.tuempresa.com"
                             />
                         </div>
 
@@ -696,7 +710,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                             {data.billeteras_digitales.map((b, i) => (
                                 <div key={i} className="mt-2 grid gap-2 rounded bg-muted/30 p-3 md:grid-cols-3">
                                     <Input
-                                        placeholder="Yape / Plin / Tunki..."
+                                        placeholder="Ej: Yape / Plin / Tunki..."
                                         value={b.tipo}
                                         onChange={(e) => {
                                             const arr = [...data.billeteras_digitales];

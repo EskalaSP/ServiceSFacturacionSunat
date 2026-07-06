@@ -14,30 +14,34 @@ use App\Http\Controllers\Web\Sunat\NotaDebitoController;
 use Illuminate\Support\Facades\Route;
 
 // ── Home root ───────────────────────────────────────────────────────────────
-// - Petición JSON (curl / API) → devuelve status de la API
-// - Petición HTML (navegador):
-//     · usuario autenticado         → dashboard
-//     · sin usuarios en la BD       → register (primer super admin)
-//     · con usuarios pero sin login → login
+// La detección es por Accept:
+//   · Cliente acepta HTML (navegador)  → dashboard/login/register según estado
+//   · Cliente NO acepta HTML (curl/API) → JSON con status de la API
+//
+// Se usa `Accept: text/html` en vez de `wantsJson()` porque proxies (nginx,
+// cloudflare, cdn) a veces reescriben Accept y disparaban wantsJson()=true
+// en navegadores reales, mostrando JSON en la raíz.
 Route::get('/', function (\Illuminate\Http\Request $request) {
-    if ($request->wantsJson()) {
-        return response()->json([
-            'api'     => 'SUNAT API',
-            'version' => 'v1',
-            'status'  => 'ok',
-            'docs'    => url('/api/v1'),
-        ]);
+    $aceptaHtml = str_contains((string) $request->header('Accept', ''), 'text/html');
+
+    if ($aceptaHtml) {
+        if ($request->user()) {
+            return redirect()->route('dashboard');
+        }
+
+        if (! \App\Models\User::query()->exists()) {
+            return redirect('/register');
+        }
+
+        return redirect()->route('login');
     }
 
-    if ($request->user()) {
-        return redirect()->route('dashboard');
-    }
-
-    if (! \App\Models\User::query()->exists()) {
-        return redirect('/register');
-    }
-
-    return redirect()->route('login');
+    return response()->json([
+        'api'     => 'SUNAT API',
+        'version' => 'v1',
+        'status'  => 'ok',
+        'docs'    => url('/api/v1'),
+    ]);
 })->name('home');
 
 // ── Auth Bridge (entrada desde el SaaS principal) ───────────────────────────
@@ -122,6 +126,12 @@ Route::middleware(['auth', 'admin'])
         Route::put('empresas/{tenant}/series/{serie}',            [\App\Http\Controllers\Admin\SerieController::class, 'update'])->name('series.update');
         Route::delete('empresas/{tenant}/series/{serie}',         [\App\Http\Controllers\Admin\SerieController::class, 'destroy'])->name('series.destroy');
         Route::post('empresas/{tenant}/series/{serie}/toggle',    [\App\Http\Controllers\Admin\SerieController::class, 'toggle'])->name('series.toggle');
+
+        // Sucursales (listado global, cross-empresa)
+        Route::get('sucursales',              [\App\Http\Controllers\Admin\SucursalGlobalController::class, 'index'])->name('sucursales.todas');
+
+        // Series (listado global, cross-empresa)
+        Route::get('series',                  [\App\Http\Controllers\Admin\SerieGlobalController::class, 'index'])->name('series.todas');
 
         // Planes
         Route::get('planes',                  [\App\Http\Controllers\Admin\PlanController::class, 'index'])->name('planes.index');

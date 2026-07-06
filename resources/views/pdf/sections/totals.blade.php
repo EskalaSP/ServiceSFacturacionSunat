@@ -2,10 +2,13 @@
 @if($tipo_documento !== '09' && $tipo_documento !== '31')
 @php
     $moneda_prefix = $tipo_moneda !== 'PEN' ? $tipo_moneda : $moneda_simbolo;
-    // Calcula el % IGV real desde los montos del documento — así respeta
-    // igv_rate_override (10.5% MYPE, 8%, etc.) sin hardcodear 18.
+    // La tasa de IGV viene del mapper ($igv_pct), tomada de porcentaje_igv de la
+    // línea gravada (18, 10.5, 8...). Solo si no viene, se recalcula desde montos
+    // como fallback (podría dar 17.99% por redondeo, pero es último recurso).
     if (isset($tipo_operacion) && str_starts_with($tipo_operacion, '02')) {
         $igv_pct = 0;
+    } elseif (!empty($igv_pct)) {
+        $igv_pct = ($igv_pct == floor($igv_pct)) ? (int) $igv_pct : rtrim(rtrim(number_format($igv_pct, 2, '.', ''), '0'), '.');
     } elseif (($mto_oper_gravadas ?? 0) > 0 && ($mto_igv ?? 0) > 0) {
         $igv_pct = round(($mto_igv / $mto_oper_gravadas) * 100, 2);
         // Redondeo cosmético: si es entero, sin decimales; si termina en .0, quita el 0

@@ -71,9 +71,9 @@ const fmtFecha = (iso: string) => {
 };
 
 // Paleta consistente con el tema
-const COLORS_TIPO = ['#557071', '#BAC5AC', '#8AA894', '#9FB88E', '#C7D4B8'];
-const COLORS_PLAN = ['#94A3B8', '#557071', '#F59E0B'];
-const COLORS_REGIMEN = ['#557071', '#BAC5AC', '#8AA894'];
+const COLORS_TIPO = ['#FAA307', '#BAC5AC', '#8AA894', '#9FB88E', '#C7D4B8'];
+const COLORS_PLAN = ['#94A3B8', '#FAA307', '#3B82F6'];
+const COLORS_REGIMEN = ['#FAA307', '#BAC5AC', '#8AA894'];
 const COLORS_ESTADO = ['#10B981', '#EF4444', '#3B82F6', '#94A3B8'];
 const COLORS_ENTORNO = ['#F59E0B', '#10B981'];
 
@@ -193,7 +193,7 @@ export default function Dashboard({ esAdmin, metricas }: Props) {
                         value={kpis.empresas_total.toString()}
                         subvalue={`${kpis.empresas_activas} activas`}
                         icon={Building2}
-                        iconColor="#557071"
+                        iconColor="#FAA307"
                     />
                     <KpiCard
                         label="Documentos hoy"
@@ -243,7 +243,7 @@ export default function Dashboard({ esAdmin, metricas }: Props) {
                                         labelFormatter={fmtFecha}
                                     />
                                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                                    <Line type="monotone" dataKey="facturas" stroke="#557071" strokeWidth={2} dot={false} name="Facturas" />
+                                    <Line type="monotone" dataKey="facturas" stroke="#FAA307" strokeWidth={2} dot={false} name="Facturas" />
                                     <Line type="monotone" dataKey="boletas" stroke="#BAC5AC" strokeWidth={2} dot={false} name="Boletas" />
                                     <Line type="monotone" dataKey="notas" stroke="#F59E0B" strokeWidth={2} dot={false} name="NC / ND" />
                                 </LineChart>

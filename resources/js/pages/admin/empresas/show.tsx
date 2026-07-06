@@ -1,10 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
-import { ArrowLeft, KeyRound, Pencil, Power } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, Download, KeyRound, Pencil, Power } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import type { BreadcrumbItem } from '@/types';
@@ -56,6 +57,16 @@ const breadcrumbs = (razon: string): BreadcrumbItem[] => [
 export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
     const [credOpen, setCredOpen] = useState<boolean>(Boolean(credencialesNuevas));
     const [copied, setCopied] = useState<'key' | 'secret' | null>(null);
+    const confirm = useConfirm();
+
+    // Abrir el modal cada vez que Inertia entrega credencialesNuevas
+    // (POST /regenerar-credenciales redirige al mismo show sin remontar,
+    // así useState no reactualiza — hay que forzarlo con useEffect).
+    useEffect(() => {
+        if (credencialesNuevas) {
+            setCredOpen(true);
+        }
+    }, [credencialesNuevas]);
 
     const copy = (text: string, which: 'key' | 'secret') => {
         navigator.clipboard.writeText(text);
@@ -63,8 +74,53 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
         setTimeout(() => setCopied(null), 1500);
     };
 
-    const regenerar = () => {
-        if (confirm('¿Regenerar api_key y api_secret? Las credenciales anteriores dejarán de funcionar inmediatamente.')) {
+    // Genera y descarga un .txt con las credenciales. Todo pasa en el
+    // navegador (Blob) — no hay endpoint ni correo, así evitamos los
+    // filtros anti-spam del SMTP que bloqueaban el envío.
+    const descargarTxt = () => {
+        if (!credencialesNuevas) return;
+        const c = credencialesNuevas;
+        const contenido = [
+            'CREDENCIALES DE API - Jorge Chavez API SUNAT',
+            '===========================================',
+            '',
+            `Empresa: ${c.razon_social}`,
+            `RUC:     ${c.ruc}`,
+            '',
+            '-- Credenciales de acceso --',
+            `X-Api-Key:    ${c.api_key}`,
+            `X-Api-Secret: ${c.api_secret}`,
+            '',
+            'Envía ambos como headers HTTP en cada request a la API.',
+            '',
+            'IMPORTANTE: guarda este archivo en un lugar seguro.',
+            'El api_secret no se puede volver a mostrar. Si lo pierdes,',
+            'deberás regenerar las credenciales desde el panel.',
+            '',
+            `Generado: ${new Date().toLocaleString('es-PE')}`,
+            '',
+        ].join('\r\n');
+
+        const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `credenciales-api-${c.ruc}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const regenerar = async () => {
+        if (
+            await confirm({
+                title: '¿Regenerar credenciales?',
+                description: 'Las credenciales anteriores dejarán de funcionar inmediatamente.',
+                variant: 'danger',
+                confirmText: 'Regenerar',
+            })
+        ) {
             router.post(`/admin/empresas/${tenant.id}/regenerar-credenciales`);
         }
     };
@@ -92,7 +148,7 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                         </DialogHeader>
 
                         <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
-                            ⚠️ El <strong>api_secret</strong> no se volverá a mostrar. Si lo pierdes, regenera credenciales.
+                            ⚠️ El <strong>api_secret</strong> no se volverá a mostrar. Descarga el archivo o cópialo antes de cerrar.
                         </div>
 
                         <div className="space-y-3">
@@ -130,7 +186,11 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                             </div>
                         </div>
 
-                        <DialogFooter>
+                        <DialogFooter className="gap-2 sm:justify-between">
+                            <Button type="button" variant="secondary" onClick={descargarTxt}>
+                                <Download className="size-4" />
+                                Descargar .txt
+                            </Button>
                             <Button onClick={() => setCredOpen(false)}>Ya guardé las credenciales</Button>
                         </DialogFooter>
                     </DialogContent>
@@ -138,6 +198,17 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
             )}
 
             <div className="flex flex-1 flex-col gap-4 p-4">
+                {(!tenant.emails || tenant.emails.length === 0) && !tenant.user && (
+                    <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+                        <strong>Sin destinatario para correos:</strong> esta empresa no tiene emails registrados ni un usuario asignado.
+                        Las credenciales no se enviarán automáticamente hasta que agregues al menos un email en{' '}
+                        <Link href={`/admin/empresas/${tenant.id}/editar`} className="underline font-medium">
+                            Editar empresa
+                        </Link>
+                        .
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-semibold tracking-tight">{tenant.razon_social}</h1>

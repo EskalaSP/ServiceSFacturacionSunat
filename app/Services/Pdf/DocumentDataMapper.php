@@ -62,6 +62,21 @@ class DocumentDataMapper
             ];
         })->toArray();
 
+        // Tasa de IGV a mostrar en los totales: se toma de la línea gravada
+        // (columna porcentaje_igv, ej. 18.00) — NO se recalcula desde los montos
+        // redondeados, porque 15.25/84.75 daría 17.99% en vez de 18%. Respeta
+        // igv_rate_override (10.5% MYPE, 8%, etc.) porque ese valor ya quedó
+        // guardado en porcentaje_igv al emitir el documento.
+        $igvPct = null;
+        foreach ($document->items as $item) {
+            $pct     = (float) ($item->porcentaje_igv ?? 0);
+            $igvLine = (float) ($item->igv ?? 0);
+            if ($pct > 0 && $igvLine > 0) {
+                $igvPct = $pct;
+                break;
+            }
+        }
+
         $tipoDocumento = $document->getTipoDocumento();
 
         // Detectar comprobante de contingencia: serie totalmente numérica
@@ -111,6 +126,7 @@ class DocumentDataMapper
             'mto_oper_inafectas' => (float) $document->mto_oper_inafectas,
             'mto_oper_gratuitas' => (float) $document->mto_oper_gratuitas,
             'mto_igv' => (float) $document->mto_igv,
+            'igv_pct' => $igvPct, // tasa real del documento (18, 10.5, ...) o null
             'mto_base_ivap' => (float) ($document->mto_base_ivap ?? 0),
             'mto_ivap' => (float) ($document->mto_ivap ?? 0),
             'mto_isc' => (float) ($document->mto_isc ?? 0),

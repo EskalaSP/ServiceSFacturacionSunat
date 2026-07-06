@@ -1,9 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { type ColumnDef } from '@tanstack/react-table';
+import { ArrowLeft, Pencil, Plus, Power, Trash2 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { DataTable } from '@/components/ui/data-table';
+import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
 import type { BreadcrumbItem } from '@/types';
 
 type Serie = {
@@ -29,117 +32,132 @@ const breadcrumbs = (razon: string, id: number): BreadcrumbItem[] => [
 ];
 
 export default function SeriesIndex({ tenant, series }: Props) {
-    const toggle = (id: number) => {
-        router.post(`/admin/empresas/${tenant.id}/series/${id}/toggle`, {}, { preserveScroll: true });
-    };
+    const confirm = useConfirm();
 
-    const eliminar = (id: number) => {
-        if (confirm('¿Eliminar serie? Esto no borra los documentos ya emitidos.')) {
-            router.delete(`/admin/empresas/${tenant.id}/series/${id}`, { preserveScroll: true });
+    const toggle = (s: Serie) =>
+        router.post(`/admin/empresas/${tenant.id}/series/${s.id}/toggle`, {}, { preserveScroll: true });
+
+    const eliminar = async (s: Serie) => {
+        if (
+            await confirm({
+                title: `¿Eliminar serie ${s.serie}?`,
+                description: 'Esto no borra los documentos ya emitidos.',
+                variant: 'danger',
+                confirmText: 'Eliminar',
+            })
+        ) {
+            router.delete(`/admin/empresas/${tenant.id}/series/${s.id}`, { preserveScroll: true });
         }
     };
+
+    const columns: ColumnDef<Serie>[] = [
+        {
+            accessorKey: 'serie',
+            header: 'Serie',
+            meta: { label: 'Serie', primary: true },
+            cell: ({ row }) => (
+                <div className="flex items-center gap-2">
+                    <span className="font-mono font-semibold">{row.original.serie}</span>
+                    <span className="text-muted-foreground text-xs uppercase">
+                        {row.original.tipo_nombre} ({row.original.tipo_documento})
+                    </span>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'correlativo',
+            header: 'Correlativo',
+            meta: { label: 'Correlativo' },
+            cell: ({ row }) => (
+                <span className="font-mono">{String(row.original.correlativo).padStart(8, '0')}</span>
+            ),
+        },
+        {
+            accessorKey: 'sucursal_nombre',
+            header: 'Sucursal',
+            meta: { label: 'Sucursal' },
+            cell: ({ row }) => row.original.sucursal_nombre ?? '—',
+        },
+        {
+            accessorKey: 'is_active',
+            header: 'Estado',
+            meta: { label: 'Estado' },
+            cell: ({ row }) =>
+                row.original.is_active ? (
+                    <Badge className="border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                        Activa
+                    </Badge>
+                ) : (
+                    <Badge variant="secondary">Inactiva</Badge>
+                ),
+        },
+        {
+            id: 'actions',
+            header: '',
+            enableSorting: false,
+            meta: { hideLabel: true, alignRight: true },
+            cell: ({ row }) => {
+                const s = row.original;
+                return (
+                    <DataTableRowActions
+                        actions={[
+                            {
+                                label: 'Editar',
+                                icon: Pencil,
+                                onSelect: () =>
+                                    router.visit(`/admin/empresas/${tenant.id}/series/${s.id}/editar`),
+                            },
+                            {
+                                label: s.is_active ? 'Desactivar' : 'Activar',
+                                icon: Power,
+                                onSelect: () => toggle(s),
+                            },
+                            {
+                                label: 'Eliminar',
+                                icon: Trash2,
+                                danger: true,
+                                separatorBefore: true,
+                                onSelect: () => eliminar(s),
+                            },
+                        ]}
+                    />
+                );
+            },
+        },
+    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs(tenant.razon_social, tenant.id)}>
             <Head title={`Series — ${tenant.razon_social}`} />
 
-            <div className="flex flex-1 flex-col gap-4 p-4">
+            <div className="flex flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-semibold tracking-tight">Series</h1>
-                        <p className="text-sm text-muted-foreground">{tenant.razon_social}</p>
+                        <p className="text-muted-foreground text-sm">{tenant.razon_social}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" asChild>
-                            <Link href={`/admin/empresas/${tenant.id}`}>
-                                <ArrowLeft className="size-4" />
-                                Volver a empresa
-                            </Link>
-                        </Button>
+                    <Button variant="ghost" asChild>
+                        <Link href={`/admin/empresas/${tenant.id}`}>
+                            <ArrowLeft className="size-4" />
+                            Volver
+                        </Link>
+                    </Button>
+                </div>
+
+                <DataTable
+                    columns={columns}
+                    data={series}
+                    searchPlaceholder="Buscar serie..."
+                    emptyMessage="Aún no hay series. Crea al menos F001 (facturas) y B001 (boletas)."
+                    toolbar={
                         <Button asChild>
                             <Link href={`/admin/empresas/${tenant.id}/series/nueva`}>
                                 <Plus className="size-4" />
                                 Nueva serie
                             </Link>
                         </Button>
-                    </div>
-                </div>
-
-                <Card className="overflow-hidden p-0">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
-                                <tr>
-                                    <th className="px-4 py-3 text-left font-medium">Tipo</th>
-                                    <th className="px-4 py-3 text-left font-medium">Serie</th>
-                                    <th className="px-4 py-3 text-left font-medium">Correlativo</th>
-                                    <th className="px-4 py-3 text-left font-medium">Sucursal</th>
-                                    <th className="px-4 py-3 text-left font-medium">Estado</th>
-                                    <th className="px-4 py-3 text-right font-medium">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {series.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
-                                            Aún no hay series. Crea al menos F001 (facturas) y B001 (boletas).
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    series.map((s) => (
-                                        <tr key={s.id} className="hover:bg-muted/30">
-                                            <td className="px-4 py-3">
-                                                <span className="text-xs uppercase font-medium">{s.tipo_nombre}</span>
-                                                <span className="ml-1 text-xs text-muted-foreground">({s.tipo_documento})</span>
-                                            </td>
-                                            <td className="px-4 py-3 font-mono font-semibold">{s.serie}</td>
-                                            <td className="px-4 py-3 font-mono">
-                                                {String(s.correlativo).padStart(8, '0')}
-                                            </td>
-                                            <td className="px-4 py-3">{s.sucursal_nombre ?? '—'}</td>
-                                            <td className="px-4 py-3">
-                                                {s.is_active ? (
-                                                    <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300">
-                                                        Activa
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="secondary">Inactiva</Badge>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <Button variant="ghost" size="sm" asChild>
-                                                    <Link href={`/admin/empresas/${tenant.id}/series/${s.id}/editar`}>
-                                                        Editar
-                                                    </Link>
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => toggle(s.id)}
-                                                    className={
-                                                        s.is_active
-                                                            ? 'text-amber-600 hover:text-amber-700'
-                                                            : 'text-emerald-600 hover:text-emerald-700'
-                                                    }
-                                                >
-                                                    {s.is_active ? 'Desactivar' : 'Activar'}
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-red-600"
-                                                    onClick={() => eliminar(s.id)}
-                                                >
-                                                    Eliminar
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </Card>
+                    }
+                />
             </div>
         </AppLayout>
     );

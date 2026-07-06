@@ -17,15 +17,19 @@ class TenantRequest extends FormRequest
     public function rules(): array
     {
         $tenantId = $this->route('tenant')?->id;
+        $creando  = $this->isMethod('POST');
+        // En UPDATE los campos operativos son `sometimes` para que un PUT
+        // parcial (ej. sólo cambiar razón social) no exija reenviar todo.
+        $reqOSometimes = $creando ? 'required' : 'sometimes';
 
         return [
             // ── Identidad ───────────────────────────────────────────────
             'ruc' => [
-                $this->isMethod('POST') ? 'required' : 'sometimes',
+                $reqOSometimes,
                 'string', 'size:11', 'regex:/^(10|15|17|20)\d{9}$/',
                 Rule::unique('tenants', 'ruc')->ignore($tenantId),
             ],
-            'razon_social' => [$this->isMethod('POST') ? 'required' : 'sometimes', 'string', 'max:255'],
+            'razon_social' => [$reqOSometimes, 'string', 'max:255'],
             'nombre_comercial' => 'nullable|string|max:255',
 
             // ── Ubicación ───────────────────────────────────────────────
@@ -41,9 +45,9 @@ class TenantRequest extends FormRequest
             'emails.*' => 'nullable|email|max:100',
 
             // ── Credenciales SUNAT ──────────────────────────────────────
-            'sol_user' => [$this->isMethod('POST') ? 'required' : 'sometimes', 'string', 'max:50'],
-            'sol_pass' => $this->isMethod('POST') ? 'required|string|min:4|max:100' : 'nullable|string|min:4|max:100',
-            'environment' => ['required', Rule::in(['beta', 'production'])],
+            'sol_user' => [$reqOSometimes, 'string', 'max:50'],
+            'sol_pass' => $creando ? 'required|string|min:4|max:100' : 'nullable|string|min:4|max:100',
+            'environment' => [$reqOSometimes, Rule::in(['beta', 'production'])],
 
             'certificado' => 'nullable|file|extensions:pfx,p12,pem|max:2048',
             'contrasena_certificado' => 'nullable|string|max:100',
@@ -54,13 +58,18 @@ class TenantRequest extends FormRequest
             'sire_client_secret' => 'nullable|string|max:200',
 
             // ── Régimen tributario ──────────────────────────────────────
-            'tax_regime' => ['required', Rule::in(['general', 'mype_restaurantes', 'nrus'])],
+            'tax_regime' => [$reqOSometimes, Rule::in(['general', 'mype_restaurantes', 'nrus'])],
             'igv_rate_override' => 'nullable|numeric|between:0,30',
             'nrus_categoria' => 'nullable|in:1,2',
 
             // ── Plan y límites ──────────────────────────────────────────
-            'plan' => ['required', Rule::in(['free', 'pro', 'business'])],
-            'max_documents_month' => 'required|integer|min:0|max:99999',
+            // El plan se valida contra la tabla `plans`, no un enum hardcoded,
+            // porque los planes son 100% administrables desde /admin/planes.
+            'plan' => [
+                $reqOSometimes,
+                Rule::exists('plans', 'slug')->where(fn ($q) => $q->where('is_active', true)),
+            ],
+            'max_documents_month' => [$reqOSometimes, 'integer', 'min:0', 'max:99999'],
 
             // ── Comercial ───────────────────────────────────────────────
             'webhook_url' => 'nullable|url|max:500',
@@ -92,6 +101,9 @@ class TenantRequest extends FormRequest
             'ruc.size' => 'El RUC debe tener exactamente 11 dígitos.',
             'certificado.extensions' => 'El certificado debe ser un archivo .pfx, .p12 o .pem.',
             'certificado.max' => 'El certificado no puede pesar más de 2 MB.',
+            'plan.exists' => 'El plan seleccionado no existe o está desactivado. Revisa /admin/planes.',
+            'environment.in' => 'El entorno debe ser "beta" o "production".',
+            'tax_regime.in' => 'El régimen debe ser general, mype_restaurantes o nrus.',
         ];
     }
 }
