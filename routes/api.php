@@ -350,6 +350,7 @@ if (config('app.debug')) {
 // Protegido con X-Bridge-Key (SAAS_BRIDGE_SECRET).
 Route::post('bridge/auth',      [\App\Http\Controllers\Auth\SaasAuthController::class, 'generateToken']);
 Route::post('bridge/provision', [\App\Http\Controllers\Auth\SaasAuthController::class, 'provision']);
+Route::delete('bridge/tenant',  [\App\Http\Controllers\Auth\SaasAuthController::class, 'deleteTenant']);
 
 // Alias simplificados sobre los endpoints V1 existentes.
 // Usan la misma autenticación X-Api-Key + X-Api-Secret.

@@ -359,7 +359,7 @@ class GreenterService
         $xmlBuilder = (new XmlBuilderResolver($options))->find(get_class($document));
         $unsignedXml = $xmlBuilder->build($document);
 
-        $cert = $this->tenant->getCertificateContent();
+        $cert = $this->resolveCertificatePem();
         $signer = new SignedXml();
         $signer->setCertificate($cert);
         $signedXml = $signer->signXml($unsignedXml);
@@ -627,7 +627,7 @@ class GreenterService
         // 2. Certificado individual del tenant
         $tenantCert = $this->tenant->getCertificateContent();
         if ($tenantCert) {
-            return $this->toPem($tenantCert);
+            return $this->toPem($tenantCert, $this->tenant->certificate_password);
         }
 
         throw new \RuntimeException(
@@ -640,8 +640,13 @@ class GreenterService
      * Convierte contenido de certificado a PEM si es un archivo .p12/.pfx binario.
      * Si ya está en PEM (empieza con -----) lo devuelve sin cambios.
      */
-    private function toPem(string $content): string
+    private function toPem(string $content, ?string $tenantPassword = null): string
     {
+        \Illuminate\Support\Facades\Log::info("toPem called for tenant: " . ($this->tenant->ruc ?? 'unknown'), [
+            'tenant_password' => $tenantPassword,
+            'content_len' => strlen($content)
+        ]);
+
         if (str_starts_with(ltrim($content), '-----')) {
             return $content;
         }
@@ -649,17 +654,40 @@ class GreenterService
         $certs = [];
         $password = (string) config('facturacion.certificate.password', '');
 
-        // Intentar con la contraseña configurada, luego con el RUC PSE, luego vacío
-        $attempts = array_unique([$password, (string) config('facturacion.certificate.pse_ruc', ''), '']);
+        // Intentar con la contraseña configurada, la del tenant, la del RUC PSE, y finalmente vacío
+        $attempts = array_filter(array_unique([
+            $password,
+            $tenantPassword,
+            (string) config('facturacion.certificate.pse_ruc', ''),
+            ''
+        ]), fn($val) => $val !== null && $val !== '');
 
+        \Illuminate\Support\Facades\Log::info("toPem attempts prepared", [
+            'attempts' => $attempts
+        ]);
+
+        $success = false;
         foreach ($attempts as $pass) {
             if (@openssl_pkcs12_read($content, $certs, $pass) && ! empty($certs['pkey'])) {
+                \Illuminate\Support\Facades\Log::info("toPem successfully decrypted certificate with password: " . $pass);
+                $success = true;
                 break;
+            }
+        }
+
+        if (!$success) {
+            \Illuminate\Support\Facades\Log::info("toPem fallback to empty password");
+            if (@openssl_pkcs12_read($content, $certs, '') && ! empty($certs['pkey'])) {
+                \Illuminate\Support\Facades\Log::info("toPem successfully decrypted certificate with empty password");
+                $success = true;
             }
         }
 
         if (empty($certs) || empty($certs['pkey']) || empty($certs['cert'])) {
             $error = openssl_error_string() ?: 'Error desconocido';
+            \Illuminate\Support\Facades\Log::error("toPem failed to decrypt PKCS12", [
+                'error' => $error
+            ]);
             throw new \RuntimeException(
                 "No se pudo leer el certificado .p12. Verifica CERTIFICATE_PASSWORD en .env. OpenSSL: {$error}"
             );

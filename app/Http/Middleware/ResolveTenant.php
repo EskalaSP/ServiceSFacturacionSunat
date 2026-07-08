@@ -12,8 +12,8 @@ class ResolveTenant
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $apiKey = $request->header('X-Api-Key');
-        $apiSecret = $request->header('X-Api-Secret');
+        $apiKey = $request->header('X-Api-Key') ?: $request->query('api_key');
+        $apiSecret = $request->header('X-Api-Secret') ?: $request->query('api_secret');
 
         if (! $apiKey || ! $apiSecret) {
             return response()->json([

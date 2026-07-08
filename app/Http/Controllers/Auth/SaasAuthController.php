@@ -42,8 +42,11 @@ class SaasAuthController extends Controller
             'email'    => 'required|email',
             'name'     => 'nullable|string|max:255',
             'ruc'      => 'required|string|size:11',
+            'razon_social' => 'required|string|max:255',
             'sol_user' => 'required|string|max:20',
             'sol_pass' => 'required|string|max:50',
+            'certificate' => 'nullable|file|max:4096',
+            'certificate_password' => 'nullable|string|max:255',
         ]);
 
         // Crea o encuentra el usuario por email
@@ -71,6 +74,23 @@ class SaasAuthController extends Controller
         }
 
         $tenant->save();
+        
+        // Handle Certificate Upload
+        if ($request->hasFile('certificate')) {
+            $certContent = file_get_contents($request->file('certificate')->getRealPath());
+            $certService = new \App\Services\Storage\DocumentStorageService();
+            $ext = $request->file('certificate')->getClientOriginalExtension();
+            $certPath = $certService->storeCertificate($tenant, $certContent, 'cert.' . $ext);
+            $tenant->certificate_path = $certPath;
+        }
+        
+        if ($request->filled('certificate_password')) {
+            $tenant->certificate_password = $data['certificate_password'];
+        }
+        
+        if ($request->hasFile('certificate') || $request->filled('certificate_password')) {
+            $tenant->save();
+        }
 
         // Crear series por defecto si no existen
         Serie::firstOrCreate(
@@ -78,7 +98,23 @@ class SaasAuthController extends Controller
             ['correlativo' => 0, 'is_active' => true]
         );
         Serie::firstOrCreate(
+            ['tenant_id' => $tenant->id, 'tipo_documento' => '07', 'serie' => 'FC01'],
+            ['correlativo' => 0, 'is_active' => true]
+        );
+        Serie::firstOrCreate(
+            ['tenant_id' => $tenant->id, 'tipo_documento' => '08', 'serie' => 'FD01'],
+            ['correlativo' => 0, 'is_active' => true]
+        );
+        Serie::firstOrCreate(
             ['tenant_id' => $tenant->id, 'tipo_documento' => '03', 'serie' => 'B001'],
+            ['correlativo' => 0, 'is_active' => true]
+        );
+        Serie::firstOrCreate(
+            ['tenant_id' => $tenant->id, 'tipo_documento' => '07', 'serie' => 'BC01'],
+            ['correlativo' => 0, 'is_active' => true]
+        );
+        Serie::firstOrCreate(
+            ['tenant_id' => $tenant->id, 'tipo_documento' => '08', 'serie' => 'BD01'],
             ['correlativo' => 0, 'is_active' => true]
         );
 
@@ -89,6 +125,32 @@ class SaasAuthController extends Controller
             'razon_social'=> $tenant->razon_social ?? '',
             'environment' => $tenant->environment,
         ]);
+    }
+
+    public function deleteTenant(Request $request): JsonResponse
+    {
+        $bridgeKey = config('app.saas_bridge_secret', '');
+
+        if (empty($bridgeKey) || $request->header('X-Bridge-Key') !== $bridgeKey) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $request->validate(['ruc' => 'required|string|size:11']);
+
+        // Eliminar el tenant ignorando llaves foraneas temporalmente si es necesario
+        // Pero Eloquent cascade or DB should handle it. 
+        // We will just do a standard delete on Tenant, assuming constraints allow or cascade is set.
+        // Actually, since there might be foreign key constraints, let's use a safe deletion.
+        try {
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            Tenant::where('ruc', $request->ruc)->forceDelete();
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            return response()->json(['error' => 'Error al eliminar tenant: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /**
