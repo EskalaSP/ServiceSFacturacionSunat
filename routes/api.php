@@ -170,6 +170,7 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     // Empresa (perfil)
     Route::get('empresa', [TenantController::class, 'show']);
     Route::put('empresa', [TenantController::class, 'update']);
+    Route::delete('empresa', [TenantController::class, 'destroy']);
     Route::post('empresa/logo', [TenantController::class, 'uploadLogo']);
     Route::post('empresa/certificado', [TenantController::class, 'uploadCertificate']);
     Route::get('empresa/credenciales', [TenantController::class, 'credenciales']);

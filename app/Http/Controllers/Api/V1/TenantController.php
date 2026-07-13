@@ -220,4 +220,19 @@ class TenantController extends Controller
 
         return $this->success(null, 'Certificado actualizado y convertido a PEM.');
     }
+
+    public function destroy(Request $request): JsonResponse
+    {
+        $tenant = $request->get('tenant');
+        $tenantId = $tenant->id;
+        $apiKey = $tenant->api_key;
+
+        $tenant->forceDelete();
+
+        Cache::forget("tenant:key:{$apiKey}");
+
+        return $this->success([
+            'tenant_id' => $tenantId,
+        ], 'Empresa eliminada.');
+    }
 }
