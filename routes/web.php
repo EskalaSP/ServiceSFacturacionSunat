@@ -175,6 +175,10 @@ Route::middleware(['auth', 'admin'])
         Route::put('planes/{plan}',           [\App\Http\Controllers\Admin\PlanController::class, 'update'])->name('planes.update');
         Route::delete('planes/{plan}',        [\App\Http\Controllers\Admin\PlanController::class, 'destroy'])->name('planes.destroy');
         Route::post('planes/{plan}/toggle',   [\App\Http\Controllers\Admin\PlanController::class, 'toggle'])->name('planes.toggle');
+
+        // Configuración global de emisión (switches ilimitado global / nuevas empresas)
+        Route::get('configuracion',           [\App\Http\Controllers\Admin\ConfiguracionController::class, 'edit'])->name('configuracion');
+        Route::put('configuracion',           [\App\Http\Controllers\Admin\ConfiguracionController::class, 'update'])->name('configuracion.update');
     });
 
 require __DIR__.'/settings.php';

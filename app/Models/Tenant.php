@@ -13,6 +13,12 @@ class Tenant extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /** La emisión respeta los límites del plan/suscripción. */
+    public const EMISSION_PLAN = 'plan';
+
+    /** La empresa emite sin restricciones, sin depender de un plan. */
+    public const EMISSION_UNLIMITED = 'unlimited';
+
     protected $fillable = [
         'ruc',
         'razon_social',
@@ -40,6 +46,7 @@ class Tenant extends Model
         'api_key',
         'api_secret',
         'plan',
+        'emission_mode',
         'tax_regime',
         'igv_rate_override',
         'nrus_categoria',
@@ -201,6 +208,15 @@ class Tenant extends Model
     public function hasReachedDocumentLimit(): bool
     {
         return $this->documentsThisMonth() >= $this->max_documents_month;
+    }
+
+    /**
+     * ¿Esta empresa está configurada individualmente como ilimitada?
+     * (No considera el switch global — eso lo resuelve EmissionPolicyService.)
+     */
+    public function hasUnlimitedEmission(): bool
+    {
+        return $this->emission_mode === self::EMISSION_UNLIMITED;
     }
 
     public function getCertificateContent(): ?string

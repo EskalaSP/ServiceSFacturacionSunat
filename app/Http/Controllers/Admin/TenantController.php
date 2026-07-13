@@ -12,6 +12,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Plan\PlanService;
+use App\Services\Settings\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -26,7 +27,7 @@ class TenantController extends Controller
 {
     private const CAMPOS_ARRAY = ['telefonos', 'emails', 'cuentas_bancarias', 'billeteras_digitales'];
 
-    public function index(Request $request): Response
+    public function index(Request $request, SettingsService $settings): Response
     {
         $query = Tenant::query()
             ->withCount(['sucursales', 'series'])
@@ -53,6 +54,7 @@ class TenantController extends Controller
                 'environment' => $t->environment,
                 'tax_regime' => $t->tax_regime,
                 'plan' => $t->plan,
+                'emission_mode' => $t->emission_mode ?? Tenant::EMISSION_PLAN,
                 'is_active' => (bool) $t->is_active,
                 'created_at' => $t->created_at?->toIso8601String(),
                 'sucursales_count' => (int) $t->sucursales_count,
@@ -63,22 +65,34 @@ class TenantController extends Controller
                 'plan' => $request->input('plan', ''),
                 'estado' => $request->input('estado', ''),
             ],
+            'emisionGlobalIlimitada' => $settings->bool(SettingsService::EMISION_ILIMITADA_GLOBAL),
         ]);
     }
 
-    public function create(): Response
+    public function create(SettingsService $settings): Response
     {
+        // El default del selector "Modo de emisión" respeta la config global:
+        // si las empresas nuevas nacen ilimitadas, el form arranca en 'unlimited'.
+        $defaultUnlimited = $settings->bool(SettingsService::NUEVAS_EMPRESAS_ILIMITADAS);
+
         return Inertia::render('admin/empresas/form', [
-            'tenant' => $this->tenantVacio(),
+            'tenant' => $this->tenantVacio($defaultUnlimited),
             'planes' => $this->planesOpciones(),
             'usuarios' => $this->usuariosOpciones(),
             'modo' => 'crear',
+            'emisionGlobalIlimitada' => $settings->bool(SettingsService::EMISION_ILIMITADA_GLOBAL),
         ]);
     }
 
-    public function store(TenantRequest $request, PlanService $planService): RedirectResponse
+    public function store(TenantRequest $request, PlanService $planService, SettingsService $settings): RedirectResponse
     {
         $data = $this->prepararData($request);
+
+        // Modo de emisión: si no vino en el form, se decide por la config global.
+        $data['emission_mode'] = $data['emission_mode']
+            ?? ($settings->bool(SettingsService::NUEVAS_EMPRESAS_ILIMITADAS)
+                ? Tenant::EMISSION_UNLIMITED
+                : Tenant::EMISSION_PLAN);
 
         $tenant = Tenant::create($data);
         $this->guardarArchivos($request, $tenant);
@@ -124,13 +138,19 @@ class TenantController extends Controller
             ->whereIn('status', [Subscription::STATUS_ACTIVE, Subscription::STATUS_TRIALING])
             ->update(['status' => Subscription::STATUS_CANCELLED, 'cancelled_at' => now()]);
 
+        // Vencimiento: si el plan define días de vigencia se respeta;
+        // de lo contrario se mantiene el comportamiento previo (+1 año).
+        $periodEnd = $plan->duration_days
+            ? now()->addDays($plan->duration_days)
+            : now()->addYear();
+
         Subscription::create([
             'tenant_id' => $tenant->id,
             'plan_id' => $plan->id,
             'status' => Subscription::STATUS_ACTIVE,
             'billing_cycle' => Subscription::BILLING_MONTHLY,
             'current_period_start' => now(),
-            'current_period_end' => now()->addYear(),
+            'current_period_end' => $periodEnd,
             'payment_gateway' => 'admin',
         ]);
 
@@ -162,6 +182,7 @@ class TenantController extends Controller
                 'environment' => $tenant->environment,
                 'tax_regime' => $tenant->tax_regime,
                 'plan' => $tenant->plan,
+                'emission_mode' => $tenant->emission_mode ?? Tenant::EMISSION_PLAN,
                 'max_documents_month' => (int) ($tenant->max_documents_month ?? 0),
                 'is_active' => (bool) $tenant->is_active,
                 'webhook_url' => $tenant->webhook_url,
@@ -180,7 +201,7 @@ class TenantController extends Controller
         ]);
     }
 
-    public function edit(Tenant $tenant): Response
+    public function edit(Tenant $tenant, SettingsService $settings): Response
     {
         return Inertia::render('admin/empresas/form', [
             'tenant' => [
@@ -202,6 +223,7 @@ class TenantController extends Controller
                 'tax_regime' => $tenant->tax_regime,
                 'igv_rate_override' => $tenant->igv_rate_override,
                 'nrus_categoria' => $tenant->nrus_categoria,
+                'emission_mode' => $tenant->emission_mode ?? Tenant::EMISSION_PLAN,
                 'plan' => $tenant->plan,
                 'max_documents_month' => (int) ($tenant->max_documents_month ?? 0),
                 'webhook_url' => $tenant->webhook_url,
@@ -211,19 +233,22 @@ class TenantController extends Controller
                 'billeteras_digitales' => $tenant->billeteras_digitales ?? [],
                 'user_id' => $tenant->user_id,
                 'is_active' => (bool) $tenant->is_active,
+                'emission_mode' => $tenant->emission_mode ?? Tenant::EMISSION_PLAN,
                 'has_certificado' => ! empty($tenant->certificate_path),
                 'has_logo' => ! empty($tenant->logo_path),
             ],
             'planes' => $this->planesOpciones(),
             'usuarios' => $this->usuariosOpciones(),
             'modo' => 'editar',
+            'emisionGlobalIlimitada' => $settings->bool(SettingsService::EMISION_ILIMITADA_GLOBAL),
         ]);
     }
 
-    private function tenantVacio(): array
+    private function tenantVacio(bool $emisionIlimitada = false): array
     {
         return [
             'id' => null,
+            'emission_mode' => $emisionIlimitada ? Tenant::EMISSION_UNLIMITED : Tenant::EMISSION_PLAN,
             'ruc' => '',
             'razon_social' => '',
             'nombre_comercial' => '',

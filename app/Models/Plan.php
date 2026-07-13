@@ -14,6 +14,8 @@ class Plan extends Model
         'price_yearly',
         'limits',
         'features',
+        'is_unlimited',
+        'duration_days',
         'sort_order',
         'is_active',
     ];
@@ -25,6 +27,8 @@ class Plan extends Model
             'features' => 'array',
             'price_monthly' => 'decimal:2',
             'price_yearly' => 'decimal:2',
+            'is_unlimited' => 'boolean',
+            'duration_days' => 'integer',
             'is_active' => 'boolean',
         ];
     }
@@ -42,6 +46,16 @@ class Plan extends Model
     public function hasFeature(string $feature): bool
     {
         return in_array($feature, $this->features ?? []);
+    }
+
+    /**
+     * Un plan es ilimitado si tiene la bandera explícita o si su límite de
+     * documentos SUNAT usa el sentinel -1 (compatibilidad con planes previos).
+     */
+    public function isUnlimited(): bool
+    {
+        return (bool) $this->is_unlimited
+            || (int) $this->getLimit('documents_month', 0) === -1;
     }
 
     public function scopeActive($query)

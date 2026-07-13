@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import type { BreadcrumbItem } from '@/types';
 
 type LimitDef = { label: string; help?: string };
@@ -24,6 +25,8 @@ type Plan = {
     sort_order: number;
     limits: Record<string, number>;
     features: string[];
+    is_unlimited: boolean;
+    duration_days: number | null;
     is_active: boolean;
     subscriptions_count?: number;
 };
@@ -53,6 +56,8 @@ export default function PlanesForm({ plan, catalogo, modo }: Props) {
         sort_order: plan.sort_order,
         limits: { ...plan.limits } as Record<string, number | ''>,
         features: [...(plan.features ?? [])],
+        is_unlimited: plan.is_unlimited ?? false,
+        duration_days: (plan.duration_days ?? '') as number | '',
         is_active: plan.is_active,
     });
 
@@ -230,8 +235,57 @@ export default function PlanesForm({ plan, catalogo, modo }: Props) {
                     </div>
                 </Card>
 
-                {/* Límites */}
+                {/* Emisión y vigencia */}
                 <Card className="p-6">
+                    <div className="mb-4">
+                        <h3 className="text-base font-semibold">Emisión y vigencia</h3>
+                        <p className="text-muted-foreground text-sm">
+                            Define si el plan es ilimitado y cuántos días dura la suscripción.
+                        </p>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+                        <div className="flex items-start gap-3">
+                            <InfinityIcon className="mt-0.5 size-5 shrink-0 text-primary" />
+                            <div>
+                                <div className="font-medium">Plan ilimitado</div>
+                                <p className="text-muted-foreground text-xs">
+                                    Las empresas con este plan emiten comprobantes sin límite. Ignora el cupo de
+                                    documentos SUNAT de abajo.
+                                </p>
+                            </div>
+                        </div>
+                        <Switch
+                            checked={data.is_unlimited}
+                            onCheckedChange={(v) => setData('is_unlimited', v)}
+                        />
+                    </div>
+
+                    <div className="mt-4 max-w-xs">
+                        <Label htmlFor="duration_days">Vigencia de la suscripción (días)</Label>
+                        <Input
+                            id="duration_days"
+                            type="number"
+                            min={1}
+                            max={3650}
+                            value={data.duration_days}
+                            onChange={(e) =>
+                                setData('duration_days', e.target.value === '' ? '' : Number(e.target.value))
+                            }
+                            placeholder="Vacío = sin vencimiento"
+                        />
+                        {errors.duration_days && (
+                            <p className="mt-1 text-xs text-red-600">{errors.duration_days}</p>
+                        )}
+                        <p className="text-muted-foreground mt-1 text-xs">
+                            Ej: 30 (mensual), 365 (anual). Vacío = no vence. Al vencer, la empresa no puede
+                            emitir hasta renovar.
+                        </p>
+                    </div>
+                </Card>
+
+                {/* Límites */}
+                <Card className={`p-6 ${data.is_unlimited ? 'opacity-60' : ''}`}>
                     <div className="mb-4 flex items-center justify-between">
                         <div>
                             <h3 className="text-base font-semibold">Límites de uso</h3>

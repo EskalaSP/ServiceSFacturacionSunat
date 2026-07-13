@@ -29,6 +29,8 @@ class PlanController extends Controller
                 'price_monthly'   => (float) $p->price_monthly,
                 'price_yearly'    => $p->price_yearly ? (float) $p->price_yearly : null,
                 'documents_month' => (int) $p->getLimit('documents_month', 0),
+                'is_unlimited'    => $p->isUnlimited(),
+                'duration_days'   => $p->duration_days,
                 'features_count'  => count($p->features ?? []),
                 'sort_order'      => (int) $p->sort_order,
                 'is_active'       => (bool) $p->is_active,
@@ -49,6 +51,8 @@ class PlanController extends Controller
                 'sort_order'    => (Plan::max('sort_order') ?? 0) + 1,
                 'limits'        => (object) [],
                 'features'      => [],
+                'is_unlimited'  => false,
+                'duration_days' => null,
                 'is_active'     => true,
             ],
             'catalogo' => $this->catalogo(),
@@ -79,6 +83,8 @@ class PlanController extends Controller
                 'sort_order'    => (int) $plan->sort_order,
                 'limits'        => (object) ($plan->limits ?? []),
                 'features'      => $plan->features ?? [],
+                'is_unlimited'  => (bool) $plan->is_unlimited,
+                'duration_days' => $plan->duration_days,
                 'is_active'     => (bool) $plan->is_active,
                 'subscriptions_count' => $plan->subscriptions()->count(),
             ],
@@ -155,6 +161,10 @@ class PlanController extends Controller
             'features'      => 'nullable|array',
             'features.*'    => 'string|max:50|regex:/^[a-z0-9_]+$/',
 
+            // Emisión ilimitada explícita y vigencia (vencimiento) del plan.
+            'is_unlimited'  => 'nullable|boolean',
+            'duration_days' => 'nullable|integer|min:1|max:3650',
+
             'is_active'     => 'nullable|boolean',
         ], [
             'slug.regex'      => 'El slug solo puede contener minúsculas, números, guiones y guiones bajos.',
@@ -162,14 +172,24 @@ class PlanController extends Controller
             'limits.*.min'    => 'El límite debe ser -1 (ilimitado) o un número positivo.',
         ]);
 
-        $data['is_active']   = $request->boolean('is_active');
-        $data['sort_order']  = $data['sort_order'] ?? 0;
+        $data['is_active']    = $request->boolean('is_active');
+        $data['is_unlimited'] = $request->boolean('is_unlimited');
+        $data['sort_order']   = $data['sort_order'] ?? 0;
+        $data['duration_days'] = $data['duration_days'] ?? null;
 
         // Validar keys de limits (evita basura o inyección de claves con caracteres raros)
         $data['limits'] = collect($data['limits'] ?? [])
             ->filter(fn ($v, $k) => $v !== null && $v !== '' && preg_match('/^[a-z0-9_]+$/', (string) $k))
             ->map(fn ($v) => (int) $v)
             ->all();
+
+        // Coherencia: un plan ilimitado fuerza el sentinel -1 en los cupos de
+        // comprobantes, para que cualquier consumidor del JSON (dashboards,
+        // max_documents_month del tenant) lea "ilimitado" de forma uniforme.
+        if ($data['is_unlimited']) {
+            $data['limits']['documents_month'] = -1;
+            $data['limits']['internal_documents_month'] = -1;
+        }
 
         $data['features'] = array_values(array_unique($data['features'] ?? []));
 

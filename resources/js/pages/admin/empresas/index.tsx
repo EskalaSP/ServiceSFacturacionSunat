@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Building2, Eye, Hash, MapPin, Pencil, Plus, Power } from 'lucide-react';
+import { Building2, Eye, Hash, Infinity as InfinityIcon, MapPin, Pencil, Plus, Power } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,11 +16,26 @@ type Empresa = {
     environment: string;
     tax_regime: string | null;
     plan: string;
+    emission_mode: string;
     is_active: boolean;
     created_at: string | null;
     sucursales_count: number;
     series_count: number;
 };
+
+/**
+ * Estado de emisión EFECTIVO, replicando la prioridad de EmissionPolicyService
+ * (sin el conteo): global → beta → empresa → plan.
+ */
+function emisionEfectiva(
+    e: Empresa,
+    globalIlimitada: boolean,
+): { ilimitada: boolean; motivo: string } {
+    if (globalIlimitada) return { ilimitada: true, motivo: 'global' };
+    if (e.environment === 'beta') return { ilimitada: true, motivo: 'beta' };
+    if (e.emission_mode === 'unlimited') return { ilimitada: true, motivo: 'empresa' };
+    return { ilimitada: false, motivo: 'plan' };
+}
 
 type Paginacion<T> = {
     data: T[];
@@ -36,6 +51,7 @@ type Paginacion<T> = {
 type Props = {
     empresas: Paginacion<Empresa>;
     filtros: { buscar: string; plan: string; estado: string };
+    emisionGlobalIlimitada: boolean;
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -43,7 +59,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Empresas', href: '/admin/empresas' },
 ];
 
-export default function EmpresasIndex({ empresas }: Props) {
+export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Props) {
     const toggle = (t: Empresa) =>
         router.post(`/admin/empresas/${t.id}/toggle`, {}, { preserveScroll: true });
 
@@ -76,14 +92,38 @@ export default function EmpresasIndex({ empresas }: Props) {
             ),
         },
         {
-            accessorKey: 'plan',
-            header: 'Plan',
-            meta: { label: 'Plan' },
-            cell: ({ row }) => (
-                <Badge variant="outline" className="text-[10px] uppercase">
-                    {row.original.plan}
-                </Badge>
-            ),
+            id: 'emision',
+            header: 'Emisión',
+            enableSorting: false,
+            meta: { label: 'Emisión' },
+            cell: ({ row }) => {
+                const est = emisionEfectiva(row.original, emisionGlobalIlimitada);
+                if (est.ilimitada) {
+                    return (
+                        <div className="flex flex-col gap-0.5">
+                            <Badge className="w-fit gap-1 border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                <InfinityIcon className="size-3" />
+                                Ilimitada
+                            </Badge>
+                            <span className="text-muted-foreground text-[10px]">
+                                {est.motivo === 'global'
+                                    ? 'switch global'
+                                    : est.motivo === 'beta'
+                                      ? 'entorno beta'
+                                      : 'config. empresa'}
+                            </span>
+                        </div>
+                    );
+                }
+                return (
+                    <div className="flex flex-col gap-0.5">
+                        <Badge variant="outline" className="w-fit text-[10px] uppercase">
+                            Plan: {row.original.plan}
+                        </Badge>
+                        <span className="text-muted-foreground text-[10px]">por suscripción</span>
+                    </div>
+                );
+            },
         },
         {
             accessorKey: 'sucursales_count',

@@ -63,6 +63,11 @@ class TenantRequest extends FormRequest
             'nrus_categoria' => 'nullable|in:1,2',
 
             // ── Plan y límites ──────────────────────────────────────────
+            // Modo de emisión: 'plan' respeta los límites del plan;
+            // 'unlimited' emite sin restricciones. Opcional en el form —
+            // si no viene, el controller aplica la config global.
+            'emission_mode' => ['nullable', Rule::in(['plan', 'unlimited'])],
+
             // El plan se valida contra la tabla `plans`, no un enum hardcoded,
             // porque los planes son 100% administrables desde /admin/planes.
             'plan' => [

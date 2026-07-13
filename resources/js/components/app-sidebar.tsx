@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, CreditCard, Hash, LayoutGrid, MapPin, ShieldCheck } from 'lucide-react';
+import { Building2, CreditCard, Hash, LayoutGrid, MapPin, Settings2, ShieldCheck } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import {
@@ -29,6 +29,7 @@ const adminNavItems: NavItem[] = [
     { title: 'Sucursales', href: '/admin/sucursales', icon: MapPin },
     { title: 'Series',     href: '/admin/series',     icon: Hash },
     { title: 'Planes',     href: '/admin/planes',     icon: CreditCard },
+    { title: 'Configuración', href: '/admin/configuracion', icon: Settings2 },
 ];
 
 export function AppSidebar() {

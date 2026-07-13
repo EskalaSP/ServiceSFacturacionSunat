@@ -5,6 +5,7 @@ import {
     CreditCard,
     Database,
     IdCard,
+    Infinity as InfinityIcon,
     MapPin,
     Plus,
     ShieldCheck,
@@ -41,6 +42,7 @@ type Tenant = {
     tax_regime: string;
     igv_rate_override: number | string | null;
     nrus_categoria: number | string | null;
+    emission_mode: string;
     plan: string;
     max_documents_month: number;
     webhook_url: string | null;
@@ -62,6 +64,7 @@ type Props = {
     planes: Option[];
     usuarios: UserOption[];
     modo: 'crear' | 'editar';
+    emisionGlobalIlimitada?: boolean;
 };
 
 const breadcrumbs = (modo: 'crear' | 'editar', razon?: string): BreadcrumbItem[] => [
@@ -95,7 +98,7 @@ const Section = ({
     </Card>
 );
 
-export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) {
+export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGlobalIlimitada }: Props) {
     const editando = modo === 'editar';
     const { data, setData, post, put, processing, errors, progress } = useForm({
         ruc: tenant.ruc,
@@ -121,6 +124,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
         tax_regime: tenant.tax_regime || 'general',
         igv_rate_override: tenant.igv_rate_override ?? '',
         nrus_categoria: tenant.nrus_categoria ?? '',
+        emission_mode: tenant.emission_mode || 'plan',
         plan: tenant.plan || 'free',
         max_documents_month: Number(tenant.max_documents_month) || 20,
         webhook_url: tenant.webhook_url ?? '',
@@ -518,52 +522,119 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo }: Props) 
                     </div>
                 </Section>
 
-                {/* 6. Plan */}
-                <Section icon={CreditCard} title="6. Plan y límites" subtitle="Plan asignado a la empresa">
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <div>
-                            <Label htmlFor="plan">Plan *</Label>
-                            <select
-                                id="plan"
-                                value={data.plan}
-                                onChange={(e) => setData('plan', e.target.value)}
-                                className="form-select"
-                                required
+                {/* 6. Emisión: modo + plan */}
+                <Section icon={CreditCard} title="6. Emisión y plan" subtitle="Define si la empresa emite ilimitado o según un plan">
+                    {emisionGlobalIlimitada && (
+                        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/20 dark:text-amber-300">
+                            <strong>Emisión ilimitada global activa.</strong>{' '}
+                            Mientras el switch global esté encendido, esta empresa emite sin límites sin
+                            importar lo que elijas aquí. Este ajuste tomará efecto cuando lo apagues.
+                        </div>
+                    )}
+
+                    {/* Selector de modo de emisión */}
+                    <div className="mb-5">
+                        <Label>Modo de emisión *</Label>
+                        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                            <button
+                                type="button"
+                                onClick={() => setData('emission_mode', 'unlimited')}
+                                className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-colors ${
+                                    data.emission_mode === 'unlimited'
+                                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                                        : 'hover:bg-muted/40'
+                                }`}
                             >
-                                <option value="free">Free</option>
-                                <option value="pro">Pro</option>
-                                <option value="business">Business</option>
-                                {planes
-                                    .filter((p) => !['free', 'pro', 'business'].includes(p.slug))
-                                    .map((p) => (
-                                        <option key={p.slug} value={p.slug}>
-                                            {p.name}
-                                        </option>
-                                    ))}
-                            </select>
+                                <InfinityIcon className="mt-0.5 size-5 shrink-0 text-primary" />
+                                <div>
+                                    <div className="font-medium">Ilimitada</div>
+                                    <p className="text-muted-foreground text-xs">
+                                        Emite sin restricciones. Ideal para programadores e integradores. No
+                                        requiere plan.
+                                    </p>
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setData('emission_mode', 'plan')}
+                                className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-colors ${
+                                    data.emission_mode === 'plan'
+                                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                                        : 'hover:bg-muted/40'
+                                }`}
+                            >
+                                <CreditCard className="mt-0.5 size-5 shrink-0 text-primary" />
+                                <div>
+                                    <div className="font-medium">Por plan / suscripción</div>
+                                    <p className="text-muted-foreground text-xs">
+                                        Respeta los límites del plan (comprobantes/mes, vencimiento). Ideal para
+                                        revendedores y SaaS.
+                                    </p>
+                                </div>
+                            </button>
                         </div>
-                        <div>
-                            <Label htmlFor="max_documents_month">Documentos SUNAT/mes *</Label>
-                            <Input
-                                id="max_documents_month"
-                                type="number"
-                                value={data.max_documents_month}
-                                onChange={(e) => setData('max_documents_month', Number(e.target.value))}
-                                required
-                                min={0}
-                                max={99999}
-                                placeholder="Ej: 200 (0 = ilimitado)"
-                            />
-                        </div>
-                        <div className="flex items-end">
-                            <label className="inline-flex items-center gap-2">
-                                <Checkbox
-                                    checked={data.is_active}
-                                    onCheckedChange={(v) => setData('is_active', v === true)}
+                    </div>
+
+                    {/* Plan y cupo: sólo en modo "por plan" */}
+                    {data.emission_mode === 'plan' && (
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <Label htmlFor="plan">Plan *</Label>
+                                <select
+                                    id="plan"
+                                    value={data.plan}
+                                    onChange={(e) => setData('plan', e.target.value)}
+                                    className="form-select"
+                                    required
+                                >
+                                    <option value="free">Free</option>
+                                    <option value="pro">Pro</option>
+                                    <option value="business">Business</option>
+                                    {planes
+                                        .filter((p) => !['free', 'pro', 'business'].includes(p.slug))
+                                        .map((p) => (
+                                            <option key={p.slug} value={p.slug}>
+                                                {p.name}
+                                            </option>
+                                        ))}
+                                </select>
+                                <p className="text-muted-foreground mt-1 text-xs">
+                                    El cupo mensual se toma del plan. Un plan vencido bloquea la emisión.
+                                </p>
+                            </div>
+                            <div>
+                                <Label htmlFor="max_documents_month">Documentos SUNAT/mes (referencia)</Label>
+                                <Input
+                                    id="max_documents_month"
+                                    type="number"
+                                    value={data.max_documents_month}
+                                    onChange={(e) => setData('max_documents_month', Number(e.target.value))}
+                                    min={0}
+                                    max={99999}
+                                    placeholder="Ej: 200 (-1 = ilimitado)"
                                 />
-                                <span className="text-sm">Empresa activa</span>
-                            </label>
+                                <p className="text-muted-foreground mt-1 text-xs">
+                                    Se sincroniza con el plan al asignarlo.
+                                </p>
+                            </div>
                         </div>
+                    )}
+
+                    {data.emission_mode === 'unlimited' && (
+                        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300">
+                            <strong>Emisión ilimitada.</strong> Esta empresa emitirá comprobantes sin límite de
+                            cantidad ni vencimiento. No se aplicará ningún plan.
+                        </div>
+                    )}
+
+                    <div className="mt-5 border-t pt-4">
+                        <label className="inline-flex items-center gap-2">
+                            <Checkbox
+                                checked={data.is_active}
+                                onCheckedChange={(v) => setData('is_active', v === true)}
+                            />
+                            <span className="text-sm">Empresa activa</span>
+                        </label>
                     </div>
                 </Section>
 
