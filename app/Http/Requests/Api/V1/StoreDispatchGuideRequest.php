@@ -2,12 +2,16 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Http\Requests\Concerns\ValidatesManualCorrelativo;
+use App\Models\DispatchGuide;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreDispatchGuideRequest extends FormRequest
 {
+    use ValidatesManualCorrelativo;
+
     public function authorize(): bool
     {
         return true;
@@ -58,6 +62,8 @@ class StoreDispatchGuideRequest extends FormRequest
             // tipo_documento: '09' Guía Remitente (por defecto) o '31' Guía Transportista
             'tipo_documento' => 'sometimes|string|in:09,31',
             'serie' => 'required|string|size:4',
+            // Correlativo opcional: si se omite, se autoincrementa según la serie.
+            'correlativo' => 'nullable|integer|min:1',
             'fecha_emision' => 'required|date',
             'observacion' => 'nullable|string|max:500',
 
@@ -189,6 +195,8 @@ class StoreDispatchGuideRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $this->validarCorrelativoManual($validator, DispatchGuide::class);
+
             $tipoDocumento = $this->input('tipo_documento', '09');
             $indicadores = $this->input('indicadores', []);
             $esM1L = is_array($indicadores) && collect($indicadores)->contains(fn ($i) => str_contains($i, 'M1L'));

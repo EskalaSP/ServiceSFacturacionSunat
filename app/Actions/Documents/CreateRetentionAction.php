@@ -26,7 +26,7 @@ class CreateRetentionAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $correlativo = $serie->nextCorrelativo();
+            $correlativo = $serie->resolveCorrelativo(isset($data['correlativo']) ? (int) $data['correlativo'] : null);
             $tasa = (float) $data['tasa'];
 
             // Calcular totales a partir de los documentos

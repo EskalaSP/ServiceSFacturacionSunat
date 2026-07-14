@@ -29,7 +29,7 @@ class CreateDispatchGuideAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $correlativo = $serie->nextCorrelativo();
+            $correlativo = $serie->resolveCorrelativo(isset($data['correlativo']) ? (int) $data['correlativo'] : null);
             $data['correlativo'] = $correlativo;
             $data['tipo_documento'] = $tipoDocumento;
 

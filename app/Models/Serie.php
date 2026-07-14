@@ -71,13 +71,39 @@ class Serie extends Model
         return $this->belongsTo(Sucursal::class);
     }
 
+    /**
+     * Resuelve el correlativo del próximo comprobante de esta serie.
+     *
+     * - $manual === null → autoincremental (comportamiento por defecto según
+     *   la configuración de la serie).
+     * - $manual entero   → modo manual: usa ese número y adelanta el puntero de
+     *   la serie solo si es mayor, para que los siguientes automáticos no
+     *   colisionen. No retrocede el puntero (permite rellenar huecos).
+     *
+     * Todo ocurre dentro de una transacción con lock para evitar condiciones de
+     * carrera entre emisiones concurrentes de la misma serie.
+     */
+    public function resolveCorrelativo(?int $manual = null): int
+    {
+        return DB::transaction(function () use ($manual) {
+            $serie = self::where('id', $this->id)->lockForUpdate()->first();
+
+            if ($manual === null) {
+                $serie->increment('correlativo');
+
+                return (int) $serie->correlativo;
+            }
+
+            if ($manual > (int) $serie->correlativo) {
+                $serie->update(['correlativo' => $manual]);
+            }
+
+            return $manual;
+        });
+    }
+
     public function nextCorrelativo(): int
     {
-        return DB::transaction(function () {
-            $serie = self::where('id', $this->id)->lockForUpdate()->first();
-            $serie->increment('correlativo');
-
-            return $serie->correlativo;
-        });
+        return $this->resolveCorrelativo(null);
     }
 }

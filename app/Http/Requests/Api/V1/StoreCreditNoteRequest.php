@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Http\Requests\Concerns\ValidatesManualCorrelativo;
+use App\Models\CreditNote;
 use App\Rules\SunatCatalog;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -11,6 +13,8 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreCreditNoteRequest extends FormRequest
 {
+    use ValidatesManualCorrelativo;
+
     public function authorize(): bool
     {
         return true;
@@ -20,6 +24,8 @@ class StoreCreditNoteRequest extends FormRequest
     {
         return [
             'serie' => 'required|string|size:4',
+            // Correlativo opcional: si se omite, se autoincrementa según la serie.
+            'correlativo' => 'nullable|integer|min:1',
             'cod_local' => 'nullable|string|size:4',
             'fecha_emision' => 'required|date',
             'tipo_moneda' => 'nullable|string|in:PEN,USD,EUR',
@@ -102,6 +108,8 @@ class StoreCreditNoteRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $v) {
+            $this->validarCorrelativoManual($v, CreditNote::class);
+
             // NRUS solo puede emitir notas de crédito contra BOLETAS (tipo 03).
             // No puede contra facturas (01) ni liquidaciones de compra (12).
             $tenant = $this->get('tenant');

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Http\Requests\Concerns\ValidatesManualCorrelativo;
+use App\Models\DebitNote;
 use App\Rules\SunatCatalog;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -11,6 +13,8 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreDebitNoteRequest extends FormRequest
 {
+    use ValidatesManualCorrelativo;
+
     public function authorize(): bool
     {
         return true;
@@ -20,6 +24,8 @@ class StoreDebitNoteRequest extends FormRequest
     {
         return [
             'serie' => 'required|string|size:4',
+            // Correlativo opcional: si se omite, se autoincrementa según la serie.
+            'correlativo' => 'nullable|integer|min:1',
             'cod_local' => 'nullable|string|size:4',
             'fecha_emision' => 'required|date',
             'tipo_moneda' => 'nullable|string|in:PEN,USD,EUR',
@@ -95,6 +101,8 @@ class StoreDebitNoteRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $v) {
+            $this->validarCorrelativoManual($v, DebitNote::class);
+
             // NRUS solo puede emitir notas de débito contra BOLETAS (tipo 03).
             $tenant = $this->get('tenant');
             if ($tenant && $tenant->tax_regime === 'nrus' && $this->input('doc_afectado_tipo') !== '03') {

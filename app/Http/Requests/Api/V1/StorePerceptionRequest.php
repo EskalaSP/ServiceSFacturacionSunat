@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Http\Requests\Concerns\ValidatesManualCorrelativo;
+use App\Models\Perception;
 use App\Rules\SunatCatalog;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -11,6 +13,8 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StorePerceptionRequest extends FormRequest
 {
+    use ValidatesManualCorrelativo;
+
     public function authorize(): bool
     {
         return true;
@@ -19,7 +23,9 @@ class StorePerceptionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'serie' => 'required|string|size:4|regex:/^P/',
+            'serie' => 'required|string|size:4|regex:/^P[A-Z0-9]{3}$/',
+            // Correlativo opcional: si se omite, se autoincrementa según la serie.
+            'correlativo' => 'nullable|integer|min:1',
             'cod_local' => 'nullable|string|size:4',
             'fecha_emision' => 'required|date',
 
@@ -61,6 +67,13 @@ class StorePerceptionRequest extends FormRequest
             'documentos.*.tipo_cambio.factor' => 'required_with:documentos.*.tipo_cambio|numeric|gt:0',
             'documentos.*.tipo_cambio.fecha' => 'required_with:documentos.*.tipo_cambio|date',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            $this->validarCorrelativoManual($v, Perception::class);
+        });
     }
 
     protected function failedValidation(Validator $validator): void

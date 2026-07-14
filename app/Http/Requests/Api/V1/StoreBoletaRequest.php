@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Http\Requests\Concerns\ValidatesManualCorrelativo;
+use App\Models\Boleta;
 use App\Rules\SunatCatalog;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -11,6 +13,8 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreBoletaRequest extends FormRequest
 {
+    use ValidatesManualCorrelativo;
+
     public function authorize(): bool
     {
         return true;
@@ -19,7 +23,9 @@ class StoreBoletaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'serie' => ['required', 'string', 'size:4', 'regex:/^(B\d{3}|\d{4})$/'],
+            'serie' => ['required', 'string', 'size:4', 'regex:/^B[A-Z0-9]{3}$/'],
+            // Correlativo opcional: si se omite, se autoincrementa según la serie.
+            'correlativo' => 'nullable|integer|min:1',
             'cod_local' => 'nullable|string|size:4',
             'fecha_emision' => 'required|date',
             'fecha_vencimiento' => 'nullable|date',
@@ -138,9 +144,18 @@ class StoreBoletaRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'serie.regex' => 'La serie de boleta debe empezar con B seguida de 3 caracteres alfanuméricos (ej: B001, BA01, BABC).',
+        ];
+    }
+
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $v) {
+            $this->validarCorrelativoManual($v, Boleta::class);
+
             $items = $this->input('items', []);
             $total = 0;
 

@@ -26,7 +26,7 @@ class CreatePerceptionAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $correlativo = $serie->nextCorrelativo();
+            $correlativo = $serie->resolveCorrelativo(isset($data['correlativo']) ? (int) $data['correlativo'] : null);
             $tasa = (float) $data['tasa'];
 
             $totalPercibido = 0;
