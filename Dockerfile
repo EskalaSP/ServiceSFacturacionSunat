@@ -20,6 +20,8 @@ RUN apk add --no-cache \
 # Extensiones PHP necesarias
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
+        pdo_mysql \
+        mysqli \
         pdo_pgsql \
         pgsql \
         zip \
