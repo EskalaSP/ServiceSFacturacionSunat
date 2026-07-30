@@ -10,7 +10,6 @@ use App\Http\Traits\ApiResponse;
 use App\Jobs\SendSummaryToSunat;
 use App\Models\Boleta;
 use App\Models\CreditNote;
-use App\Models\DebitNote;
 use App\Models\Summary;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -83,7 +82,7 @@ class SummaryController extends Controller
         $limiteAnterior = $hoy->copy()->subDays(7);
         if ($fechaResumen->lt($limiteAnterior->startOfDay()) || $fechaResumen->gt($hoy->endOfDay())) {
             return $this->error(
-                'SUNAT solo permite resumen diario del mismo día de emisión o hasta 7 días calendario después. Fecha límite: ' . $limiteAnterior->format('Y-m-d'),
+                'SUNAT solo permite resumen diario del mismo día de emisión o hasta 7 días calendario después. Fecha límite: '.$limiteAnterior->format('Y-m-d'),
                 422
             );
         }
@@ -115,6 +114,7 @@ class SummaryController extends Controller
 
                     if ($fechaEmision->lt($limiteAnterior->copy()->startOfDay())) {
                         $anulErrors[] = "Boleta {$ref} ya pasó el plazo de 7 días para anulación (emitida el {$fechaEmision->format('Y-m-d')}).";
+
                         continue;
                     }
 
@@ -126,6 +126,7 @@ class SummaryController extends Controller
 
                     if ($hasNC) {
                         $anulErrors[] = "La boleta {$ref} tiene una nota de crédito asociada. Usa la NC en vez de anularla.";
+
                         continue;
                     }
 
@@ -155,14 +156,21 @@ class SummaryController extends Controller
 
                 if ($boletas->isEmpty()) {
                     return $this->error(
-                        'No hay boletas pendientes para la fecha ' . $fechaResumen->format('Y-m-d') . '.',
+                        'No hay boletas pendientes para la fecha '.$fechaResumen->format('Y-m-d').'.',
                         422
                     );
                 }
             }
 
-            $correlativo = $this->generateCorrelativo($tenant, $fechaResumen);
+            // El correlativo se numera por FECHA DE ENVÍO, que es la que entra en
+            // el identificador. Numerarlo por fecha de referencia —como se hacía—
+            // produce identificadores repetidos: el día que se envía el resumen
+            // atrasado de ayer junto con el de hoy, cada uno pide su correlativo
+            // a un contador distinto, los dos devuelven 001 y los dos salen como
+            // RC-{hoy}-001. Para SUNAT ese identificador ES el resumen, así que
+            // el segundo viaja como duplicado y su ticket nunca resuelve.
             $fechaEnvio = Carbon::now('America/Lima')->format('Y-m-d');
+            $correlativo = $this->generateCorrelativo($tenant, $fechaEnvio);
             $fechaId = str_replace('-', '', $fechaEnvio);
             $identifier = "RC-{$fechaId}-{$correlativo}";
 
@@ -214,7 +222,7 @@ class SummaryController extends Controller
                 ],
             ], 201);
         } catch (\Throwable $e) {
-            return $this->error('Error al crear resumen: ' . $e->getMessage(), 500);
+            return $this->error('Error al crear resumen: '.$e->getMessage(), 500);
         }
     }
 
@@ -271,7 +279,7 @@ class SummaryController extends Controller
                 'total_documentos' => $summary->total_documentos,
                 'documentos' => $boletas->map(fn (Boleta $doc) => [
                     'id' => $doc->id,
-                    'numero' => $doc->serie . '-' . $doc->correlativo,
+                    'numero' => $doc->serie.'-'.$doc->correlativo,
                     'total' => (float) $doc->mto_imp_venta,
                     'estado_sunat' => $doc->sunat_status,
                 ])->toArray(),
@@ -287,16 +295,17 @@ class SummaryController extends Controller
         if (! $summary->xml_path) {
             $motivo = match ($summary->sunat_status) {
                 'pendiente' => 'El resumen aún no fue procesado (estado: pendiente). Espera a que el worker lo envíe a SUNAT.',
-                'enviado'   => 'El resumen fue enviado pero el XML no está disponible aún. Consulta el estado con GET /resumenes/{id}/estado.',
-                'rechazado' => 'El resumen fue rechazado por SUNAT y el XML no pudo guardarse. Código: ' . ($summary->sunat_code ?? 'N/A') . '.',
-                default     => 'XML no generado (estado: ' . $summary->sunat_status . ').',
+                'enviado' => 'El resumen fue enviado pero el XML no está disponible aún. Consulta el estado con GET /resumenes/{id}/estado.',
+                'rechazado' => 'El resumen fue rechazado por SUNAT y el XML no pudo guardarse. Código: '.($summary->sunat_code ?? 'N/A').'.',
+                default => 'XML no generado (estado: '.$summary->sunat_status.').',
             };
+
             return $this->error($motivo, 404);
         }
 
         if (! Storage::disk('public')->exists($summary->xml_path)) {
             return $this->error(
-                'El XML fue generado pero el archivo no se encuentra en disco. Ruta esperada: ' . $summary->xml_path,
+                'El XML fue generado pero el archivo no se encuentra en disco. Ruta esperada: '.$summary->xml_path,
                 404
             );
         }
@@ -326,16 +335,27 @@ class SummaryController extends Controller
         ]);
     }
 
-    private function generateCorrelativo($tenant, Carbon $fecha): string
+    /**
+     * Siguiente correlativo del día de ENVÍO.
+     *
+     * Se deriva de la base, no de un contador en caché: el contador anterior
+     * vivía en Redis con 48h de TTL, así que un reinicio o un flush lo devolvía
+     * a 001 y el identificador volvía a chocar con uno ya enviado a SUNAT.
+     *
+     * El lock cubre el hueco entre leer el máximo y grabar la fila. Si aun así
+     * dos peticiones se cruzaran, el índice único de `summaries` es la garantía
+     * final: la segunda falla en vez de crear un duplicado silencioso.
+     */
+    private function generateCorrelativo($tenant, string $fechaEnvio): string
     {
-        $fechaStr = $fecha->format('Y-m-d');
-        $cacheKey = "tenant:{$tenant->id}:summary_correlativo:{$fechaStr}";
+        $siguiente = fn (): int => 1 + (int) Summary::where('tenant_id', $tenant->id)
+            ->where('fecha_envio', $fechaEnvio)
+            ->pluck('correlativo')
+            ->map(fn ($c): int => (int) $c)
+            ->max();
 
-        $correlativo = Cache::increment($cacheKey);
-
-        if ($correlativo === 1) {
-            Cache::put($cacheKey, 1, 172800);
-        }
+        $correlativo = Cache::lock("summary_correlativo:{$tenant->id}:{$fechaEnvio}", 10)
+            ->block(5, $siguiente);
 
         return str_pad((string) $correlativo, 3, '0', STR_PAD_LEFT);
     }

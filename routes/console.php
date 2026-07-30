@@ -35,3 +35,12 @@ Schedule::command('sire:poll-pending')
 Schedule::command('sire:reconcile-all')
     ->dailyAt('03:00')
     ->withoutOverlapping();
+
+// === Resúmenes diarios de boletas ===
+// Vuelve a consultar el ticket de los resúmenes sin estado final. El comando
+// decide a cuáles les toca (seguido la primera hora, cada 4h después), así que
+// correrlo cada 5 minutos no genera consultas de más.
+Schedule::command('summaries:poll-pending')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
