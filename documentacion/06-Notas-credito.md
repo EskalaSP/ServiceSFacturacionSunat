@@ -98,6 +98,31 @@
 
 **Mismos campos que factura** (ver `04-Facturas.md`). Los items representan lo que se está **revertiendo** (devolviendo, anulando, descontando). Los montos siempre se expresan en positivo.
 
+Campos nuevos opcionales (SUNAT 2026): `items[].cod_producto_sunat` (UNSPSC) y `contrato_colaboracion`
+(consorcios). Ver [24-Novedades-SUNAT-2026-2027.md](24-Novedades-SUNAT-2026-2027.md).
+
+### ⚠️ Validación de monto (ERR-3286/3503)
+
+El **Importe Total de la NC no puede superar** el del documento que modifica (factura o boleta emitida
+por esta API):
+
+- **Factura (01):** NC ≤ documento (estricto).
+- **Boleta (03):** NC ≤ documento + 1 (tolerancia).
+
+Si se pasa → **HTTP 422**:
+
+```json
+{
+  "estado": "error",
+  "mensaje": "Error de validación",
+  "errores": {
+    "doc_afectado_correlativo": ["El importe total de la nota de crédito (500) no puede superar el del documento que modifica F001-1 (118) (ERR-3286/3503)."]
+  }
+}
+```
+
+No aplica si la moneda difiere de la del documento, ni si el documento fue emitido en otro sistema.
+
 ### Ejemplo — Anulación total (cod_motivo=01)
 
 ```json

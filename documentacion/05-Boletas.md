@@ -109,6 +109,12 @@
 
 **Idénticos a factura** (ver `04-Facturas.md` sección Items). Todos los catálogos aplican: Cat. 07 (afectación IGV), Cat. 08 (ISC), Cat. 53 (descuentos), Cat. 54 (detracciones), etc.
 
+**Campos nuevos SUNAT 2026** (opcionales, iguales que en factura):
+- `items[].cod_producto_sunat` — código UNSPSC de 8 dígitos (Cat. 25).
+- `contrato_colaboracion` (raíz) — para consorcios sin contabilidad independiente.
+
+Ver [24-Novedades-SUNAT-2026-2027.md](24-Novedades-SUNAT-2026-2027.md).
+
 ### Ejemplo con múltiples métodos de pago (pago mixto)
 
 ```json

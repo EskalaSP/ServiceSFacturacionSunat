@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Building2, Calendar, CreditCard, Loader2, Plus, Search, Trash2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
@@ -438,22 +439,25 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                 {/* Serie */}
                                 <div className="flex flex-col gap-1.5">
                                     <Label className="text-xs font-medium text-muted-foreground">Serie</Label>
-                                    <select
+                                    <Combobox
                                         value={serie}
-                                        onChange={(e) => setSerie(e.target.value)}
-                                        className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                    >
-                                        {series.map((s) => (
-                                            <option key={s.id} value={s.serie}>
-                                                {s.serie} — Corr. {s.correlativo + 1}
-                                            </option>
-                                        ))}
-                                        {series.length === 0 && (
-                                            <option value={tipoDoc === '01' ? 'F001' : 'B001'}>
-                                                {tipoDoc === '01' ? 'F001' : 'B001'}
-                                            </option>
-                                        )}
-                                    </select>
+                                        onChange={(v) => setSerie(v)}
+                                        searchable
+                                        options={[
+                                            ...series.map((s) => ({
+                                                value: String(s.serie),
+                                                label: `${s.serie} — Corr. ${s.correlativo + 1}`,
+                                            })),
+                                            ...(series.length === 0
+                                                ? [{
+                                                    value: tipoDoc === '01' ? 'F001' : 'B001',
+                                                    label: tipoDoc === '01' ? 'F001' : 'B001',
+                                                }]
+                                                : []),
+                                        ]}
+                                        placeholder="Serie"
+                                        className="h-10 rounded-xl"
+                                    />
                                 </div>
 
                                 {/* Fecha */}
@@ -469,14 +473,15 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                 {/* Moneda */}
                                 <div className="flex flex-col gap-1.5">
                                     <Label className="text-xs font-medium text-muted-foreground">Moneda</Label>
-                                    <select
+                                    <Combobox
                                         value={moneda}
-                                        onChange={(e) => setMoneda(e.target.value as 'PEN' | 'USD')}
-                                        className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                    >
-                                        <option value="PEN">PEN — Soles</option>
-                                        <option value="USD">USD — Dólares</option>
-                                    </select>
+                                        onChange={(v) => setMoneda(v as 'PEN' | 'USD')}
+                                        options={[
+                                            { value: 'PEN', label: 'PEN — Soles' },
+                                            { value: 'USD', label: 'USD — Dólares' },
+                                        ]}
+                                        className="h-10 rounded-xl"
+                                    />
                                 </div>
                             </div>
                         </section>
@@ -492,15 +497,15 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                 {/* Tipo operación */}
                                 <div className="flex flex-col gap-1.5">
                                     <Label className="text-xs font-medium text-muted-foreground">Tipo de operación</Label>
-                                    <select
+                                    <Combobox
                                         value={tipoOp}
-                                        onChange={(e) => setTipoOp(e.target.value)}
-                                        className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                    >
-                                        {TIPOS_OPERACION.map((t) => (
-                                            <option key={t.code} value={t.code}>{t.code} — {t.label}</option>
-                                        ))}
-                                    </select>
+                                        onChange={(v) => setTipoOp(v)}
+                                        options={TIPOS_OPERACION.map((t) => ({
+                                            value: String(t.code),
+                                            label: `${t.code} — ${t.label}`,
+                                        }))}
+                                        className="h-10 rounded-xl"
+                                    />
                                 </div>
 
                                 {/* Forma de pago */}
@@ -585,17 +590,18 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <div className="flex flex-col gap-1.5">
                                         <Label className="text-xs font-medium text-muted-foreground">Tipo doc.</Label>
-                                        <select
+                                        <Combobox
                                             value={clienteTipoDoc}
-                                            onChange={(e) => setClienteTipoDoc(e.target.value)}
-                                            className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                        >
-                                            <option value="6">RUC</option>
-                                            <option value="1">DNI</option>
-                                            <option value="4">Carné de Extranjería</option>
-                                            <option value="7">Pasaporte</option>
-                                            <option value="0">Otros</option>
-                                        </select>
+                                            onChange={(v) => setClienteTipoDoc(v)}
+                                            options={[
+                                                { value: '6', label: 'RUC' },
+                                                { value: '1', label: 'DNI' },
+                                                { value: '4', label: 'Carné de Extranjería' },
+                                                { value: '7', label: 'Pasaporte' },
+                                                { value: '0', label: 'Otros' },
+                                            ]}
+                                            className="h-10 rounded-xl"
+                                        />
                                     </div>
                                     <div className="flex flex-col gap-1.5">
                                         <Label className="text-xs font-medium text-muted-foreground">
@@ -731,15 +737,16 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                                     </td>
                                                     {/* Unidad de medida */}
                                                     <td className="px-3 py-2.5">
-                                                        <select
+                                                        <Combobox
                                                             value={item.unidad}
-                                                            onChange={(e) => updateItem(i, 'unidad', e.target.value)}
-                                                            className="h-8 rounded-lg border border-border bg-background px-2 text-xs outline-none"
-                                                        >
-                                                            {unidades.map((u) => (
-                                                                <option key={u.code} value={u.code}>{u.label}</option>
-                                                            ))}
-                                                        </select>
+                                                            onChange={(v) => updateItem(i, 'unidad', v)}
+                                                            searchable
+                                                            options={unidades.map((u) => ({
+                                                                value: String(u.code),
+                                                                label: u.label,
+                                                            }))}
+                                                            className="h-8 min-w-[150px] text-xs"
+                                                        />
                                                     </td>
                                                     {/* Cantidad */}
                                                     <td className="px-3 py-2.5">
@@ -770,15 +777,16 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                                     </td>
                                                     {/* IGV */}
                                                     <td className="px-3 py-2.5">
-                                                        <select
+                                                        <Combobox
                                                             value={item.tip_afe_igv}
-                                                            onChange={(e) => updateItem(i, 'tip_afe_igv', e.target.value)}
-                                                            className="h-8 rounded-lg border border-border bg-background px-2 text-xs outline-none"
-                                                        >
-                                                            {TIPOS_IGV.map((t) => (
-                                                                <option key={t.code} value={t.code}>{t.label}</option>
-                                                            ))}
-                                                        </select>
+                                                            onChange={(v) => updateItem(i, 'tip_afe_igv', v)}
+                                                            searchable
+                                                            options={TIPOS_IGV.map((t) => ({
+                                                                value: String(t.code),
+                                                                label: t.label,
+                                                            }))}
+                                                            className="h-8 min-w-[150px] text-xs"
+                                                        />
                                                     </td>
                                                     {/* Total */}
                                                     <td className="px-3 py-2.5 text-right text-xs font-semibold tabular-nums">
@@ -861,20 +869,20 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                                 <Label className="text-xs font-medium text-muted-foreground">
                                                     Bien o servicio sujeto a detracción (Catálogo 54)
                                                 </Label>
-                                                <select
+                                                <Combobox
                                                     value={detCodigo}
-                                                    onChange={(e) => setDetCodigo(e.target.value)}
-                                                    className={`h-10 rounded-xl border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 ${
-                                                        errors.det_codigo ? 'border-destructive' : 'border-border'
-                                                    }`}
-                                                >
-                                                    <option value="">— Selecciona el bien o servicio —</option>
-                                                    {DETRACCIONES.map((d) => (
-                                                        <option key={d.codigo} value={d.codigo}>
-                                                            {d.codigo} — {d.descripcion} ({d.porcentaje}%)
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    onChange={(v) => setDetCodigo(v)}
+                                                    searchable
+                                                    options={[
+                                                        { value: '', label: '— Selecciona el bien o servicio —' },
+                                                        ...DETRACCIONES.map((d) => ({
+                                                            value: String(d.codigo),
+                                                            label: `${d.codigo} — ${d.descripcion} (${d.porcentaje}%)`,
+                                                        })),
+                                                    ]}
+                                                    placeholder="— Selecciona el bien o servicio —"
+                                                    className={`h-10 rounded-xl ${errors.det_codigo ? 'border-destructive' : ''}`}
+                                                />
                                                 {errors.det_codigo && <p className="text-xs text-destructive">{errors.det_codigo}</p>}
                                             </div>
 
@@ -897,17 +905,16 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                                 <Label className="text-xs font-medium text-muted-foreground">
                                                     Medio de pago (Catálogo 59)
                                                 </Label>
-                                                <select
+                                                <Combobox
                                                     value={detMedioPago}
-                                                    onChange={(e) => setDetMedioPago(e.target.value)}
-                                                    className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                                >
-                                                    {MEDIOS_PAGO_DET.map((m) => (
-                                                        <option key={m.code} value={m.code}>
-                                                            {m.code} — {m.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    onChange={(v) => setDetMedioPago(v)}
+                                                    searchable
+                                                    options={MEDIOS_PAGO_DET.map((m) => ({
+                                                        value: String(m.code),
+                                                        label: `${m.code} — ${m.label}`,
+                                                    }))}
+                                                    className="h-10 rounded-xl"
+                                                />
                                             </div>
                                         </div>
 

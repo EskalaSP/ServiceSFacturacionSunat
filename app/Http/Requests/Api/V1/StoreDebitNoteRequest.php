@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Http\Requests\Concerns\ValidatesCodProductoSunat;
+use App\Http\Requests\Concerns\ValidatesContratoColaboracion;
 use App\Http\Requests\Concerns\ValidatesManualCorrelativo;
 use App\Models\DebitNote;
 use App\Rules\SunatCatalog;
+use App\Rules\SunatProductCode;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreDebitNoteRequest extends FormRequest
 {
-    use ValidatesManualCorrelativo;
+    use ValidatesCodProductoSunat, ValidatesContratoColaboracion, ValidatesManualCorrelativo;
 
     public function authorize(): bool
     {
@@ -23,6 +26,7 @@ class StoreDebitNoteRequest extends FormRequest
     public function rules(): array
     {
         return [
+            ...$this->reglasContratoColaboracion(),
             'serie' => 'required|string|size:4',
             // Correlativo opcional: si se omite, se autoincrementa según la serie.
             'correlativo' => 'nullable|integer|min:1',
@@ -38,10 +42,10 @@ class StoreDebitNoteRequest extends FormRequest
             'cliente.email' => 'nullable|email',
             'cliente.telefono' => 'nullable|string|max:20',
 
-            // Documento afectado
-            'doc_afectado_tipo' => 'required|string|in:01,03,12',
-            'doc_afectado_serie' => 'required|string|size:4',
-            'doc_afectado_correlativo' => 'required|string',
+            // Documento afectado — opcional solo para Penalidades (motivo 13, ERR-2524).
+            'doc_afectado_tipo' => 'nullable|required_unless:cod_motivo,13|string|in:01,03,12',
+            'doc_afectado_serie' => 'nullable|required_unless:cod_motivo,13|string|size:4',
+            'doc_afectado_correlativo' => 'nullable|required_unless:cod_motivo,13|string',
             'cod_motivo' => ['required', 'string', new SunatCatalog('10')],
             'des_motivo' => 'required|string|max:250',
 
@@ -60,7 +64,7 @@ class StoreDebitNoteRequest extends FormRequest
             // Items
             'items' => 'required|array|min:1',
             'items.*.codigo' => 'nullable|string|max:30',
-            'items.*.cod_producto_sunat' => 'nullable|string|max:8',
+            'items.*.cod_producto_sunat' => ['nullable', 'string', new SunatProductCode],
             'items.*.descripcion' => 'required|string|max:500',
             'items.*.unidad' => 'required|string|in:4A,BJ,BLL,BG,BO,BX,CT,CMK,CMQ,CMT,CEN,CY,CJ,DZN,DZP,BE,GLI,GRM,GRO,HLT,LEF,SET,KGM,KTM,KWH,KT,CA,LBR,LTR,MWH,MTR,MTK,MTQ,MGM,MLT,MMT,MMK,MMQ,MLL,UM,ONZ,PF,PK,PR,FOT,FTK,FTQ,C62,PG,ST,INH,RM,DR,STN,LTN,TNE,TU,NIU,ZZ,GLL,YRD,YDK,U2,HUR,QD,HD,JG,JR,CH,AV,SA,BT,HT,RD,RL,SEC,DAY,MON',
             'items.*.cantidad' => 'required|numeric|gt:0',
@@ -102,6 +106,22 @@ class StoreDebitNoteRequest extends FormRequest
     {
         $validator->after(function (Validator $v) {
             $this->validarCorrelativoManual($v, DebitNote::class);
+            $this->validarCodProductoObligatorio($v);
+
+            // ERR-3507: la ND por Penalidades (motivo 13) solo admite operaciones
+            // inafectas del IGV/IVAP. Los importes de IGV e IVAP deben ser cero.
+            if ($this->input('cod_motivo') === '13') {
+                $igvTotal = (float) $this->input('mto_igv', 0) + (float) $this->input('mto_ivap', 0);
+                foreach ((array) $this->input('items', []) as $item) {
+                    $igvTotal += (float) ($item['igv'] ?? 0);
+                }
+                if ($igvTotal > 0) {
+                    $v->errors()->add(
+                        'cod_motivo',
+                        'La nota de débito por Penalidades (motivo 13) solo admite operaciones inafectas del IGV/IVAP (ERR-3507): los importes de IGV/IVAP deben ser 0.'
+                    );
+                }
+            }
 
             // NRUS solo puede emitir notas de débito contra BOLETAS (tipo 03).
             $tenant = $this->get('tenant');

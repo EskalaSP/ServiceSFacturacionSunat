@@ -108,6 +108,7 @@
 | `forma_pago` | string | ❌ | `Contado` (default) \| `Credito` |
 | `leyenda` | string(500) | ❌ | Leyenda custom |
 | `observacion` | string(500) | ❌ | |
+| `contrato_colaboracion` | object | ❌ | Consorcios sin contabilidad independiente. Ver sección abajo y [24-Novedades](24-Novedades-SUNAT-2026-2027.md#2-contrato-de-colaboración-empresarial) |
 
 ### Cliente
 
@@ -126,7 +127,7 @@
 | Campo | Tipo | Obligatorio | Notas |
 |-------|------|-------------|-------|
 | `codigo` | string(30) | ❌ | Código interno |
-| `cod_producto_sunat` | string(8) | ❌ | UNSPSC (Cat. 25) |
+| `cod_producto_sunat` | string(8) | ❌* | UNSPSC (Cat. 25). 8 dígitos, debe existir en el catálogo y no terminar en `0000`. *Obligatorio desde 01/01/2027 si el RUC está en el padrón. Ver [24-Novedades](24-Novedades-SUNAT-2026-2027.md#1-código-de-producto-sunat-unspsc) |
 | `descripcion` | string(500) | ✅ | |
 | `unidad` | string | ✅ | UN/CEFACT (ver tabla abajo) |
 | `cantidad` | numeric | ✅ | > 0 |
@@ -138,6 +139,29 @@
 | `descuentos` | array | ❌ | Ver estructura abajo |
 
 **Unidades UN/CEFACT más usadas:** `NIU` (unidad), `KGM` (kg), `LTR` (litro), `MTR` (metro), `ZZ` (servicios), `BG` (bolsa), `BO` (botella), `BX` (caja), `DZN` (docena), `PK` (paquete), `SET`, `HUR` (hora), `DAY` (día), `MON` (mes).
+
+> 💡 **`cod_producto_sunat`** (opcional): código UNSPSC de 8 dígitos que debe existir en el catálogo
+> y no terminar en `0000`. Viaja al XML como `cbc:ItemClassificationCode`. Detalles y ejemplos en
+> [24-Novedades-SUNAT-2026-2027.md](24-Novedades-SUNAT-2026-2027.md#1-código-de-producto-sunat-unspsc).
+
+### Contrato de colaboración empresarial (opcional)
+
+Solo para **consorcios sin contabilidad independiente**. Bloque opcional a nivel raíz:
+
+```json
+{
+  "contrato_colaboracion": {
+    "tipo": "1",
+    "numero": "CONS-2026-014",
+    "descripcion": "Consorcio vial sin contabilidad independiente",
+    "porcentaje": 40
+  }
+}
+```
+
+`tipo`: `1` (Ventas) o `2` (Adquisiciones). Si envías `numero`, entonces `tipo`, `descripcion` y
+`porcentaje` (0–99.99) son obligatorios. Detalles en
+[24-Novedades](24-Novedades-SUNAT-2026-2027.md#2-contrato-de-colaboración-empresarial).
 
 ### Ejemplo con impuestos especiales
 

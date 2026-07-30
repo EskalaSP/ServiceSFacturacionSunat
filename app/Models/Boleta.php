@@ -23,7 +23,7 @@ class Boleta extends Model implements Documentable
         'mto_icbper', 'total_impuestos', 'valor_venta', 'sub_total',
         'mto_imp_venta', 'total_anticipos', 'total_descuentos',
         'leyenda', 'observacion', 'cuotas', 'detraccion', 'percepcion',
-        'anticipos', 'descuentos_globales', 'guias', 'extras',
+        'anticipos', 'descuentos_globales', 'guias', 'extras', 'contrato_colaboracion',
         'xml_path', 'cdr_path', 'pdf_path', 'hash_cpe',
         'sunat_status', 'sunat_code', 'sunat_description', 'sunat_notes',
         'ticket', 'sent_at',
@@ -43,6 +43,7 @@ class Boleta extends Model implements Documentable
             'descuentos_globales' => 'array',
             'guias' => 'array',
             'extras' => 'array',
+            'contrato_colaboracion' => 'array',
         ]);
     }
 

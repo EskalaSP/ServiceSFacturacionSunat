@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DebitNoteItem extends Model
 {
     protected $fillable = [
-        'debit_note_id', 'codigo', 'descripcion', 'unidad', 'cantidad',
+        'debit_note_id', 'codigo', 'cod_producto_sunat', 'descripcion', 'unidad', 'cantidad',
         'mto_valor_unitario', 'mto_valor_venta', 'mto_base_igv',
         'porcentaje_igv', 'igv', 'tip_afe_igv', 'isc', 'icbper',
         'total_impuestos', 'mto_precio_unitario', 'descuento', 'descuentos',

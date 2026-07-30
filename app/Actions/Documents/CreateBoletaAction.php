@@ -96,6 +96,7 @@ class CreateBoletaAction
                 'anticipos' => $data['anticipos'] ?? null,
                 'descuentos_globales' => $data['descuentos_globales'] ?? null,
                 'guias' => $data['guias'] ?? null,
+                'contrato_colaboracion' => $data['contrato_colaboracion'] ?? null,
                 'extras' => $data['extras'] ?? null,
                 'sunat_status' => 'pendiente',
             ]);

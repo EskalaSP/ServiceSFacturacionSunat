@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             PlanSeeder::class,
+            UnspscCodeSeeder::class,
+            UnspscTaxonomySeeder::class,
         ]);
     }
 }

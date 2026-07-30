@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { BreadcrumbItem } from '@/types';
@@ -86,20 +87,13 @@ export default function SeriesForm({ tenant, serie, sucursales, prefijos, modo }
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <Label htmlFor="tipo_documento">Tipo de documento *</Label>
-                            <select
-                                id="tipo_documento"
+                            <Combobox
                                 value={data.tipo_documento}
-                                onChange={(e) => setData('tipo_documento', e.target.value)}
+                                onChange={(v) => setData('tipo_documento', v)}
+                                options={Object.entries(TIPO_LABEL).map(([code, label]) => ({ value: code, label }))}
                                 disabled={editando}
-                                required
-                                className={`form-select ${editando ? 'opacity-70' : ''}`}
-                            >
-                                {Object.entries(TIPO_LABEL).map(([code, label]) => (
-                                    <option key={code} value={code}>
-                                        {label}
-                                    </option>
-                                ))}
-                            </select>
+                                className={editando ? 'opacity-70' : ''}
+                            />
                             {editando && (
                                 <p className="mt-1 text-xs text-muted-foreground">
                                     El tipo no se puede cambiar en una serie existente.
@@ -145,19 +139,16 @@ export default function SeriesForm({ tenant, serie, sucursales, prefijos, modo }
 
                         <div>
                             <Label htmlFor="sucursal_id">Sucursal</Label>
-                            <select
-                                id="sucursal_id"
-                                value={data.sucursal_id as string | number}
-                                onChange={(e) => setData('sucursal_id', e.target.value)}
-                                className="form-select"
-                            >
-                                <option value="">— Sin asignar —</option>
-                                {sucursales.map((s) => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.nombre} ({s.cod_local})
-                                    </option>
-                                ))}
-                            </select>
+                            <Combobox
+                                value={String(data.sucursal_id)}
+                                onChange={(v) => setData('sucursal_id', v)}
+                                options={[
+                                    { value: '', label: '— Sin asignar —' },
+                                    ...sucursales.map((s) => ({ value: String(s.id), label: `${s.nombre} (${s.cod_local})` })),
+                                ]}
+                                placeholder="— Sin asignar —"
+                                searchable
+                            />
                         </div>
 
                         <label className="md:col-span-2 inline-flex items-center gap-2 text-sm">

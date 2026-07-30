@@ -99,7 +99,7 @@ return [
     '10' => [
         '01' => 'Intereses por mora',
         '02' => 'Aumento en el valor',
-        '03' => 'Penalidades / otros conceptos',
+        '03' => 'Otros conceptos', // Antes "Penalidades / otros conceptos"; las penalidades pasan al código 13 (vig. 01/01/2027)
         '04' => 'Ajustes de valor de exportación',
         '05' => 'Ajustes por corrección de la moneda',
         '06' => 'Ajustes por corrección de la cantidad',
@@ -108,6 +108,7 @@ return [
         '09' => 'Otros',
         '11' => 'Ajustes de operaciones de exportación',
         '12' => 'Ajustes afectos al IVAP',
+        '13' => 'Penalidades', // Nuevo (RS 048-2026); solo operaciones inafectas del IGV (ERR-3507)
     ],
 
     // ─── Catálogo 11: Tipo valor de venta (Resumen Diario) ────────
@@ -163,7 +164,7 @@ return [
 
     // ─── Catálogo 51: Tipo de operación ────────────────────────────
     '51' => [
-        '0101' => 'Venta interna',
+        '0101' => 'Venta interna no sujeta a Detracción o Percepción',
         '0112' => 'Venta Interna - Sustenta Gastos Deducibles Persona Natural',
         '0113' => 'Venta Interna - NRUS',
         '0200' => 'Exportación de Bienes',
@@ -254,6 +255,14 @@ return [
         '037' => ['desc' => 'Demás servicios gravados con el IGV', 'tasa' => 12],
         '039' => ['desc' => 'Minerales no metálicos', 'tasa' => 10],
         '040' => ['desc' => 'Bien inmueble gravado con IGV', 'tasa' => 4],
+        // Códigos incorporados por SUNAT con vigencia 01/09/2026 (Reglas de validación 24.07.2026, Cat. 54).
+        // 'tasa' pendiente de confirmar contra la R.S. SPOT vigente. No se usa para calcular el monto de
+        // detracción (el cliente envía detraccion.porcentaje y detraccion.monto); solo valida el código.
+        '038' => ['desc' => 'Espectáculos públicos gravados con el IGV', 'tasa' => null],
+        '042' => ['desc' => 'Ladrillos de construcción, bovedillas, cubrevigas y artículos similares, de cerámica', 'tasa' => null],
+        '043' => ['desc' => 'Estructuras metálicas para la construcción', 'tasa' => null],
+        '046' => ['desc' => 'Cobre gravado con el IGV', 'tasa' => null],
+        '047' => ['desc' => 'Plata gravada con el IGV', 'tasa' => null],
     ],
 
     // ─── Catálogo 59: Medios de pago ───────────────────────────────

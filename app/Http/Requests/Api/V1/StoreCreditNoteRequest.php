@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Http\Requests\Concerns\ValidatesCodProductoSunat;
+use App\Http\Requests\Concerns\ValidatesContratoColaboracion;
 use App\Http\Requests\Concerns\ValidatesManualCorrelativo;
+use App\Http\Requests\Concerns\ValidatesNotaCreditoMonto;
 use App\Models\CreditNote;
 use App\Rules\SunatCatalog;
+use App\Rules\SunatProductCode;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreCreditNoteRequest extends FormRequest
 {
-    use ValidatesManualCorrelativo;
+    use ValidatesCodProductoSunat, ValidatesContratoColaboracion, ValidatesManualCorrelativo, ValidatesNotaCreditoMonto;
 
     public function authorize(): bool
     {
@@ -23,6 +27,7 @@ class StoreCreditNoteRequest extends FormRequest
     public function rules(): array
     {
         return [
+            ...$this->reglasContratoColaboracion(),
             'serie' => 'required|string|size:4',
             // Correlativo opcional: si se omite, se autoincrementa según la serie.
             'correlativo' => 'nullable|integer|min:1',
@@ -60,7 +65,7 @@ class StoreCreditNoteRequest extends FormRequest
             // Items
             'items' => 'required|array|min:1',
             'items.*.codigo' => 'nullable|string|max:30',
-            'items.*.cod_producto_sunat' => 'nullable|string|max:8',
+            'items.*.cod_producto_sunat' => ['nullable', 'string', new SunatProductCode],
             'items.*.descripcion' => 'required|string|max:500',
             'items.*.unidad' => 'required|string|in:4A,BJ,BLL,BG,BO,BX,CT,CMK,CMQ,CMT,CEN,CY,CJ,DZN,DZP,BE,GLI,GRM,GRO,HLT,LEF,SET,KGM,KTM,KWH,KT,CA,LBR,LTR,MWH,MTR,MTK,MTQ,MGM,MLT,MMT,MMK,MMQ,MLL,UM,ONZ,PF,PK,PR,FOT,FTK,FTQ,C62,PG,ST,INH,RM,DR,STN,LTN,TNE,TU,NIU,ZZ,GLL,YRD,YDK,U2,HUR,QD,HD,JG,JR,CH,AV,SA,BT,HT,RD,RL,SEC,DAY,MON',
             'items.*.cantidad' => 'required|numeric|gt:0',
@@ -109,6 +114,8 @@ class StoreCreditNoteRequest extends FormRequest
     {
         $validator->after(function (Validator $v) {
             $this->validarCorrelativoManual($v, CreditNote::class);
+            $this->validarCodProductoObligatorio($v);
+            $this->validarMontoVsDocumentoModificado($v);
 
             // NRUS solo puede emitir notas de crédito contra BOLETAS (tipo 03).
             // No puede contra facturas (01) ni liquidaciones de compra (12).

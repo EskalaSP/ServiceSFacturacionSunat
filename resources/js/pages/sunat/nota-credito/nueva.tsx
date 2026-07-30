@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Combobox } from '@/components/ui/combobox';
 import SunatLayout from '@/layouts/sunat-layout';
 import type { MotivoNC, SerieSunat, TenantSunat } from '@/types';
 
@@ -202,16 +203,17 @@ export default function NuevaNotaCredito({ motivos, series, doc_original, tenant
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 <div className="flex flex-col gap-1.5">
                                     <Label>Serie</Label>
-                                    <select
+                                    <Combobox
                                         value={serie}
-                                        onChange={(e) => setSerie(e.target.value)}
-                                        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                                    >
-                                        {series.map((s) => (
-                                            <option key={s.id} value={s.serie}>{s.serie}</option>
-                                        ))}
-                                        {series.length === 0 && <option value="FC01">FC01</option>}
-                                    </select>
+                                        onChange={(v) => setSerie(v)}
+                                        options={
+                                            series.length > 0
+                                                ? series.map((s) => ({ value: String(s.serie), label: s.serie }))
+                                                : [{ value: 'FC01', label: 'FC01' }]
+                                        }
+                                        searchable
+                                        className="h-9"
+                                    />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <Label>Fecha de emisión</Label>
@@ -219,23 +221,21 @@ export default function NuevaNotaCredito({ motivos, series, doc_original, tenant
                                 </div>
                                 <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
                                     <Label>Motivo</Label>
-                                    <select
+                                    <Combobox
                                         value={motivo}
-                                        onChange={(e) => {
-                                            setMotivo(e.target.value);
-                                            const m = motivos.find((m) => m.codigo === e.target.value);
+                                        onChange={(v) => {
+                                            setMotivo(v);
+                                            const m = motivos.find((m) => m.codigo === v);
                                             if (m) setDesMotivo(m.descripcion);
                                         }}
-                                        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                                        aria-invalid={!!errors.motivo}
-                                    >
-                                        <option value="">— Selecciona motivo —</option>
-                                        {motivos.map((m) => (
-                                            <option key={m.codigo} value={m.codigo}>
-                                                {m.codigo} — {m.descripcion}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        options={[
+                                            { value: '', label: '— Selecciona motivo —' },
+                                            ...motivos.map((m) => ({ value: String(m.codigo), label: `${m.codigo} — ${m.descripcion}` })),
+                                        ]}
+                                        placeholder="— Selecciona motivo —"
+                                        searchable
+                                        className="h-9"
+                                    />
                                     {errors.motivo && <p className="text-xs text-destructive">{errors.motivo}</p>}
                                 </div>
                             </div>
@@ -278,17 +278,19 @@ export default function NuevaNotaCredito({ motivos, series, doc_original, tenant
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <Label className="text-xs">U.M.</Label>
-                                        <select
+                                        <Combobox
                                             value={item.unidad}
-                                            onChange={(e) => updateItem(i, 'unidad', e.target.value)}
-                                            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                                        >
-                                            <option value="NIU">NIU</option>
-                                            <option value="ZZ">ZZ</option>
-                                            <option value="KGM">KGM</option>
-                                            <option value="SET">SET</option>
-                                            <option value="HUR">HUR</option>
-                                        </select>
+                                            onChange={(v) => updateItem(i, 'unidad', v)}
+                                            options={[
+                                                { value: 'NIU', label: 'NIU' },
+                                                { value: 'ZZ', label: 'ZZ' },
+                                                { value: 'KGM', label: 'KGM' },
+                                                { value: 'SET', label: 'SET' },
+                                                { value: 'HUR', label: 'HUR' },
+                                            ]}
+                                            searchable
+                                            className="h-8 text-xs"
+                                        />
                                     </div>
                                     <div className="flex flex-col justify-end gap-1">
                                         <Label className="text-xs invisible">X</Label>

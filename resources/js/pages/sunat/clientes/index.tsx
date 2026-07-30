@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Edit2, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
@@ -293,15 +294,19 @@ export default function ClientesIndex({ clientes, filtros }: Props) {
                             <div className="grid grid-cols-[120px_1fr_auto] gap-2 items-end">
                                 <div className="flex flex-col gap-1.5">
                                     <Label className="text-xs font-medium text-muted-foreground">Tipo doc.</Label>
-                                    <select value={form.tipo_documento} onChange={(e) => setField('tipo_documento', e.target.value)}
+                                    <Combobox
+                                        value={form.tipo_documento}
+                                        onChange={(v) => setField('tipo_documento', v)}
                                         disabled={!!editId}
-                                        className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none disabled:opacity-60">
-                                        <option value="6">RUC</option>
-                                        <option value="1">DNI</option>
-                                        <option value="4">Carné Extra.</option>
-                                        <option value="7">Pasaporte</option>
-                                        <option value="0">Otros</option>
-                                    </select>
+                                        options={[
+                                            { value: '6', label: 'RUC' },
+                                            { value: '1', label: 'DNI' },
+                                            { value: '4', label: 'Carné Extra.' },
+                                            { value: '7', label: 'Pasaporte' },
+                                            { value: '0', label: 'Otros' },
+                                        ]}
+                                        className="h-10 rounded-xl"
+                                    />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <Label className="text-xs font-medium text-muted-foreground">Número</Label>

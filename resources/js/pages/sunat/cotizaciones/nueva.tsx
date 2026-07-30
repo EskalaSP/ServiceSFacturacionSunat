@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Building2, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
@@ -209,14 +210,15 @@ export default function NuevaCotizacion({ tenant, clientes }: Props) {
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <Label className="text-xs font-medium text-muted-foreground">Moneda</Label>
-                                    <select
+                                    <Combobox
                                         value={moneda}
-                                        onChange={(e) => setMoneda(e.target.value as 'PEN' | 'USD')}
-                                        className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none"
-                                    >
-                                        <option value="PEN">PEN — Soles</option>
-                                        <option value="USD">USD — Dólares</option>
-                                    </select>
+                                        onChange={(v) => setMoneda(v as 'PEN' | 'USD')}
+                                        options={[
+                                            { value: 'PEN', label: 'PEN — Soles' },
+                                            { value: 'USD', label: 'USD — Dólares' },
+                                        ]}
+                                        className="h-10 rounded-xl"
+                                    />
                                 </div>
                             </div>
                         </section>
@@ -254,14 +256,18 @@ export default function NuevaCotizacion({ tenant, clientes }: Props) {
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <div className="flex flex-col gap-1.5">
                                         <Label className="text-xs font-medium text-muted-foreground">Tipo doc.</Label>
-                                        <select value={clienteTipoDoc} onChange={(e) => setClienteTipoDoc(e.target.value)}
-                                            className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none">
-                                            <option value="6">RUC</option>
-                                            <option value="1">DNI</option>
-                                            <option value="4">Carné Extranjería</option>
-                                            <option value="7">Pasaporte</option>
-                                            <option value="0">Otros</option>
-                                        </select>
+                                        <Combobox
+                                            value={clienteTipoDoc}
+                                            onChange={(v) => setClienteTipoDoc(v)}
+                                            options={[
+                                                { value: '6', label: 'RUC' },
+                                                { value: '1', label: 'DNI' },
+                                                { value: '4', label: 'Carné Extranjería' },
+                                                { value: '7', label: 'Pasaporte' },
+                                                { value: '0', label: 'Otros' },
+                                            ]}
+                                            className="h-10 rounded-xl"
+                                        />
                                     </div>
                                     <div className="flex flex-col gap-1.5">
                                         <Label className="text-xs font-medium text-muted-foreground">Número de documento</Label>
@@ -321,10 +327,13 @@ export default function NuevaCotizacion({ tenant, clientes }: Props) {
                                                             placeholder="Descripción del servicio..." className="h-8 min-w-[180px] rounded-lg text-xs" />
                                                     </td>
                                                     <td className="px-3 py-2.5">
-                                                        <select value={item.unidad} onChange={(e) => updateItem(i, 'unidad', e.target.value)}
-                                                            className="h-8 rounded-lg border border-border bg-background px-2 text-xs outline-none">
-                                                            {UNIDADES.map((u) => <option key={u.code} value={u.code}>{u.label}</option>)}
-                                                        </select>
+                                                        <Combobox
+                                                            value={item.unidad}
+                                                            onChange={(v) => updateItem(i, 'unidad', v)}
+                                                            searchable
+                                                            options={UNIDADES.map((u) => ({ value: String(u.code), label: u.label }))}
+                                                            className="h-8 min-w-[150px] text-xs"
+                                                        />
                                                     </td>
                                                     <td className="px-3 py-2.5">
                                                         <Input type="number" min={0.001} step="0.001" value={item.cantidad}
@@ -342,10 +351,13 @@ export default function NuevaCotizacion({ tenant, clientes }: Props) {
                                                             className="h-8 w-14 rounded-lg text-right text-xs" />
                                                     </td>
                                                     <td className="px-3 py-2.5">
-                                                        <select value={item.tip_afe_igv} onChange={(e) => updateItem(i, 'tip_afe_igv', e.target.value)}
-                                                            className="h-8 rounded-lg border border-border bg-background px-2 text-xs outline-none">
-                                                            {TIPOS_IGV.map((t) => <option key={t.code} value={t.code}>{t.label}</option>)}
-                                                        </select>
+                                                        <Combobox
+                                                            value={item.tip_afe_igv}
+                                                            onChange={(v) => updateItem(i, 'tip_afe_igv', v)}
+                                                            searchable
+                                                            options={TIPOS_IGV.map((t) => ({ value: String(t.code), label: t.label }))}
+                                                            className="h-8 min-w-[150px] text-xs"
+                                                        />
                                                     </td>
                                                     <td className="px-3 py-2.5 text-right text-xs font-semibold tabular-nums">{fmt(total)}</td>
                                                     <td className="px-2 py-2.5">

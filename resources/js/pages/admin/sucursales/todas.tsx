@@ -5,9 +5,11 @@ import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Combobox } from '@/components/ui/combobox';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
+import { Pagination } from '@/components/ui/pagination';
 import type { BreadcrumbItem } from '@/types';
 
 type Sucursal = {
@@ -157,18 +159,17 @@ export default function SucursalesTodas({ sucursales, empresas, filtros }: Props
 
                 <Card className="p-4">
                     <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <select
-                            className="form-select sm:max-w-xs"
+                        <Combobox
                             value={data.tenant_id}
-                            onChange={(e) => setData('tenant_id', e.target.value)}
-                        >
-                            <option value="">Todas las empresas</option>
-                            {empresas.map((emp) => (
-                                <option key={emp.id} value={emp.id}>
-                                    {emp.ruc} — {emp.razon_social}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(v) => setData('tenant_id', v)}
+                            options={[
+                                { value: '', label: 'Todas las empresas' },
+                                ...empresas.map((emp) => ({ value: String(emp.id), label: `${emp.ruc} — ${emp.razon_social}` })),
+                            ]}
+                            placeholder="Todas las empresas"
+                            searchable
+                            className="sm:max-w-xs"
+                        />
                         <Button type="submit" variant="secondary" disabled={processing}>
                             Filtrar por empresa
                         </Button>
@@ -183,33 +184,12 @@ export default function SucursalesTodas({ sucursales, empresas, filtros }: Props
                 <DataTable
                     columns={columns}
                     data={sucursales.data}
+                    manualPagination
                     searchPlaceholder="Buscar por nombre, cód local..."
                     emptyMessage="No hay sucursales que coincidan."
                 />
 
-                {sucursales.last_page > 1 && (
-                    <div className="flex flex-wrap items-center justify-center gap-1">
-                        {sucursales.links.map((link, i) =>
-                            link.url ? (
-                                <Link
-                                    key={i}
-                                    href={link.url}
-                                    preserveScroll
-                                    className={`min-w-[36px] rounded-md px-3 py-1.5 text-center text-sm ${
-                                        link.active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted border'
-                                    }`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ) : (
-                                <span
-                                    key={i}
-                                    className="min-w-[36px] rounded-md px-3 py-1.5 text-center text-sm opacity-40"
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ),
-                        )}
-                    </div>
-                )}
+                <Pagination links={sucursales.links} from={sucursales.from} to={sucursales.to} total={sucursales.total} />
             </div>
         </AppLayout>
     );

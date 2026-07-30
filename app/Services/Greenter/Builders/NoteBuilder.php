@@ -44,9 +44,12 @@ class NoteBuilder
             ->setCompany($this->buildCompany($data['cod_local'] ?? '0000'))
             ->setClient($this->buildClient($data['cliente']));
 
-        // Documento afectado
-        $note->setTipDocAfectado($data['doc_afectado_tipo']);
-        $note->setNumDocfectado($data['doc_afectado_serie'] . '-' . $data['doc_afectado_correlativo']);
+        // Documento afectado — opcional para Penalidades (ND motivo 13). Si no se
+        // informa, no se setea (el BillingReference vacío se remueve al firmar).
+        if (! empty($data['doc_afectado_tipo']) && ! empty($data['doc_afectado_serie'])) {
+            $note->setTipDocAfectado($data['doc_afectado_tipo']);
+            $note->setNumDocfectado($data['doc_afectado_serie'] . '-' . $data['doc_afectado_correlativo']);
+        }
 
         // Motivo
         $note->setCodMotivo($data['cod_motivo']);
@@ -291,7 +294,7 @@ class NoteBuilder
             ->setTotalImpuestos($totalImpuestos);
 
         if (! empty($item['cod_producto_sunat'])) {
-            $detail->setCodProductoSunat($item['cod_producto_sunat']);
+            $detail->setCodProdSunat($item['cod_producto_sunat']);
         }
 
         if ($isGratuito || $isGratuitoGravado) {

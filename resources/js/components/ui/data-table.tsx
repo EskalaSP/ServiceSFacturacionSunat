@@ -47,6 +47,11 @@ type DataTableProps<TData, TValue> = {
     emptyMessage?: string;
     /** Contenido extra a la derecha de la barra de búsqueda (ej. botón "Nuevo") */
     toolbar?: React.ReactNode;
+    /**
+     * La paginación la maneja el servidor (Laravel) + <Pagination> externo.
+     * Renderiza todas las filas recibidas y oculta el paginador interno.
+     */
+    manualPagination?: boolean;
 };
 
 export function DataTable<TData, TValue>({
@@ -57,6 +62,7 @@ export function DataTable<TData, TValue>({
     pageSize = 10,
     emptyMessage = 'No hay resultados.',
     toolbar,
+    manualPagination = false,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [globalFilter, setGlobalFilter] = React.useState('');
@@ -70,7 +76,8 @@ export function DataTable<TData, TValue>({
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
+        // Sin modelo de paginación en modo manual → renderiza todas las filas.
+        ...(manualPagination ? {} : { getPaginationRowModel: getPaginationRowModel() }),
         initialState: { pagination: { pageSize } },
     });
 
@@ -99,7 +106,7 @@ export function DataTable<TData, TValue>({
             )}
 
             {/* ── Vista escritorio (tabla) ─────────────────────────── */}
-            <div className="border-border bg-card hidden rounded-xl border shadow-sm md:block">
+            <div className="bg-card hidden rounded-xl shadow-soft md:block">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((hg) => (
@@ -184,7 +191,7 @@ export function DataTable<TData, TValue>({
                         return (
                             <div
                                 key={row.id}
-                                className="border-border bg-card flex flex-col gap-3 rounded-xl border p-4 shadow-sm"
+                                className="bg-card flex flex-col gap-3 rounded-xl p-4 shadow-soft"
                             >
                                 {(primary || actions) && (
                                     <div className="flex items-start justify-between gap-2">
@@ -218,14 +225,14 @@ export function DataTable<TData, TValue>({
                         );
                     })
                 ) : (
-                    <div className="border-border bg-card text-muted-foreground rounded-xl border p-8 text-center text-sm">
+                    <div className="bg-card text-muted-foreground rounded-xl p-8 text-center text-sm shadow-soft">
                         {emptyMessage}
                     </div>
                 )}
             </div>
 
-            {/* ── Paginación ───────────────────────────────────────── */}
-            {table.getPageCount() > 1 && (
+            {/* ── Paginación interna (solo modo client-side) ───────── */}
+            {!manualPagination && table.getPageCount() > 1 && (
                 <div className="flex items-center justify-between gap-2">
                     <p className="text-muted-foreground text-xs">
                         {table.getFilteredRowModel().rows.length} resultado(s) · Página{' '}

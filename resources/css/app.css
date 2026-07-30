@@ -8,9 +8,11 @@
 
 @theme {
     --font-sans:
-        'DM Sans', ui-sans-serif, system-ui, sans-serif,
+        'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+    --font-mono:
+        'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -64,100 +66,100 @@
 }
 
 :root {
-    /* ── Modo claro · blanco suave ───────────────────── */
-    --background:           hsl(0, 0%, 97%);      /* #F7F7F7 - blanco suave */
-    --foreground:           hsl(206, 9%, 14%);    /* #212528 */
-    --card:                 hsl(0, 0%, 100%);     /* #FFFFFF - cards blancas puras */
-    --card-foreground:      hsl(206, 9%, 14%);
+    /* ── Modo claro · neutros limpios + marca ámbar ─────────────── */
+    --background:           hsl(210, 24%, 98%);   /* off-white muy suave */
+    --foreground:           hsl(222, 44%, 8%);    /* casi negro: máxima legibilidad */
+    --card:                 hsl(0, 0%, 100%);     /* cards blancas puras (sin borde, con sombra) */
+    --card-foreground:      hsl(222, 44%, 8%);
     --popover:              hsl(0, 0%, 100%);
-    --popover-foreground:   hsl(206, 9%, 14%);
-    --primary:              hsl(39, 96%, 50%);    /* #FAA307 ámbar (marca) */
-    --primary-foreground:   hsl(30, 50%, 10%);    /* texto oscuro sobre ámbar */
-    --secondary:            hsl(0, 0%, 95%);      /* #F2F2F2 */
-    --secondary-foreground: hsl(206, 9%, 14%);
-    --muted:                hsl(0, 0%, 96%);      /* #F5F5F5 */
-    --muted-foreground:     hsl(150, 5%, 42%);    /* #6B7B73 */
-    --accent:               hsl(88, 18%, 73%);    /* #BAC5AC salvia */
-    --accent-foreground:    hsl(206, 9%, 14%);
-    --destructive:          hsl(0, 65%, 48%);
+    --popover-foreground:   hsl(222, 44%, 8%);
+    --primary:              hsl(38, 95%, 50%);    /* #FAA307 ámbar (marca) */
+    --primary-foreground:   hsl(28, 70%, 10%);    /* texto oscuro sobre ámbar */
+    --secondary:            hsl(210, 22%, 95%);
+    --secondary-foreground: hsl(222, 40%, 12%);
+    --muted:                hsl(210, 22%, 96%);
+    --muted-foreground:     hsl(218, 19%, 32%);   /* secundario bien legible (WCAG AA) */
+    --accent:               hsl(210, 24%, 93%);   /* hover/realce neutro */
+    --accent-foreground:    hsl(220, 30%, 14%);
+    --destructive:          hsl(0, 72%, 49%);
     --destructive-foreground: hsl(0, 0%, 98%);
-    --border:               hsl(0, 0%, 91%);      /* #E8E8E8 borde visible pero suave */
-    --input:                hsl(0, 0%, 96%);      /* #F5F5F5 */
-    --ring:                 hsl(39, 96%, 50%);    /* #FAA307 */
-    --radius:               1rem;
+    --border:               hsl(214, 20%, 91%);   /* sutil (las cards ya no lo usan) */
+    --input:                hsl(214, 22%, 95%);
+    --ring:                 hsl(38, 95%, 50%);
+    --radius:               0.875rem;
 
-    /* Charts */
-    --chart-1:              hsl(39, 96%, 50%);
-    --chart-2:              hsl(88, 18%, 65%);
-    --chart-3:              hsl(206, 9%, 35%);
-    --chart-4:              hsl(158, 12%, 55%);
-    --chart-5:              hsl(0, 0%, 70%);
+    /* Charts — paleta VIBRANTE y VALIDADA (data-viz, CVD-safe en claro) */
+    --chart-1:              #F0990A;   /* ámbar */
+    --chart-2:              #3599E6;   /* azul */
+    --chart-3:              #00BA5D;   /* verde */
+    --chart-4:              #8B5CF6;   /* violeta */
+    --chart-5:              #E63946;   /* rojo */
 
-    /* Sidebar */
-    --sidebar:              hsl(0, 0%, 98%);      /* #FAFAFA casi blanco */
-    --sidebar-foreground:   hsl(206, 9%, 20%);
-    --sidebar-primary:      hsl(39, 96%, 50%);
-    --sidebar-primary-foreground: hsl(30, 50%, 10%);
-    --sidebar-accent:       hsl(0, 0%, 95%);      /* #F2F2F2 hover */
-    --sidebar-accent-foreground: hsl(206, 9%, 14%);
-    --sidebar-border:       hsl(0, 0%, 91%);      /* #E8E8E8 */
-    --sidebar-ring:         hsl(39, 96%, 50%);
+    /* Sidebar — limpio, casi blanco */
+    --sidebar:              hsl(210, 28%, 99%);
+    --sidebar-foreground:   hsl(220, 26%, 22%);
+    --sidebar-primary:      hsl(38, 95%, 50%);
+    --sidebar-primary-foreground: hsl(28, 65%, 11%);
+    --sidebar-accent:       hsl(210, 24%, 94%);
+    --sidebar-accent-foreground: hsl(220, 30%, 14%);
+    --sidebar-border:       hsl(214, 20%, 92%);
+    --sidebar-ring:         hsl(38, 95%, 50%);
 
-    /* Custom brand tokens */
-    --beige:                hsl(88, 18%, 73%);
-    --olive:                hsl(39, 96%, 50%);
+    --beige:                hsl(88, 20%, 70%);
+    --olive:                hsl(38, 95%, 50%);
 
     color-scheme: light;
 }
 
 .dark {
-    /* ── Base: #010202 · cards máximo en #020303 ────────────────── */
-    --background:           hsl(180, 33%, 1%);   /* #010202 base */
-    --foreground:           hsl(0, 0%, 92%);     /* #EAEAEA texto */
+    /* ── Modo oscuro · carbón-navío premium (no negro puro) ─────── */
+    --background:           hsl(222, 20%, 8%);    /* carbón profundo */
+    --foreground:           hsl(210, 32%, 98%);   /* blanco nítido: máxima legibilidad */
 
-    --card:                 hsl(180, 20%, 1.5%); /* #020303 cards (mínimo permitido) */
-    --card-foreground:      hsl(0, 0%, 92%);
+    --card:                 hsl(220, 17%, 12%);   /* elevado: se distingue del fondo sin borde */
+    --card-foreground:      hsl(210, 32%, 98%);
 
-    --popover:              hsl(180, 25%, 2%);   /* #030505 popovers/modales */
-    --popover-foreground:   hsl(0, 0%, 92%);
+    --popover:              hsl(220, 18%, 13%);
+    --popover-foreground:   hsl(210, 32%, 98%);
 
-    --primary:              hsl(39, 96%, 52%);   /* #FAA307 ámbar (marca) */
-    --primary-foreground:   hsl(30, 50%, 8%);    /* texto oscuro sobre ámbar */
+    --primary:              hsl(38, 96%, 53%);    /* ámbar (marca) */
+    --primary-foreground:   hsl(28, 70%, 9%);
 
-    --secondary:            hsl(180, 20%, 3.5%); /* #070909 hover/secondary */
-    --secondary-foreground: hsl(0, 0%, 92%);
+    --secondary:            hsl(220, 15%, 16%);
+    --secondary-foreground: hsl(210, 32%, 98%);
 
-    --muted:                hsl(180, 22%, 2.5%); /* #050707 fondos muted */
-    --muted-foreground:     hsl(0, 0%, 55%);     /* #8C8C8C texto secundario */
+    --muted:                hsl(220, 15%, 15%);
+    --muted-foreground:     hsl(214, 22%, 74%);   /* secundario bien legible en oscuro */
 
-    --accent:               hsl(88, 18%, 73%);   /* mantener salvia */
-    --accent-foreground:    hsl(180, 33%, 1%);
+    --accent:               hsl(220, 15%, 17%);
+    --accent-foreground:    hsl(210, 22%, 95%);
 
-    --destructive:          hsl(0, 60%, 45%);
-    --destructive-foreground: hsl(0, 65%, 65%);
+    --destructive:          hsl(0, 66%, 52%);
+    --destructive-foreground: hsl(0, 0%, 98%);
 
-    --border:               hsl(180, 8%, 10%);   /* #171B1B borde sutil pero visible */
-    --input:                hsl(180, 22%, 2.5%); /* #050707 fondo input */
-    --ring:                 hsl(39, 96%, 52%);   /* #FAA307 */
+    --border:               hsl(220, 14%, 19%);
+    --input:                hsl(220, 15%, 17%);
+    --ring:                 hsl(38, 96%, 53%);
 
-    --chart-1:              hsl(39, 96%, 52%);
-    --chart-2:              hsl(88, 18%, 70%);
-    --chart-3:              hsl(206, 8%, 35%);
-    --chart-4:              hsl(158, 14%, 32%);
-    --chart-5:              hsl(0, 0%, 55%);
+    /* Charts — pasos vibrantes para superficie oscura (validados) */
+    --chart-1:              #C98500;
+    --chart-2:              #3599E6;
+    --chart-3:              #00A854;
+    --chart-4:              #8B5CF6;
+    --chart-5:              #DE3B48;
 
-    /* Sidebar — mismo que background para look flat */
-    --sidebar:              hsl(180, 33%, 1%);   /* #010202 mismo que bg */
-    --sidebar-foreground:   hsl(0, 0%, 92%);
-    --sidebar-primary:      hsl(39, 96%, 52%);
-    --sidebar-primary-foreground: hsl(30, 50%, 8%);
-    --sidebar-accent:       hsl(180, 20%, 3.5%); /* #070909 hover items */
-    --sidebar-accent-foreground: hsl(0, 0%, 92%);
-    --sidebar-border:       hsl(180, 8%, 10%);   /* #171B1B separadores */
-    --sidebar-ring:         hsl(39, 96%, 52%);
+    /* Sidebar — un punto más oscuro que el fondo para dar profundidad */
+    --sidebar:              hsl(222, 22%, 6.5%);
+    --sidebar-foreground:   hsl(210, 20%, 88%);
+    --sidebar-primary:      hsl(38, 96%, 53%);
+    --sidebar-primary-foreground: hsl(28, 65%, 10%);
+    --sidebar-accent:       hsl(220, 15%, 15%);
+    --sidebar-accent-foreground: hsl(210, 22%, 95%);
+    --sidebar-border:       hsl(220, 14%, 16%);
+    --sidebar-ring:         hsl(38, 96%, 53%);
 
-    --beige:                hsl(88, 18%, 73%);
-    --olive:                hsl(39, 96%, 52%);
+    --beige:                hsl(88, 20%, 70%);
+    --olive:                hsl(38, 96%, 53%);
 
     color-scheme: dark;
 }
@@ -167,33 +169,66 @@
         @apply border-border;
     }
 
+    /* Tamaño base fluido según el dispositivo:
+       móvil ~15.5px · tablet ~16.3px · escritorio ~17.5px (tope).
+       Toda la UI (rem) escala de forma proporcional y legible. */
+    html {
+        font-size: clamp(15.5px, 14px + 0.3vw, 17.5px);
+        line-height: 1.5;
+        text-size-adjust: 100%;
+        -webkit-text-size-adjust: 100%;
+    }
+
     body {
         @apply bg-background text-foreground;
-        letter-spacing: -0.01em;
-        font-feature-settings: "ss01";
+        font-weight: 400;
+        line-height: 1.6;
+        letter-spacing: -0.011em;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    /* Títulos claros y en negrita */
+    h1, h2, h3, h4, h5 {
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--foreground);
+    }
+
+    /* Números tabulares para importes/tablas — se ven prolijos y alineados */
+    table, .tabular-nums {
+        font-variant-numeric: tabular-nums;
     }
 }
 
 @layer utilities {
+    /* Sombra suave para cards sin borde (reemplaza el borde) */
     .shadow-soft {
-        box-shadow: 0 4px 24px -4px rgba(33, 37, 40, 0.07),
-                    0 2px 8px -2px rgba(33, 37, 40, 0.04);
+        box-shadow:
+            0 1px 2px -1px rgba(16, 24, 40, 0.06),
+            0 4px 16px -4px rgba(16, 24, 40, 0.08);
+    }
+    .dark .shadow-soft {
+        box-shadow:
+            0 1px 2px -1px rgba(0, 0, 0, 0.5),
+            0 8px 24px -8px rgba(0, 0, 0, 0.6);
     }
 
     /* Input/textarea custom con misma apariencia que <Input> — cross-theme */
     .form-input {
         background-color: var(--input);
         color: var(--foreground);
-        border: 1px solid var(--input);
+        border: 1px solid transparent;
         border-radius: var(--radius-md);
         padding: 0.5rem 0.75rem;
         font-size: 0.875rem;
-        transition: border-color 150ms;
+        transition: border-color 150ms, box-shadow 150ms;
         outline: none;
         width: 100%;
     }
     .form-input:focus-visible {
         border-color: var(--ring);
+        box-shadow: 0 0 0 3px hsl(38 95% 50% / 0.18);
     }
     .form-input::placeholder {
         color: var(--muted-foreground);
@@ -215,17 +250,18 @@
         background-size: 1.1em;
         padding-right: 2.25rem;
         color: var(--foreground);
-        border: 1px solid var(--input);
+        border: 1px solid transparent;
         border-radius: var(--radius-md);
         height: 2.25rem;
         padding-left: 0.75rem;
         font-size: 0.875rem;
-        transition: border-color 150ms;
+        transition: border-color 150ms, box-shadow 150ms;
         outline: none;
         width: 100%;
     }
     .form-select:focus-visible {
         border-color: var(--ring);
+        box-shadow: 0 0 0 3px hsl(38 95% 50% / 0.18);
     }
     .form-select:disabled {
         opacity: 0.5;
@@ -235,16 +271,9 @@
         background-color: var(--popover);
         color: var(--popover-foreground);
     }
+
+    /* Superficie del dashboard — plana (sin degradados) */
     .dashboard-surface {
-        background:
-            radial-gradient(900px 480px at 50% -10%, rgba(82, 121, 106, 0.06), transparent 65%),
-            radial-gradient(700px 400px at 100% 0%, rgba(186, 197, 172, 0.08), transparent 55%),
-            hsl(0, 0%, 97%);
-    }
-    .dark .dashboard-surface {
-        background:
-            radial-gradient(900px 480px at 50% -10%, rgba(82, 121, 106, 0.10), transparent 65%),
-            radial-gradient(700px 400px at 100% 0%, rgba(186, 197, 172, 0.05), transparent 55%),
-            hsl(180, 33%, 1%);
+        background: var(--background);
     }
 }

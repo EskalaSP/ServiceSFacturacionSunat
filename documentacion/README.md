@@ -21,6 +21,10 @@
 10. [**10-Guia-remision-RM.md**](./10-Guia-remision-RM.md) — Guías de remisión remitente (Tipo 09)
 11. [**11-Guia-transportista.md**](./11-Guia-transportista.md) — Guías de remisión transportista (Tipo 31) — GRE REST OAuth2
 
+### 🆕 Novedades normativas SUNAT 2026 / 2027
+24. [**24-Novedades-SUNAT-2026-2027.md**](./24-Novedades-SUNAT-2026-2027.md) — Código de producto SUNAT (UNSPSC), Contrato de colaboración empresarial, ND motivo 13 (Penalidades), validación de montos en NC, catálogos actualizados (54/51/10) y vigencias
+25. [**25-Buscar-codigo-producto.md**](./25-Buscar-codigo-producto.md) — Buscador de Código de Producto SUNAT (UNSPSC): búsqueda por texto/código, validación y navegación jerárquica (drill-down como el Excel oficial)
+
 ### ⚙️ Operaciones (ciclo de vida)
 12. [**12-Envio-manual.md**](./12-Envio-manual.md) — Envío manual a SUNAT (`enviar_automatico=false` + `POST /xxx/{id}/enviar`)
 13. [**13-Actualizar.md**](./13-Actualizar.md) — Cómo actualizar documentos rechazados/pendientes

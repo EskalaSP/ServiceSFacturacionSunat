@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Download, FileText, Filter, Search, X } from 'lucide-react';
 import { StatusBadge } from '@/components/sunat/status-badge';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,30 +101,33 @@ export default function Historial({ documentos, filtros, tenant }: Props) {
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                                 <div className="flex flex-col gap-1.5">
                                     <Label>Tipo</Label>
-                                    <select
+                                    <Combobox
                                         value={tipo}
-                                        onChange={(e) => setTipo(e.target.value)}
-                                        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                                    >
-                                        <option value="todos">Todos</option>
-                                        <option value="facturas">Facturas</option>
-                                        <option value="boletas">Boletas</option>
-                                    </select>
+                                        onChange={(v) => setTipo(v)}
+                                        options={[
+                                            { value: 'todos', label: 'Todos' },
+                                            { value: 'facturas', label: 'Facturas' },
+                                            { value: 'boletas', label: 'Boletas' },
+                                        ]}
+                                        className="h-9 rounded-md"
+                                    />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <Label>Estado</Label>
-                                    <select
+                                    <Combobox
                                         value={estado}
-                                        onChange={(e) => setEstado(e.target.value)}
-                                        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                                    >
-                                        <option value="">Todos</option>
-                                        <option value="aceptado">Aceptado</option>
-                                        <option value="pendiente">Pendiente</option>
-                                        <option value="enviado">Enviado</option>
-                                        <option value="rechazado">Rechazado</option>
-                                        <option value="borrador">Borrador</option>
-                                    </select>
+                                        onChange={(v) => setEstado(v)}
+                                        placeholder="Todos"
+                                        options={[
+                                            { value: '', label: 'Todos' },
+                                            { value: 'aceptado', label: 'Aceptado' },
+                                            { value: 'pendiente', label: 'Pendiente' },
+                                            { value: 'enviado', label: 'Enviado' },
+                                            { value: 'rechazado', label: 'Rechazado' },
+                                            { value: 'borrador', label: 'Borrador' },
+                                        ]}
+                                        className="h-9 rounded-md"
+                                    />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <Label>Desde</Label>

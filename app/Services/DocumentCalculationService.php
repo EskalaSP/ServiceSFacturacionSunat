@@ -163,6 +163,7 @@ class DocumentCalculationService
 
             $calculated[] = [
                 'codigo' => $item['codigo'] ?? null,
+                'cod_producto_sunat' => $item['cod_producto_sunat'] ?? null,
                 'descripcion' => $item['descripcion'],
                 'unidad' => $item['unidad'],
                 'cantidad' => $cantidad,

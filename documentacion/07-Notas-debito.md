@@ -66,6 +66,9 @@
 
 ### Campos obligatorios del documento afectado
 
+> Obligatorios para todos los motivos **excepto el `13` (Penalidades)**, donde el documento afectado
+> es opcional (puedes omitir `doc_afectado_*`).
+
 | Campo | Descripción |
 |-------|-------------|
 | `doc_afectado_tipo` | `01` (Factura), `03` (Boleta), `12` (Ticket) |
@@ -85,7 +88,7 @@
 |--------|-------------|------------|
 | `01` | Intereses por mora | Mora en pago atrasado |
 | `02` | Aumento en el valor | Ajuste al alza |
-| `03` | Penalidades / otros conceptos | Multa contractual |
+| `03` | Otros conceptos | Conceptos varios (ya **no** incluye penalidades) |
 | `04` | Ajustes de valor de exportación | Solo para exportaciones |
 | `05` | Ajustes por corrección de la moneda | Cambio de moneda |
 | `06` | Ajustes por corrección de la cantidad | Cantidad mayor a la inicial |
@@ -94,10 +97,19 @@
 | `09` | Otros | Caso no cubierto |
 | `11` | Ajustes de operaciones de exportación | Exportación |
 | `12` | Ajustes afectos al IVAP | Arroz |
+| `13` | **Penalidades** 🆕 | Multa contractual (vig. **01/01/2027**) |
+
+> 🆕 **Motivo 13 (Penalidades) — desde 01/01/2027.** Las penalidades salen del `03` y pasan al `13`.
+> Reglas: (1) **solo operaciones inafectas** (`tip_afe_igv: "30"`, sin IGV — ERR-3507); (2) el
+> **documento afectado es OPCIONAL** (puedes omitir `doc_afectado_*`). Hoy SUNAT aún rechaza el `13`
+> (vigencia 2027). Ver [24-Novedades](24-Novedades-SUNAT-2026-2027.md#3-nota-de-débito-motivo-13--penalidades).
 
 ### Items
 
 **Mismos campos que factura**. Los items representan el **monto adicional** a cobrar.
+
+Campos nuevos opcionales (SUNAT 2026): `items[].cod_producto_sunat` (UNSPSC) y `contrato_colaboracion`
+(consorcios). Ver [24-Novedades-SUNAT-2026-2027.md](24-Novedades-SUNAT-2026-2027.md).
 
 ### Ejemplo — Intereses por mora
 
@@ -125,6 +137,10 @@
 
 ### Ejemplo — Penalidad contractual
 
+> **Vigencia:** hasta el **31/12/2026** las penalidades usan `cod_motivo: "03"` (como abajo).
+> Desde el **01/01/2027** usa `cod_motivo: "13"` con ítems **inafectos** (`tip_afe_igv: "30"`) y el
+> documento afectado es opcional (ver ejemplo motivo 13 al final de la sección).
+
 ```json
 {
   "serie": "FD01",
@@ -146,6 +162,30 @@
   ]
 }
 ```
+
+### Ejemplo — Penalidad motivo 13 🆕 (desde 01/01/2027, sin documento afectado)
+
+```json
+{
+  "serie": "FD01",
+  "fecha_emision": "2027-01-15",
+  "tipo_moneda": "PEN",
+  "cod_motivo": "13",
+  "des_motivo": "Penalidad por incumplimiento contractual",
+  "cliente": { "tipo_doc":"6", "num_doc":"20555666777", "razon_social":"ACME SAC" },
+  "items": [
+    {
+      "descripcion": "Penalidad contractual",
+      "unidad": "ZZ",
+      "cantidad": 1,
+      "precio_unitario": 500.00,
+      "tip_afe_igv": "30"
+    }
+  ]
+}
+```
+
+> Nota: sin `doc_afectado_*` (opcional para el 13) y con `tip_afe_igv: "30"` (inafecto, sin IGV).
 
 ### Ejemplo — Aumento por cargo omitido
 

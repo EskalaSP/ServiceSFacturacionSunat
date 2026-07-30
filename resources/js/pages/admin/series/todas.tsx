@@ -5,9 +5,11 @@ import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Combobox } from '@/components/ui/combobox';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
+import { Pagination } from '@/components/ui/pagination';
 import type { BreadcrumbItem } from '@/types';
 
 type Serie = {
@@ -173,30 +175,27 @@ export default function SeriesTodas({ series, empresas, tipos, filtros }: Props)
 
                 <Card className="p-4">
                     <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <select
-                            className="form-select sm:max-w-xs"
+                        <Combobox
                             value={data.tenant_id}
-                            onChange={(e) => setData('tenant_id', e.target.value)}
-                        >
-                            <option value="">Todas las empresas</option>
-                            {empresas.map((emp) => (
-                                <option key={emp.id} value={emp.id}>
-                                    {emp.ruc} — {emp.razon_social}
-                                </option>
-                            ))}
-                        </select>
-                        <select
-                            className="form-select sm:max-w-[200px]"
+                            onChange={(v) => setData('tenant_id', v)}
+                            options={[
+                                { value: '', label: 'Todas las empresas' },
+                                ...empresas.map((emp) => ({ value: String(emp.id), label: `${emp.ruc} — ${emp.razon_social}` })),
+                            ]}
+                            placeholder="Todas las empresas"
+                            searchable
+                            className="sm:max-w-xs"
+                        />
+                        <Combobox
                             value={data.tipo_documento}
-                            onChange={(e) => setData('tipo_documento', e.target.value)}
-                        >
-                            <option value="">Todos los tipos</option>
-                            {Object.entries(tipos).map(([codigo, nombre]) => (
-                                <option key={codigo} value={codigo}>
-                                    {codigo} — {nombre}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(v) => setData('tipo_documento', v)}
+                            options={[
+                                { value: '', label: 'Todos los tipos' },
+                                ...Object.entries(tipos).map(([codigo, nombre]) => ({ value: codigo, label: `${codigo} — ${nombre}` })),
+                            ]}
+                            placeholder="Todos los tipos"
+                            className="sm:max-w-[200px]"
+                        />
                         <Button type="submit" variant="secondary" disabled={processing}>
                             Filtrar
                         </Button>
@@ -211,33 +210,12 @@ export default function SeriesTodas({ series, empresas, tipos, filtros }: Props)
                 <DataTable
                     columns={columns}
                     data={series.data}
+                    manualPagination
                     searchPlaceholder="Buscar por serie..."
                     emptyMessage="No hay series que coincidan."
                 />
 
-                {series.last_page > 1 && (
-                    <div className="flex flex-wrap items-center justify-center gap-1">
-                        {series.links.map((link, i) =>
-                            link.url ? (
-                                <Link
-                                    key={i}
-                                    href={link.url}
-                                    preserveScroll
-                                    className={`min-w-[36px] rounded-md px-3 py-1.5 text-center text-sm ${
-                                        link.active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted border'
-                                    }`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ) : (
-                                <span
-                                    key={i}
-                                    className="min-w-[36px] rounded-md px-3 py-1.5 text-center text-sm opacity-40"
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ),
-                        )}
-                    </div>
-                )}
+                <Pagination links={series.links} from={series.from} to={series.to} total={series.total} />
             </div>
         </AppLayout>
     );

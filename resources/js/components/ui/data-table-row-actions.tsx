@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 export type RowAction = {
     label: string;
     icon?: React.ComponentType<{ className?: string }>;
+    /** Color del ícono (clase Tailwind, ej. 'text-[#3599E6]'). */
+    iconClassName?: string;
     onSelect: () => void;
     /** Pinta el item en rojo (acciones destructivas). */
     danger?: boolean;
@@ -54,7 +56,7 @@ export function DataTableRowActions({ actions }: { actions: RowAction[] }) {
                                     'text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400',
                             )}
                         >
-                            {action.icon && <action.icon className="size-4" />}
+                            {action.icon && <action.icon className={cn('size-4', action.iconClassName)} />}
                             {action.label}
                         </DropdownMenuItem>
                     </React.Fragment>

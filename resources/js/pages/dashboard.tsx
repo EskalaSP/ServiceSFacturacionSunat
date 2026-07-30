@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import {
     ArrowDownRight,
     ArrowUpRight,
@@ -30,7 +31,7 @@ import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: dashboard() },
+    { title: 'Inicio', href: dashboard() },
 ];
 
 type Kpis = {
@@ -70,12 +71,28 @@ const fmtFecha = (iso: string) => {
     return `${d}/${m}`;
 };
 
-// Paleta consistente con el tema
-const COLORS_TIPO = ['#FAA307', '#BAC5AC', '#8AA894', '#9FB88E', '#C7D4B8'];
-const COLORS_PLAN = ['#94A3B8', '#FAA307', '#3B82F6'];
-const COLORS_REGIMEN = ['#FAA307', '#BAC5AC', '#8AA894'];
-const COLORS_ESTADO = ['#10B981', '#EF4444', '#3B82F6', '#94A3B8'];
-const COLORS_ENTORNO = ['#F59E0B', '#10B981'];
+// Paleta categórica validada (data-viz): distinguible en daltonismo, en claro y oscuro.
+// Orden fijo — el color sigue a la entidad, nunca al ranking. Dos pasos por modo.
+const PALETTE_LIGHT = ['#F0990A', '#3599E6', '#00BA5D', '#8B5CF6', '#E63946'];
+const PALETTE_DARK = ['#C98500', '#3599E6', '#00A854', '#8B5CF6', '#DE3B48'];
+// Estados (semántico): aceptado · rechazado · enviado · otro.
+const COLORS_ESTADO = ['#00BA5D', '#E63946', '#3599E6', '#94a3b8'];
+
+// Detecta el modo oscuro real (clase .dark en <html>) y reacciona al cambio de tema.
+function useIsDark(): boolean {
+    const [dark, setDark] = useState(
+        () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
+    );
+    useEffect(() => {
+        const el = document.documentElement;
+        const update = () => setDark(el.classList.contains('dark'));
+        update();
+        const obs = new MutationObserver(update);
+        obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+        return () => obs.disconnect();
+    }, []);
+    return dark;
+}
 
 function KpiCard({
     label,
@@ -157,10 +174,16 @@ function DashboardPlaceholder() {
 }
 
 export default function Dashboard({ esAdmin, metricas }: Props) {
+    const chart = useIsDark() ? PALETTE_DARK : PALETTE_LIGHT;
+    const COLORS_TIPO = chart;
+    const COLORS_PLAN = [chart[1], chart[0], chart[2]];
+    const COLORS_REGIMEN = [chart[0], chart[2], chart[3]];
+    const COLORS_ENTORNO = [chart[0], chart[1]];
+
     if (!esAdmin || !metricas) {
         return (
             <AppLayout breadcrumbs={breadcrumbs}>
-                <Head title="Dashboard" />
+                <Head title="Inicio" />
                 <DashboardPlaceholder />
             </AppLayout>
         );
@@ -173,7 +196,7 @@ export default function Dashboard({ esAdmin, metricas }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard" />
+            <Head title="Inicio" />
 
             <div className="flex flex-1 flex-col gap-6 p-4">
                 {/* Header */}
@@ -193,28 +216,28 @@ export default function Dashboard({ esAdmin, metricas }: Props) {
                         value={kpis.empresas_total.toString()}
                         subvalue={`${kpis.empresas_activas} activas`}
                         icon={Building2}
-                        iconColor="#FAA307"
+                        iconColor="#F0990A"
                     />
                     <KpiCard
                         label="Documentos hoy"
                         value={kpis.docs_hoy.toString()}
                         subvalue={`${kpis.docs_mes} este mes`}
                         icon={FileText}
-                        iconColor="#3B82F6"
+                        iconColor="#3599E6"
                     />
                     <KpiCard
                         label="Ventas del mes"
                         value={fmtSoles(kpis.ventas_mes)}
                         growth={kpis.crecimiento_ventas}
                         icon={Wallet}
-                        iconColor="#F59E0B"
+                        iconColor="#8B5CF6"
                     />
                     <KpiCard
                         label="Documentos del mes"
                         value={kpis.docs_mes.toString()}
                         growth={kpis.crecimiento_docs}
                         icon={CheckCircle2}
-                        iconColor="#10B981"
+                        iconColor="#00BA5D"
                     />
                 </div>
 
@@ -243,9 +266,9 @@ export default function Dashboard({ esAdmin, metricas }: Props) {
                                         labelFormatter={fmtFecha}
                                     />
                                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                                    <Line type="monotone" dataKey="facturas" stroke="#FAA307" strokeWidth={2} dot={false} name="Facturas" />
-                                    <Line type="monotone" dataKey="boletas" stroke="#BAC5AC" strokeWidth={2} dot={false} name="Boletas" />
-                                    <Line type="monotone" dataKey="notas" stroke="#F59E0B" strokeWidth={2} dot={false} name="NC / ND" />
+                                    <Line type="monotone" dataKey="facturas" stroke={chart[0]} strokeWidth={2} dot={false} name="Facturas" />
+                                    <Line type="monotone" dataKey="boletas" stroke={chart[1]} strokeWidth={2} dot={false} name="Boletas" />
+                                    <Line type="monotone" dataKey="notas" stroke={chart[2]} strokeWidth={2} dot={false} name="NC / ND" />
                                 </LineChart>
                             </ResponsiveContainer>
                         </ChartCard>

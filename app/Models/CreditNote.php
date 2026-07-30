@@ -21,7 +21,7 @@ class CreditNote extends Model implements Documentable
         'mto_oper_gravadas', 'mto_oper_exoneradas', 'mto_oper_inafectas',
         'mto_oper_gratuitas', 'mto_igv', 'mto_isc', 'mto_icbper',
         'total_impuestos', 'valor_venta', 'sub_total', 'mto_imp_venta',
-        'total_anticipos', 'total_descuentos', 'leyenda', 'observacion', 'guias',
+        'total_anticipos', 'total_descuentos', 'leyenda', 'observacion', 'guias', 'contrato_colaboracion',
         'xml_path', 'cdr_path', 'pdf_path', 'hash_cpe',
         'sunat_status', 'sunat_code', 'sunat_description', 'sunat_notes',
         'ticket', 'sent_at',
@@ -31,6 +31,7 @@ class CreditNote extends Model implements Documentable
     {
         return array_merge($this->sharedCasts(), [
             'guias' => 'array',
+            'contrato_colaboracion' => 'array',
         ]);
     }
 

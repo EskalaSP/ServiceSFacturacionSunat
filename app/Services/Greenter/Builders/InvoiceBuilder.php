@@ -490,6 +490,11 @@ class InvoiceBuilder
             ->setTipAfeIgv($tipAfeIgv)
             ->setTotalImpuestos($totalImpuestos);
 
+        // Código de producto SUNAT (UNSPSC / cbc:ItemClassificationCode)
+        if (! empty($item['cod_producto_sunat'])) {
+            $detail->setCodProdSunat($item['cod_producto_sunat']);
+        }
+
         if ($isGratuito || $isGratuitoGravado) {
             // Gratuito: SUNAT requiere AlternativeConditionPrice con PriceTypeCode=02
             // SUNAT 2640: Price/PriceAmount DEBE ser 0 para gratuita (no el valor referencial)

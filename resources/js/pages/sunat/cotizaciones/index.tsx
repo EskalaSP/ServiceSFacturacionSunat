@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { FileText, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import SunatLayout from '@/layouts/sunat-layout';
 
@@ -96,17 +97,18 @@ export default function CotizacionesIndex({ cotizaciones, filtros, tenant }: Pro
                         onKeyDown={(e) => e.key === 'Enter' && buscar()}
                         className="h-9 w-64 rounded-xl"
                     />
-                    <select
+                    <Combobox
                         value={status}
-                        onChange={(e) => { setStatus(e.target.value); router.get('/sunat/cotizaciones', { q, status: e.target.value }, { preserveState: true }); }}
-                        className="h-9 rounded-xl border border-border bg-background px-3 text-sm outline-none"
-                    >
-                        <option value="todos">Todos los estados</option>
-                        <option value="vigente">Vigente</option>
-                        <option value="aceptada">Aceptada</option>
-                        <option value="rechazada">Rechazada</option>
-                        <option value="vencida">Vencida</option>
-                    </select>
+                        onChange={(v) => { setStatus(v); router.get('/sunat/cotizaciones', { q, status: v }, { preserveState: true }); }}
+                        options={[
+                            { value: 'todos', label: 'Todos los estados' },
+                            { value: 'vigente', label: 'Vigente' },
+                            { value: 'aceptada', label: 'Aceptada' },
+                            { value: 'rechazada', label: 'Rechazada' },
+                            { value: 'vencida', label: 'Vencida' },
+                        ]}
+                        className="h-9 w-48 rounded-xl"
+                    />
                     <Button variant="outline" size="sm" onClick={buscar} className="h-9 rounded-xl">
                         Buscar
                     </Button>
@@ -162,16 +164,17 @@ export default function CotizacionesIndex({ cotizaciones, filtros, tenant }: Pro
                                                     {cot.moneda === 'USD' ? '$' : 'S/'} {fmt(cot.total)}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <select
+                                                    <Combobox
                                                         value={cot.status}
-                                                        onChange={(e) => cambiarEstado(cot.id, e.target.value)}
-                                                        className={`rounded-full border-0 px-2.5 py-1 text-[11px] font-medium outline-none cursor-pointer ${st.className}`}
-                                                    >
-                                                        <option value="vigente">Vigente</option>
-                                                        <option value="aceptada">Aceptada</option>
-                                                        <option value="rechazada">Rechazada</option>
-                                                        <option value="vencida">Vencida</option>
-                                                    </select>
+                                                        onChange={(v) => cambiarEstado(cot.id, v)}
+                                                        options={[
+                                                            { value: 'vigente', label: 'Vigente' },
+                                                            { value: 'aceptada', label: 'Aceptada' },
+                                                            { value: 'rechazada', label: 'Rechazada' },
+                                                            { value: 'vencida', label: 'Vencida' },
+                                                        ]}
+                                                        className={`h-auto w-auto rounded-full ${st.className}`}
+                                                    />
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center justify-center gap-1.5">

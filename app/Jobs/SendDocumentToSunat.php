@@ -67,6 +67,7 @@ class SendDocumentToSunat implements ShouldQueue
                 default => throw new \RuntimeException("Tipo de documento {$tipoDocumento} no soportado"),
             };
 
+            $service->setContratoColaboracion($document->contrato_colaboracion ?? null);
             $result = $service->send($greenterDoc);
             $cb->recordSuccess($endpoint);
         } catch (\SoapFault $e) {
@@ -249,6 +250,7 @@ class SendDocumentToSunat implements ShouldQueue
         $data['items'] = $document->items->map(function ($item) {
             $mapped = [
                 'codigo' => $item->codigo,
+                'cod_producto_sunat' => $item->cod_producto_sunat,
                 'descripcion' => $item->descripcion,
                 'unidad' => $item->unidad,
                 'cantidad' => $item->cantidad,

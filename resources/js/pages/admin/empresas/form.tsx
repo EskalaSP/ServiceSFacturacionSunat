@@ -17,6 +17,7 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
@@ -401,16 +402,14 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                         </div>
                         <div>
                             <Label htmlFor="environment">Entorno *</Label>
-                            <select
-                                id="environment"
+                            <Combobox
                                 value={data.environment}
-                                onChange={(e) => setData('environment', e.target.value)}
-                                className="form-select"
-                                required
-                            >
-                                <option value="beta">Beta (pruebas)</option>
-                                <option value="production">Producción</option>
-                            </select>
+                                onChange={(v) => setData('environment', v)}
+                                options={[
+                                    { value: 'beta', label: 'Beta (pruebas)' },
+                                    { value: 'production', label: 'Producción' },
+                                ]}
+                            />
                         </div>
                         <div className="md:col-span-2">
                             <Label htmlFor="certificado">Certificado digital (.pfx / .p12 / .pem)</Label>
@@ -479,17 +478,15 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
                             <Label htmlFor="tax_regime">Régimen *</Label>
-                            <select
-                                id="tax_regime"
+                            <Combobox
                                 value={data.tax_regime}
-                                onChange={(e) => setData('tax_regime', e.target.value)}
-                                className="form-select"
-                                required
-                            >
-                                <option value="general">General (18% IGV)</option>
-                                <option value="mype_restaurantes">MYPE Restaurantes (Ley 31556)</option>
-                                <option value="nrus">NRUS (solo boletas, 0% IGV)</option>
-                            </select>
+                                onChange={(v) => setData('tax_regime', v)}
+                                options={[
+                                    { value: 'general', label: 'General (18% IGV)' },
+                                    { value: 'mype_restaurantes', label: 'MYPE Restaurantes (Ley 31556)' },
+                                    { value: 'nrus', label: 'NRUS (solo boletas, 0% IGV)' },
+                                ]}
+                            />
                         </div>
                         {data.tax_regime !== 'nrus' && (
                             <div>
@@ -507,16 +504,16 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                         {data.tax_regime === 'nrus' && (
                             <div>
                                 <Label htmlFor="nrus_categoria">Categoría NRUS</Label>
-                                <select
-                                    id="nrus_categoria"
+                                <Combobox
                                     value={data.nrus_categoria as string}
-                                    onChange={(e) => setData('nrus_categoria', e.target.value)}
-                                    className="form-select"
-                                >
-                                    <option value="">—</option>
-                                    <option value="1">Cat. 1 (S/20/mes — hasta S/5k)</option>
-                                    <option value="2">Cat. 2 (S/50/mes — hasta S/8k)</option>
-                                </select>
+                                    onChange={(v) => setData('nrus_categoria', v)}
+                                    options={[
+                                        { value: '', label: '—' },
+                                        { value: '1', label: 'Cat. 1 (S/20/mes — hasta S/5k)' },
+                                        { value: '2', label: 'Cat. 2 (S/50/mes — hasta S/8k)' },
+                                    ]}
+                                    placeholder="—"
+                                />
                             </div>
                         )}
                     </div>
@@ -580,24 +577,18 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                         <div className="grid gap-4 md:grid-cols-2">
                             <div>
                                 <Label htmlFor="plan">Plan *</Label>
-                                <select
-                                    id="plan"
+                                <Combobox
                                     value={data.plan}
-                                    onChange={(e) => setData('plan', e.target.value)}
-                                    className="form-select"
-                                    required
-                                >
-                                    <option value="free">Free</option>
-                                    <option value="pro">Pro</option>
-                                    <option value="business">Business</option>
-                                    {planes
-                                        .filter((p) => !['free', 'pro', 'business'].includes(p.slug))
-                                        .map((p) => (
-                                            <option key={p.slug} value={p.slug}>
-                                                {p.name}
-                                            </option>
-                                        ))}
-                                </select>
+                                    onChange={(v) => setData('plan', v)}
+                                    options={[
+                                        { value: 'free', label: 'Free' },
+                                        { value: 'pro', label: 'Pro' },
+                                        { value: 'business', label: 'Business' },
+                                        ...planes
+                                            .filter((p) => !['free', 'pro', 'business'].includes(p.slug))
+                                            .map((p) => ({ value: p.slug, label: p.name })),
+                                    ]}
+                                />
                                 <p className="text-muted-foreground mt-1 text-xs">
                                     El cupo mensual se toma del plan. Un plan vencido bloquea la emisión.
                                 </p>
@@ -712,19 +703,20 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                                             setData('cuentas_bancarias', arr);
                                         }}
                                     />
-                                    <select
+                                    <Combobox
                                         value={c.moneda ?? ''}
-                                        onChange={(e) => {
+                                        onChange={(v) => {
                                             const arr = [...data.cuentas_bancarias];
-                                            arr[i] = { ...arr[i], moneda: e.target.value };
+                                            arr[i] = { ...arr[i], moneda: v };
                                             setData('cuentas_bancarias', arr);
                                         }}
-                                        className="form-select"
-                                    >
-                                        <option value="">Moneda</option>
-                                        <option value="PEN">PEN</option>
-                                        <option value="USD">USD</option>
-                                    </select>
+                                        options={[
+                                            { value: '', label: 'Moneda' },
+                                            { value: 'PEN', label: 'PEN' },
+                                            { value: 'USD', label: 'USD' },
+                                        ]}
+                                        placeholder="Moneda"
+                                    />
                                     <Input
                                         placeholder="Número"
                                         value={c.numero}
@@ -828,19 +820,17 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                 <Section icon={UserCircle} title="8. Usuario asignado (opcional)" subtitle="Cliente que administra esta empresa">
                     <div>
                         <Label htmlFor="user_id">Usuario</Label>
-                        <select
-                            id="user_id"
-                            value={data.user_id as string | number}
-                            onChange={(e) => setData('user_id', e.target.value)}
-                            className="form-select md:max-w-md"
-                        >
-                            <option value="">— Sin asignar —</option>
-                            {usuarios.map((u) => (
-                                <option key={u.id} value={u.id}>
-                                    {u.name} ({u.email})
-                                </option>
-                            ))}
-                        </select>
+                        <Combobox
+                            value={String(data.user_id)}
+                            onChange={(v) => setData('user_id', v)}
+                            options={[
+                                { value: '', label: '— Sin asignar —' },
+                                ...usuarios.map((u) => ({ value: String(u.id), label: `${u.name} (${u.email})` })),
+                            ]}
+                            placeholder="— Sin asignar —"
+                            searchable
+                            className="md:max-w-md"
+                        />
                     </div>
                 </Section>
 

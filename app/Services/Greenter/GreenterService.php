@@ -345,6 +345,65 @@ class GreenterService
         return (new VoidedBuilder($this->tenant))->build($data);
     }
 
+    /** @var array<string,mixed>|null Contrato de colaboración empresarial a inyectar en el XML. */
+    private ?array $contratoColaboracion = null;
+
+    public function setContratoColaboracion(?array $contrato): void
+    {
+        $this->contratoColaboracion = $contrato;
+    }
+
+    /**
+     * Inyecta cac:ContractDocumentReference (Contrato de Colaboración Empresarial)
+     * antes de firmar. Greenter no modela este nodo. Se ubica en la secuencia UBL
+     * correcta: antes de AdditionalDocumentReference / Signature.
+     */
+    private function injectContratoColaboracion(string $xml): string
+    {
+        $c = $this->contratoColaboracion;
+        if (empty($c) || empty($c['numero'])) {
+            return $xml;
+        }
+
+        $esc = fn ($s) => htmlspecialchars((string) $s, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+        $porcentaje = number_format((float) ($c['porcentaje'] ?? 0), 2, '.', '');
+
+        $node = '<cac:ContractDocumentReference>'
+            . '<cbc:ID>' . $esc($c['numero']) . '</cbc:ID>'
+            . '<cbc:DocumentTypeCode>' . $esc($c['tipo'] ?? '') . '</cbc:DocumentTypeCode>'
+            . '<cbc:DocumentDescription>' . $esc($c['descripcion'] ?? '') . '</cbc:DocumentDescription>'
+            . '<cac:IssuerParty><cac:PartyLegalEntity><cac:ShareholderParty>'
+            . '<cbc:PartecipationPercent>' . $porcentaje . '</cbc:PartecipationPercent>'
+            . '</cac:ShareholderParty></cac:PartyLegalEntity></cac:IssuerParty>'
+            . '</cac:ContractDocumentReference>';
+
+        foreach (['<cac:AdditionalDocumentReference', '<cac:Signature'] as $anchor) {
+            $pos = strpos($xml, $anchor);
+            if ($pos !== false) {
+                return substr($xml, 0, $pos) . $node . substr($xml, $pos);
+            }
+        }
+
+        return $xml;
+    }
+
+    /**
+     * Nota de débito por Penalidades (motivo 13) sin documento afectado: SUNAT
+     * exige que el tag cac:BillingReference esté AUSENTE, pero Greenter siempre
+     * lo renderiza (vacío). Se remueve el nodo vacío antes de firmar.
+     */
+    private function stripEmptyNoteReference(string $xml, DocumentInterface $document): string
+    {
+        if (! $document instanceof \Greenter\Model\Sale\Note) {
+            return $xml;
+        }
+        if ($document->getCodMotivo() !== '13' || ! empty($document->getNumDocfectado())) {
+            return $xml;
+        }
+
+        return preg_replace('#\s*<cac:BillingReference>.*?</cac:BillingReference>#s', '', $xml, 1) ?? $xml;
+    }
+
     public function send(DocumentInterface $document): array
     {
         $see = $this->resolveSee($document);
@@ -358,6 +417,8 @@ class GreenterService
         $options = ['autoescape' => false, 'cache' => $cachePath];
         $xmlBuilder = (new XmlBuilderResolver($options))->find(get_class($document));
         $unsignedXml = $xmlBuilder->build($document);
+        $unsignedXml = $this->stripEmptyNoteReference($unsignedXml, $document);
+        $unsignedXml = $this->injectContratoColaboracion($unsignedXml);
 
         $cert = $this->resolveCertificatePem();
         $signer = new SignedXml();

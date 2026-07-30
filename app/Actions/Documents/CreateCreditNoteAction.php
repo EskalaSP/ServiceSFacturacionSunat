@@ -84,6 +84,7 @@ class CreateCreditNoteAction
                 'leyenda' => $data['leyenda'] ?? null,
                 'observacion' => $data['observacion'] ?? null,
                 'guias' => $data['guias'] ?? null,
+                'contrato_colaboracion' => $data['contrato_colaboracion'] ?? null,
                 'sunat_status' => 'pendiente',
             ]);
 

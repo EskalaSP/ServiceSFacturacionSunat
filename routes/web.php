@@ -161,6 +161,12 @@ Route::middleware(['auth', 'admin'])
         Route::delete('empresas/{tenant}/series/{serie}',         [\App\Http\Controllers\Admin\SerieController::class, 'destroy'])->name('series.destroy');
         Route::post('empresas/{tenant}/series/{serie}/toggle',    [\App\Http\Controllers\Admin\SerieController::class, 'toggle'])->name('series.toggle');
 
+        // Comprobantes de la empresa (todos los tipos, unificados)
+        Route::get('empresas/{tenant}/comprobantes', [\App\Http\Controllers\Admin\EmpresaComprobanteController::class, 'index'])->name('empresas.comprobantes');
+        Route::get('empresas/{tenant}/comprobantes/{tipo}/{id}/{formato}', [\App\Http\Controllers\Admin\EmpresaComprobanteController::class, 'download'])
+            ->where(['formato' => 'xml|cdr|pdf', 'id' => '[0-9]+'])
+            ->name('empresas.comprobantes.download');
+
         // Sucursales (listado global, cross-empresa)
         Route::get('sucursales',              [\App\Http\Controllers\Admin\SucursalGlobalController::class, 'index'])->name('sucursales.todas');
 

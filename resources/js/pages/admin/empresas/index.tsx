@@ -1,11 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Building2, Eye, Hash, Infinity as InfinityIcon, MapPin, Pencil, Plus, Power } from 'lucide-react';
+import { Building2, Eye, FileText, Hash, Infinity as InfinityIcon, MapPin, Pencil, Plus, Power } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
+import { Pagination } from '@/components/ui/pagination';
 import type { BreadcrumbItem } from '@/types';
 
 type Empresa = {
@@ -193,6 +194,11 @@ export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Prop
                                 onSelect: () => router.visit(`/admin/empresas/${t.id}/series`),
                             },
                             {
+                                label: 'Comprobantes',
+                                icon: FileText,
+                                onSelect: () => router.visit(`/admin/empresas/${t.id}/comprobantes`),
+                            },
+                            {
                                 label: t.is_active ? 'Desactivar' : 'Activar',
                                 icon: Power,
                                 separatorBefore: true,
@@ -225,6 +231,7 @@ export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Prop
                 <DataTable
                     columns={columns}
                     data={empresas.data}
+                    manualPagination
                     searchPlaceholder="Buscar por RUC, razón social..."
                     emptyMessage="No hay empresas registradas."
                     toolbar={
@@ -238,31 +245,7 @@ export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Prop
                 />
 
                 {/* Paginación server-side (si hay más de una página) */}
-                {empresas.last_page > 1 && (
-                    <div className="flex flex-wrap items-center justify-center gap-1">
-                        {empresas.links.map((link, i) =>
-                            link.url ? (
-                                <Link
-                                    key={i}
-                                    href={link.url}
-                                    preserveScroll
-                                    className={`min-w-[36px] rounded-md px-3 py-1.5 text-center text-sm ${
-                                        link.active
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'hover:bg-muted border'
-                                    }`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ) : (
-                                <span
-                                    key={i}
-                                    className="min-w-[36px] rounded-md px-3 py-1.5 text-center text-sm opacity-40"
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ),
-                        )}
-                    </div>
-                )}
+                <Pagination links={empresas.links} from={empresas.from} to={empresas.to} total={empresas.total} />
             </div>
         </AppLayout>
     );

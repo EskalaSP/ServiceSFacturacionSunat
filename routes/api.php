@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\BoletaController;
+use App\Http\Controllers\Api\V1\CatalogoProductoController;
 use App\Http\Controllers\Api\V1\ClientController;
 use App\Http\Controllers\Api\V1\ConsultController;
 use App\Http\Controllers\Api\V1\CpeConsultaController;
@@ -109,6 +110,14 @@ Route::prefix('v1')->middleware(['resolve.tenant', 'throttle:api', 'log.api', 'u
     Route::put('notas-debito/{id}', [DebitNoteController::class, 'update']);
     Route::post('notas-debito/{id}/reenviar', [DebitNoteController::class, 'resend']);
     Route::post('notas-debito/{id}/enviar', [DebitNoteController::class, 'enviar']);
+
+    // Catálogos SUNAT — buscador de Código de Producto (UNSPSC v14, Cat. 25)
+    Route::get('catalogos/producto-sunat', [CatalogoProductoController::class, 'search']);
+    Route::get('catalogos/producto-sunat/segmentos', [CatalogoProductoController::class, 'segmentos']);
+    Route::get('catalogos/producto-sunat/familias', [CatalogoProductoController::class, 'familias']);
+    Route::get('catalogos/producto-sunat/clases', [CatalogoProductoController::class, 'clases']);
+    Route::get('catalogos/producto-sunat/productos', [CatalogoProductoController::class, 'productos']);
+    Route::get('catalogos/producto-sunat/{codigo}', [CatalogoProductoController::class, 'show'])->where('codigo', '[0-9]{8}');
 
     // Guías de remisión (GRR - tipo 09 por default, GRT - tipo 31 vía payload.tipo_documento='31')
     Route::post('guias-remision', [DispatchGuideController::class, 'store'])->middleware('check.limit:sunat');

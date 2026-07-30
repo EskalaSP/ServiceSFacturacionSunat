@@ -63,9 +63,9 @@ class CreateDebitNoteAction
                 'client_num_doc' => $data['cliente']['num_doc'],
                 'client_razon_social' => $data['cliente']['razon_social'],
                 'client_direccion' => $data['cliente']['direccion'] ?? null,
-                'doc_afectado_tipo' => $data['doc_afectado_tipo'],
-                'doc_afectado_serie' => $data['doc_afectado_serie'],
-                'doc_afectado_correlativo' => $data['doc_afectado_correlativo'],
+                'doc_afectado_tipo' => $data['doc_afectado_tipo'] ?? null,
+                'doc_afectado_serie' => $data['doc_afectado_serie'] ?? null,
+                'doc_afectado_correlativo' => $data['doc_afectado_correlativo'] ?? null,
                 'cod_motivo' => $data['cod_motivo'],
                 'des_motivo' => $data['des_motivo'],
                 'mto_oper_gravadas' => $totals['mto_oper_gravadas'],
@@ -84,6 +84,7 @@ class CreateDebitNoteAction
                 'leyenda' => $data['leyenda'] ?? null,
                 'observacion' => $data['observacion'] ?? null,
                 'guias' => $data['guias'] ?? null,
+                'contrato_colaboracion' => $data['contrato_colaboracion'] ?? null,
                 'sunat_status' => 'pendiente',
             ]);
 
