@@ -40,21 +40,46 @@ class EmpresaComprobantesQuery
     ];
 
     /**
-     * `SERIE-00000001` a partir de serie + correlativo, según el motor.
+     * Nombre del tipo texto para un CAST, según el motor.
+     *
+     * No se puede usar el mismo literal en los dos: en MySQL es CHAR, pero en
+     * Postgres `CAST(x AS CHAR)` significa `char(1)` y TRUNCA el valor a un solo
+     * carácter — peor que un error, porque no falla, corrompe el dato.
+     */
+    private function tipoTexto(): string
+    {
+        return DB::connection()->getDriverName() === 'pgsql' ? 'VARCHAR' : 'CHAR';
+    }
+
+    /**
+     * `SERIE-00000001` a partir de serie + correlativo.
      *
      * `correlativo` es un entero. MySQL lo castea solo dentro de LPAD; Postgres
      * no tiene `lpad(integer, integer, text)` y responde
      * "SQLSTATE[42883] function lpad(integer, integer, unknown) does not exist".
-     *
-     * Tampoco sirve un CAST único: en MySQL el tipo texto es CHAR, pero en
-     * Postgres `CAST(x AS CHAR)` significa `char(1)` y TRUNCA el correlativo a
-     * un solo carácter — peor que el error, porque no falla, corrompe.
      */
     private function expresionNumero(): string
     {
-        $tipoTexto = DB::connection()->getDriverName() === 'pgsql' ? 'VARCHAR' : 'CHAR';
+        return "CONCAT(serie, '-', LPAD(CAST(correlativo AS {$this->tipoTexto()}), 8, '0'))";
+    }
 
-        return "CONCAT(serie, '-', LPAD(CAST(correlativo AS {$tipoTexto}), 8, '0'))";
+    /**
+     * `correlativo` normalizado a texto para que el UNION cierre.
+     *
+     * Las 7 tablas de comprobantes lo declaran `unsignedInteger`, pero
+     * `summaries` y `voided_documents` lo tienen como `string(5)` — ahí el
+     * correlativo es parte de un identificador tipo `RC-20260305-001`, no un
+     * número de comprobante. MySQL mezcla ambos sin quejarse; Postgres corta con
+     * "UNION types integer and character varying cannot be matched".
+     *
+     * Se unifica a texto y no a entero a propósito: castear los string a número
+     * asume que siempre son dígitos, y si alguna fila no lo fuera la pantalla
+     * entera dejaría de cargar. La columna solo se arrastra como dato auxiliar
+     * —lo que se muestra y se ordena es `numero`—, así que texto no pierde nada.
+     */
+    private function expresionCorrelativo(): string
+    {
+        return "CAST(correlativo AS {$this->tipoTexto()}) AS correlativo";
     }
 
     /**
@@ -63,6 +88,7 @@ class EmpresaComprobantesQuery
     public function baseUnion(int $tenantId): Builder
     {
         $numeroCore = $this->expresionNumero();
+        $correlativo = $this->expresionCorrelativo();
 
         // Cada bandera se normaliza a 1/0. Escribir `(xml_path IS NOT NULL)` da
         // boolean en Postgres e integer en MySQL, y las ramas que no tienen la
@@ -78,10 +104,10 @@ class EmpresaComprobantesQuery
             .$bandera($pdf).' AS has_pdf';
 
         // 4 comprobantes electrónicos "core" (mismo esquema vía HasDocumentFields).
-        $core = function (string $tipo, string $tabla) use ($numeroCore, $flags, $tenantId) {
+        $core = function (string $tipo, string $tabla) use ($numeroCore, $correlativo, $flags, $tenantId) {
             return DB::table($tabla)
                 ->selectRaw(
-                    "'$tipo' AS tipo, id, serie, correlativo, $numeroCore AS numero, "
+                    "'$tipo' AS tipo, id, serie, $correlativo, $numeroCore AS numero, "
                     .'client_razon_social AS cliente, client_num_doc AS cliente_doc, tipo_moneda AS moneda, '
                     .'mto_imp_venta AS total, sub_total AS subtotal, mto_igv AS igv, '
                     .'sunat_status AS estado, fecha_emision, sent_at AS fecha_envio, sucursal_id, observacion, '
@@ -100,7 +126,7 @@ class EmpresaComprobantesQuery
         $q->unionAll(
             DB::table('dispatch_guides')
                 ->selectRaw(
-                    "tipo_documento AS tipo, id, serie, correlativo, $numeroCore AS numero, "
+                    "tipo_documento AS tipo, id, serie, $correlativo, $numeroCore AS numero, "
                     .'destinatario_razon_social AS cliente, destinatario_num_doc AS cliente_doc, NULL AS moneda, '
                     .'NULL AS total, NULL AS subtotal, NULL AS igv, '
                     .'sunat_status AS estado, fecha_emision, sent_at AS fecha_envio, sucursal_id, observacion, '
@@ -114,7 +140,7 @@ class EmpresaComprobantesQuery
         $q->unionAll(
             DB::table('retentions')
                 ->selectRaw(
-                    "'20' AS tipo, id, serie, correlativo, $numeroCore AS numero, "
+                    "'20' AS tipo, id, serie, $correlativo, $numeroCore AS numero, "
                     ."proveedor_razon_social AS cliente, proveedor_num_doc AS cliente_doc, 'PEN' AS moneda, "
                     .'imp_retenido AS total, NULL AS subtotal, NULL AS igv, '
                     .'sunat_status AS estado, fecha_emision, sent_at AS fecha_envio, NULL AS sucursal_id, observacion, '
@@ -128,7 +154,7 @@ class EmpresaComprobantesQuery
         $q->unionAll(
             DB::table('perceptions')
                 ->selectRaw(
-                    "'40' AS tipo, id, serie, correlativo, $numeroCore AS numero, "
+                    "'40' AS tipo, id, serie, $correlativo, $numeroCore AS numero, "
                     ."cliente_razon_social AS cliente, cliente_num_doc AS cliente_doc, 'PEN' AS moneda, "
                     .'imp_percibido AS total, NULL AS subtotal, NULL AS igv, '
                     .'sunat_status AS estado, fecha_emision, sent_at AS fecha_envio, NULL AS sucursal_id, observacion, '
@@ -142,7 +168,7 @@ class EmpresaComprobantesQuery
         $q->unionAll(
             DB::table('summaries')
                 ->selectRaw(
-                    "'RC' AS tipo, id, NULL AS serie, correlativo, identifier AS numero, "
+                    "'RC' AS tipo, id, NULL AS serie, $correlativo, identifier AS numero, "
                     .'NULL AS cliente, NULL AS cliente_doc, NULL AS moneda, NULL AS total, NULL AS subtotal, NULL AS igv, '
                     .'sunat_status AS estado, fecha_referencia AS fecha_emision, fecha_envio, NULL AS sucursal_id, NULL AS observacion, '
                     .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', null)
@@ -154,7 +180,7 @@ class EmpresaComprobantesQuery
         $q->unionAll(
             DB::table('voided_documents')
                 ->selectRaw(
-                    "'RA' AS tipo, id, NULL AS serie, correlativo, identifier AS numero, "
+                    "'RA' AS tipo, id, NULL AS serie, $correlativo, identifier AS numero, "
                     .'NULL AS cliente, NULL AS cliente_doc, NULL AS moneda, NULL AS total, NULL AS subtotal, NULL AS igv, '
                     .'sunat_status AS estado, fecha_generacion AS fecha_emision, fecha_comunicacion AS fecha_envio, NULL AS sucursal_id, NULL AS observacion, '
                     .$flags('xml_path IS NOT NULL', null, null)
