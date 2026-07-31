@@ -196,11 +196,7 @@ class DashboardController extends Controller
 
     private function empresasPorRegimen(): array
     {
-        $labels = [
-            'general' => 'General',
-            'mype_restaurantes' => 'MYPE Restaurantes',
-            'nrus' => 'NRUS',
-        ];
+        $labels = config('regimenes.lista');
 
         return Tenant::selectRaw('tax_regime, COUNT(*) as total')
             ->groupBy('tax_regime')

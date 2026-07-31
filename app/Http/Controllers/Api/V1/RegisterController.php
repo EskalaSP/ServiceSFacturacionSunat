@@ -31,9 +31,9 @@ class RegisterController extends Controller
             'plan' => 'sometimes|string|in:free,pro,business',
             // Régimen tributario. Por defecto 'general' (18%).
             //  - general: 18% IGV
-            //  - mype_restaurantes: tasa reducida según schedule (Ley 31556)
-            //  - nrus: Nuevo Régimen Único Simplificado (solo boletas, IGV=0, cuota mensual fija)
-            'tax_regime' => 'sometimes|string|in:general,mype_restaurantes,nrus',
+            //  - rer / mype: 18% salvo que se declare igv_rate_override
+            //  - rus: Nuevo RUS (solo boletas, IGV=0, cuota mensual fija)
+            'tax_regime' => 'sometimes|string|in:'.implode(',', array_keys(config('regimenes.lista'))),
             // Opcional: forzar una tasa de IGV específica (tiene precedencia sobre el régimen).
             'igv_rate_override' => 'nullable|numeric|between:0,30',
             // Solo para NRUS: categoría 1 (cuota S/20) o 2 (cuota S/50). Ignorado para otros regímenes.
@@ -88,7 +88,7 @@ class RegisterController extends Controller
             'plan' => $plan,
             'tax_regime' => $request->input('tax_regime', 'general'),
             'igv_rate_override' => $request->input('igv_rate_override'),
-            'nrus_categoria' => $request->input('tax_regime') === 'nrus' ? $request->input('nrus_categoria') : null,
+            'nrus_categoria' => $request->input('tax_regime') === config('regimenes.restringido') ? $request->input('nrus_categoria') : null,
             'max_documents_month' => $plans[$plan]['max_documents'] ?? 20,
             'is_active' => true,
         ]);

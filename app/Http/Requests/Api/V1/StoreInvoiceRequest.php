@@ -164,7 +164,7 @@ class StoreInvoiceRequest extends FormRequest
 
             // NRUS no puede emitir facturas (solo boletas). Ley del Nuevo RUS.
             $tenant = $this->get('tenant');
-            if ($tenant && $tenant->tax_regime === 'nrus') {
+            if ($tenant && $tenant->tax_regime === config('regimenes.restringido')) {
                 $v->errors()->add(
                     'tax_regime',
                     'Los contribuyentes del régimen NRUS solo pueden emitir boletas de venta, no facturas.'

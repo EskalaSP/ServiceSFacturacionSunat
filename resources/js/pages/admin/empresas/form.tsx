@@ -482,13 +482,14 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                                 value={data.tax_regime}
                                 onChange={(v) => setData('tax_regime', v)}
                                 options={[
-                                    { value: 'general', label: 'General (18% IGV)' },
-                                    { value: 'mype_restaurantes', label: 'MYPE Restaurantes (Ley 31556)' },
-                                    { value: 'nrus', label: 'NRUS (solo boletas, 0% IGV)' },
+                                    { value: 'rus', label: 'Nuevo RUS (solo boletas, 0% IGV)' },
+                                    { value: 'rer', label: 'Régimen Especial (RER)' },
+                                    { value: 'mype', label: 'Régimen MYPE Tributario' },
+                                    { value: 'general', label: 'Régimen General' },
                                 ]}
                             />
                         </div>
-                        {data.tax_regime !== 'nrus' && (
+                        {data.tax_regime !== 'rus' && (
                             <div>
                                 <Label htmlFor="igv_rate_override">IGV override (%)</Label>
                                 <Input
@@ -501,9 +502,9 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                                 />
                             </div>
                         )}
-                        {data.tax_regime === 'nrus' && (
+                        {data.tax_regime === 'rus' && (
                             <div>
-                                <Label htmlFor="nrus_categoria">Categoría NRUS</Label>
+                                <Label htmlFor="nrus_categoria">Categoría del RUS</Label>
                                 <Combobox
                                     value={data.nrus_categoria as string}
                                     onChange={(v) => setData('nrus_categoria', v)}

@@ -27,24 +27,30 @@ use App\Models\Tenant;
 class TaxRateService
 {
     public const REGIMEN_GENERAL = 'general';
-    public const REGIMEN_MYPE_RESTAURANTES = 'mype_restaurantes';
-    public const REGIMEN_NRUS = 'nrus';
+
+    /** Nuevo RUS. Antes se llamaba 'nrus' en este campo. */
+    public const REGIMEN_RUS = 'rus';
 
     /**
-     * Schedule de tasas combinadas por régimen y año.
-     * Clave: 'año' (entero). Valor: tasa combinada aplicable.
+     * Tasas combinadas de la Ley 31556 (restaurantes y hoteles), por año.
+     *
+     * Ya NO se aplican automáticamente por régimen: "restaurantes" nunca fue un
+     * régimen tributario, era un MYPE con una tasa especial, y tenerlo en la
+     * misma lista obligaba al emisor a elegir entre declarar su régimen real o
+     * su tasa correcta. Ahora la tasa va en `igv_rate_override`.
+     *
+     * El schedule queda como referencia para sugerir el valor en el panel y
+     * para la migración que rellenó el override de los que ya estaban.
      */
-    private const SCHEDULE = [
-        self::REGIMEN_MYPE_RESTAURANTES => [
-            2022 => 10.0,
-            2023 => 10.0,
-            2024 => 10.0,
-            2025 => 10.0, // régimen original expiró fines 2024; 2025 queda en 10 por si hay ampliación
-            2026 => 10.5,
-            2027 => 15.0,
-            2028 => 18.0,
-            2029 => 18.0,
-        ],
+    public const LEY_31556 = [
+        2022 => 10.0,
+        2023 => 10.0,
+        2024 => 10.0,
+        2025 => 10.0, // el régimen original expiró fines de 2024; 2025 queda en 10 por si hay ampliación
+        2026 => 10.5,
+        2027 => 15.0,
+        2028 => 18.0,
+        2029 => 18.0,
     ];
 
     /**
@@ -63,31 +69,38 @@ class TaxRateService
 
         $regimen = $tenant->tax_regime ?? self::REGIMEN_GENERAL;
 
-        // NRUS: siempre 0% (inafecto — el contribuyente paga cuota fija, no IGV por operación)
-        if ($regimen === self::REGIMEN_NRUS) {
+        // RUS: siempre 0% (inafecto — el contribuyente paga cuota fija, no IGV por operación)
+        if ($regimen === self::REGIMEN_RUS) {
             return 0.0;
         }
 
-        if ($regimen === self::REGIMEN_GENERAL) {
-            return 18.0;
-        }
-
-        $year = $this->extractYear($fechaEmision);
-        $schedule = self::SCHEDULE[$regimen] ?? [];
-
-        return (float) ($schedule[$year] ?? 18.0);
+        // RER, MYPE y General tributan al 18%. Cualquier tasa distinta —la de
+        // restaurantes y hoteles de la Ley 31556, por ejemplo— se declara en
+        // igv_rate_override, que ya se resolvió arriba.
+        return 18.0;
     }
 
     /**
-     * Indica si el tenant está en régimen NRUS.
+     * Tasa que sugiere la Ley 31556 para el año dado, o null fuera de vigencia.
+     *
+     * No se aplica sola: sirve para que el panel proponga el valor al cargar el
+     * override de un restaurante u hotel acogido.
+     */
+    public function tasaLey31556(?string $fechaEmision = null): ?float
+    {
+        return self::LEY_31556[$this->extractYear($fechaEmision)] ?? null;
+    }
+
+    /**
+     * Indica si el tenant está en el Nuevo RUS.
      */
     public function isNrus(?Tenant $tenant): bool
     {
-        return $tenant && $tenant->tax_regime === self::REGIMEN_NRUS;
+        return $tenant && $tenant->tax_regime === self::REGIMEN_RUS;
     }
 
     /**
-     * tip_afe_igv por defecto para un tenant: '30' (Inafecto) si es NRUS, '10' (Gravado) en otros casos.
+     * tip_afe_igv por defecto para un tenant: '30' (Inafecto) si es RUS, '10' (Gravado) en otros casos.
      */
     public function defaultTipAfeIgv(?Tenant $tenant): string
     {

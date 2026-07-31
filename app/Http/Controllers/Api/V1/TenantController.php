@@ -58,7 +58,7 @@ class TenantController extends Controller
             'billeteras_digitales.*.titular' => 'nullable|string|max:100',
             'mensaje_agradecimiento' => 'nullable|string|max:500',
             'mensaje_promocional' => 'nullable|string|max:500',
-            'tax_regime' => 'nullable|string|in:general,mype_restaurantes,nrus',
+            'tax_regime' => 'nullable|string|in:'.implode(',', array_keys(config('regimenes.lista'))),
             'igv_rate_override' => 'nullable|numeric|between:0,30',
             'nrus_categoria' => 'nullable|integer|in:1,2',
         ]);
@@ -99,7 +99,7 @@ class TenantController extends Controller
         }
 
         // Si cambian a un régimen que no es NRUS, limpiar nrus_categoria
-        if (array_key_exists('tax_regime', $data) && $data['tax_regime'] !== 'nrus') {
+        if (array_key_exists('tax_regime', $data) && $data['tax_regime'] !== config('regimenes.restringido')) {
             $data['nrus_categoria'] = null;
         }
 

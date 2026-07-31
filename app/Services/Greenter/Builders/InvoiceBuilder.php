@@ -334,7 +334,7 @@ class InvoiceBuilder
 
         // NRUS default '30' (Inafecto); otros regímenes default '10' (Gravado).
         $tipAfeIgv = $item['tip_afe_igv'] ?? $this->taxRates->defaultTipAfeIgv($this->tenant);
-        // Tasa según régimen del tenant + fecha (general=18, mype_restaurantes según schedule, nrus=0)
+        // Tasa según régimen del tenant (rus=0, resto=18 salvo igv_rate_override)
         $porcentajeIgv = $this->taxRates->rateForItem($item, $this->tenant, $this->fechaEmision);
         $cantidad = (float) $item['cantidad'];
         $precioUnitario = (float) $item['precio_unitario'];

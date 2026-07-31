@@ -24,7 +24,7 @@ class DocumentCalculationService
             // Para NRUS, si el item no trae tip_afe_igv, default a '30' (Inafecto).
             // Para otros regímenes, default a '10' (Gravado) como siempre.
             $tipAfeIgv = $item['tip_afe_igv'] ?? $this->taxRates->defaultTipAfeIgv($tenant);
-            // Tasa por régimen (general=18, mype_restaurantes=variable por año, nrus=0), o override por item.
+            // Tasa por régimen (rus=0, resto=18 salvo igv_rate_override), o override por item.
             $porcentajeIgv = $this->taxRates->rateForItem($item, $tenant, $fechaEmision);
             $cantidad = (float) $item['cantidad'];
             $precioUnitario = (float) $item['precio_unitario'];

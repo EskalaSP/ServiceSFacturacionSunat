@@ -65,7 +65,7 @@ class CreateBoletaAction
                 'fecha_emision' => $this->resolveEmisionDateTime($data['fecha_emision']),
                 'fecha_vencimiento' => $data['fecha_vencimiento'] ?? null,
                 // NRUS: tipo_operacion 0113 (Venta Interna - NRUS, Cat. 51); otros: 0101 estándar.
-                'tipo_operacion' => $data['tipo_operacion'] ?? ($tenant->tax_regime === 'nrus' ? '0113' : '0101'),
+                'tipo_operacion' => $data['tipo_operacion'] ?? ($tenant->tax_regime === config('regimenes.restringido') ? '0113' : '0101'),
                 'tipo_moneda' => $data['tipo_moneda'] ?? 'PEN',
                 'forma_pago' => $data['forma_pago'] ?? 'Contado',
                 'client_tipo_doc' => $data['cliente']['tipo_doc'],

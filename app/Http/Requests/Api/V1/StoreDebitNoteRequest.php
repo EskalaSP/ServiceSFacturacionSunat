@@ -125,7 +125,7 @@ class StoreDebitNoteRequest extends FormRequest
 
             // NRUS solo puede emitir notas de débito contra BOLETAS (tipo 03).
             $tenant = $this->get('tenant');
-            if ($tenant && $tenant->tax_regime === 'nrus' && $this->input('doc_afectado_tipo') !== '03') {
+            if ($tenant && $tenant->tax_regime === config('regimenes.restringido') && $this->input('doc_afectado_tipo') !== '03') {
                 $v->errors()->add(
                     'doc_afectado_tipo',
                     'Los contribuyentes del régimen NRUS solo pueden emitir notas de débito contra boletas de venta (tipo 03).'

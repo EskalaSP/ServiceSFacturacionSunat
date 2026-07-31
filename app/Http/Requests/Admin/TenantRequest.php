@@ -58,7 +58,7 @@ class TenantRequest extends FormRequest
             'sire_client_secret' => 'nullable|string|max:200',
 
             // ── Régimen tributario ──────────────────────────────────────
-            'tax_regime' => [$reqOSometimes, Rule::in(['general', 'mype_restaurantes', 'nrus'])],
+            'tax_regime' => [$reqOSometimes, Rule::in(array_keys(config('regimenes.lista')))],
             'igv_rate_override' => 'nullable|numeric|between:0,30',
             'nrus_categoria' => 'nullable|in:1,2',
 
@@ -108,7 +108,7 @@ class TenantRequest extends FormRequest
             'certificado.max' => 'El certificado no puede pesar más de 2 MB.',
             'plan.exists' => 'El plan seleccionado no existe o está desactivado. Revisa /admin/planes.',
             'environment.in' => 'El entorno debe ser "beta" o "production".',
-            'tax_regime.in' => 'El régimen debe ser general, mype_restaurantes o nrus.',
+            'tax_regime.in' => 'El régimen debe ser uno de: '.implode(', ', array_keys(config('regimenes.lista'))).'.',
         ];
     }
 }
