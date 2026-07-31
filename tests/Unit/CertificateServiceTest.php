@@ -64,10 +64,35 @@ class CertificateServiceTest extends TestCase
             (new CertificateService)->convertToPem($soloCert, 'crt');
             $this->fail('Debió rechazar un certificado sin clave privada.');
         } catch (RuntimeException $e) {
-            // El dueño de una bodega no sabe qué es una clave privada; el
-            // mensaje tiene que nombrar los archivos que él sí reconoce.
-            $this->assertStringContainsString('.pfx', $e->getMessage());
-            $this->assertStringContainsString('.cer', $e->getMessage());
+            // El flujo habitual es convertir el .p12 de SUNAT a mano, y la
+            // conversión con -nokeys descarta la clave. El mensaje tiene que
+            // dar el comando correcto, no explicar criptografía.
+            $this->assertStringContainsString('.p12', $e->getMessage());
+            $this->assertStringContainsString('-nodes', $e->getMessage());
+        }
+    }
+
+    public function test_explica_el_caso_de_la_clave_cifrada(): void
+    {
+        [$completo] = $this->parAutofirmado();
+
+        // Equivale a convertir el .p12 SIN -nodes: la clave viaja, pero cifrada
+        // con su propia frase de paso, y Greenter no puede usarla.
+        openssl_pkey_export(
+            openssl_pkey_get_private($completo),
+            $keyCifrada,
+            'frase-de-paso'
+        );
+
+        openssl_x509_export(openssl_x509_read($completo), $certPem);
+
+        try {
+            (new CertificateService)->convertToPem($certPem.$keyCifrada, 'cer');
+            $this->fail('Debió rechazar una clave privada cifrada.');
+        } catch (RuntimeException $e) {
+            // El mensaje tiene que mandar a repetir la conversión, no a buscar
+            // otro archivo: la clave está ahí, el problema es cómo se exportó.
+            $this->assertStringContainsString('-nodes', $e->getMessage());
         }
     }
 

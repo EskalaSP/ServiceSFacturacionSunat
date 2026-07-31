@@ -63,10 +63,24 @@ class CertificateService
         }
 
         if (@openssl_pkey_get_private($pem) === false) {
+            // La clave está, pero cifrada con una frase de paso. Pasa cuando se
+            // convierte el .p12 sin -nodes. Greenter tampoco podría usarla, así
+            // que se rechaza igual — pero el motivo es otro y la solución
+            // también, y decir "no tiene clave privada" mandaría a buscar el
+            // archivo equivocado.
+            if (str_contains($pem, 'ENCRYPTED PRIVATE KEY') || str_contains($pem, 'Proc-Type: 4,ENCRYPTED')) {
+                throw new RuntimeException(
+                    'La clave privada del archivo está protegida con una contraseña propia y no se puede usar '
+                    .'para firmar. Al convertir el .p12 hay que agregar -nodes: '
+                    .'openssl pkcs12 -in certificado.p12 -out certificado.pem -nodes'
+                );
+            }
+
             throw new RuntimeException(
                 'El archivo tiene el certificado pero NO la clave privada, así que no sirve para firmar '
-                .'comprobantes. Probablemente subiste el .cer o .crt que descargaste del portal de SUNAT: '
-                .'necesitás el archivo .pfx o .p12 que te entregó tu certificadora, junto con su contraseña.'
+                .'comprobantes. Si convertiste tu .p12, la conversión descartó la clave: repetila con '
+                .'openssl pkcs12 -in certificado.p12 -out certificado.pem -nodes (sin -nokeys). '
+                .'También podés subir el .p12 tal cual, con su contraseña.'
             );
         }
 
