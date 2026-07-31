@@ -18,23 +18,59 @@ class CertificateService
         if (in_array($extension, ['pem', 'cer', 'crt'])) {
             // Validar que sea un PEM válido
             if (str_contains($content, '-----BEGIN')) {
-                return $content;
+                return $this->asegurarClavePrivada($content);
             }
 
             // Puede ser un DER binario, intentar convertir
             $pem = $this->derToPem($content);
             if ($pem) {
-                return $pem;
+                return $this->asegurarClavePrivada($pem);
             }
 
             throw new RuntimeException('El archivo no contiene un certificado PEM válido.');
         }
 
         if (in_array($extension, ['pfx', 'p12'])) {
-            return $this->pfxToPem($content, $password ?? '');
+            return $this->asegurarClavePrivada($this->pfxToPem($content, $password ?? ''));
         }
 
         throw new RuntimeException("Formato de certificado no soportado: .{$extension}");
+    }
+
+    /**
+     * Rechaza un certificado que no sirva para firmar.
+     *
+     * Antes bastaba con que el archivo contuviera un "-----BEGIN" para darlo por
+     * bueno. Un .cer o .crt lo tiene, pero solo lleva el certificado PÚBLICO —y
+     * es justo el archivo que SUNAT deja descargar de su portal, así que es el
+     * error más fácil de cometer.
+     *
+     * El problema no era aceptarlo, era CUÁNDO se notaba: el archivo se
+     * guardaba sin chistar y recién fallaba días después al firmar un
+     * comprobante, con un "openssl_sign(): Supplied key param cannot be coerced
+     * into a private key" que no le dice nada a nadie. Para entonces ya hay
+     * boletas emitidas que nunca llegaron a SUNAT y un plazo de 7 días corriendo.
+     *
+     * Validar acá cuesta un milisegundo y el usuario todavía tiene el archivo
+     * correcto a mano.
+     */
+    private function asegurarClavePrivada(string $pem): string
+    {
+        if (@openssl_x509_read($pem) === false) {
+            throw new RuntimeException(
+                'El archivo no contiene un certificado digital válido.'
+            );
+        }
+
+        if (@openssl_pkey_get_private($pem) === false) {
+            throw new RuntimeException(
+                'El archivo tiene el certificado pero NO la clave privada, así que no sirve para firmar '
+                .'comprobantes. Probablemente subiste el .cer o .crt que descargaste del portal de SUNAT: '
+                .'necesitás el archivo .pfx o .p12 que te entregó tu certificadora, junto con su contraseña.'
+            );
+        }
+
+        return $pem;
     }
 
     /**
@@ -78,8 +114,8 @@ class CertificateService
         if ($cert === false) {
             // Intentar como DER
             $pem = "-----BEGIN CERTIFICATE-----\n"
-                . chunk_split(base64_encode($derContent), 64, "\n")
-                . "-----END CERTIFICATE-----\n";
+                .chunk_split(base64_encode($derContent), 64, "\n")
+                ."-----END CERTIFICATE-----\n";
 
             $cert = @openssl_x509_read($pem);
 

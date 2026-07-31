@@ -703,12 +703,20 @@ class GreenterService
      */
     private function toPem(string $content, ?string $tenantPassword = null): string
     {
-        \Illuminate\Support\Facades\Log::info("toPem called for tenant: " . ($this->tenant->ruc ?? 'unknown'), [
-            'tenant_password' => $tenantPassword,
-            'content_len' => strlen($content)
-        ]);
-
+        // Un PEM ya listo se devuelve tal cual, pero antes se comprueba que
+        // traiga la clave privada: si solo tiene el certificado público, el
+        // fallo aparecía mucho más tarde, dentro de openssl_sign(), como un
+        // "Supplied key param cannot be coerced into a private key" que no
+        // apunta a ninguna parte.
         if (str_starts_with(ltrim($content), '-----')) {
+            if (@openssl_pkey_get_private($content) === false) {
+                throw new \RuntimeException(
+                    'El certificado digital cargado no incluye la clave privada, así que no puede firmar '
+                    . 'comprobantes. Hay que volver a subir el archivo .pfx/.p12 entregado por la certificadora '
+                    . '(el .cer que se descarga del portal de SUNAT solo tiene la parte pública).'
+                );
+            }
+
             return $content;
         }
 
@@ -723,23 +731,19 @@ class GreenterService
             ''
         ]), fn($val) => $val !== null && $val !== '');
 
-        \Illuminate\Support\Facades\Log::info("toPem attempts prepared", [
-            'attempts' => $attempts
-        ]);
-
+        // NUNCA registrar las contraseñas en el log: con la contraseña del
+        // certificado se puede firmar en nombre del cliente, y storage/logs no
+        // tiene el mismo cuidado que la base de datos.
         $success = false;
         foreach ($attempts as $pass) {
             if (@openssl_pkcs12_read($content, $certs, $pass) && ! empty($certs['pkey'])) {
-                \Illuminate\Support\Facades\Log::info("toPem successfully decrypted certificate with password: " . $pass);
                 $success = true;
                 break;
             }
         }
 
         if (!$success) {
-            \Illuminate\Support\Facades\Log::info("toPem fallback to empty password");
             if (@openssl_pkcs12_read($content, $certs, '') && ! empty($certs['pkey'])) {
-                \Illuminate\Support\Facades\Log::info("toPem successfully decrypted certificate with empty password");
                 $success = true;
             }
         }
