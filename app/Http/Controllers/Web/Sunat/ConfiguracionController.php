@@ -81,10 +81,26 @@ class ConfiguracionController extends Controller
         ]);
 
         if ($request->hasFile('certificate')) {
-            $certContent = file_get_contents($request->file('certificate')->getRealPath());
-            $certService = new \App\Services\Storage\DocumentStorageService();
-            $ext = $request->file('certificate')->getClientOriginalExtension();
-            $certPath = $certService->storeCertificate($tenant, $certContent, 'cert.' . $ext);
+            // Convertir y validar ANTES de guardar, igual que la API.
+            // Este camino guardaba el archivo crudo sin mirarlo: un .cer subido
+            // desde acá quedaba almacenado como PEM sin clave privada y recién
+            // fallaba días después, al firmar un comprobante.
+            $archivo = $request->file('certificate');
+            $certService = new \App\Services\CertificateService();
+
+            try {
+                $pemContent = $certService->convertToPem(
+                    file_get_contents($archivo->getRealPath()),
+                    strtolower($archivo->getClientOriginalExtension()),
+                    $request->input('certificate_password'),
+                );
+            } catch (\RuntimeException $e) {
+                return back()->withErrors(['certificate' => $e->getMessage()])->withInput();
+            }
+
+            $certPath = (new \App\Services\Storage\DocumentStorageService())
+                ->storeCertificate($tenant, $pemContent, 'cert.pem');
+
             $tenant->update(['certificate_path' => $certPath]);
         }
         if ($request->filled('certificate_password')) {

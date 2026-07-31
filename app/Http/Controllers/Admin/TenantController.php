@@ -457,7 +457,20 @@ class TenantController extends Controller
     private function guardarArchivos(TenantRequest $request, Tenant $tenant): void
     {
         if ($request->hasFile('certificado')) {
-            $path = $request->file('certificado')->store("tenants/{$tenant->id}/certs", 'local');
+            // Convertir y validar antes de guardar, igual que la API y el panel
+            // del cliente. Guardar el archivo crudo dejaba pasar un .cer sin
+            // clave privada, que solo falla al firmar un comprobante.
+            $archivo = $request->file('certificado');
+
+            $pemContent = (new \App\Services\CertificateService())->convertToPem(
+                file_get_contents($archivo->getRealPath()),
+                strtolower($archivo->getClientOriginalExtension()),
+                $request->input('contrasena_certificado'),
+            );
+
+            $path = "tenants/{$tenant->id}/certs/cert.pem";
+            Storage::disk('local')->put($path, $pemContent);
+
             $update = ['certificate_path' => Storage::disk('local')->path($path)];
             if ($request->filled('contrasena_certificado')) {
                 $update['certificate_password'] = $request->input('contrasena_certificado');

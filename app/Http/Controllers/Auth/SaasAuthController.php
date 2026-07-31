@@ -77,10 +77,24 @@ class SaasAuthController extends Controller
         
         // Handle Certificate Upload
         if ($request->hasFile('certificate')) {
-            $certContent = file_get_contents($request->file('certificate')->getRealPath());
-            $certService = new \App\Services\Storage\DocumentStorageService();
-            $ext = $request->file('certificate')->getClientOriginalExtension();
-            $certPath = $certService->storeCertificate($tenant, $certContent, 'cert.' . $ext);
+            // Convertir y validar antes de guardar: si el archivo no trae la
+            // clave privada no sirve para firmar, y hay que decirlo ahora y no
+            // cuando el cliente ya emitió comprobantes que SUNAT nunca recibió.
+            $archivo = $request->file('certificate');
+
+            try {
+                $pemContent = (new \App\Services\CertificateService())->convertToPem(
+                    file_get_contents($archivo->getRealPath()),
+                    strtolower($archivo->getClientOriginalExtension()),
+                    $request->input('certificate_password'),
+                );
+            } catch (\RuntimeException $e) {
+                return back()->withErrors(['certificate' => $e->getMessage()])->withInput();
+            }
+
+            $certPath = (new \App\Services\Storage\DocumentStorageService())
+                ->storeCertificate($tenant, $pemContent, 'cert.pem');
+
             $tenant->certificate_path = $certPath;
         }
         
