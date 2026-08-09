@@ -163,6 +163,13 @@ Route::middleware(['auth', 'admin'])
 
         // Comprobantes de la empresa (todos los tipos, unificados)
         Route::get('empresas/{tenant}/comprobantes', [\App\Http\Controllers\Admin\EmpresaComprobanteController::class, 'index'])->name('empresas.comprobantes');
+        Route::get('empresas/{tenant}/comprobantes/{tipo}/{id}/respuesta', [\App\Http\Controllers\Admin\EmpresaComprobanteController::class, 'respuesta'])
+            ->where(['id' => '[0-9]+'])
+            ->name('empresas.comprobantes.respuesta');
+        Route::post('empresas/{tenant}/comprobantes/{tipo}/{id}/reenviar', [\App\Http\Controllers\Admin\EmpresaComprobanteController::class, 'reenviar'])
+            ->where(['id' => '[0-9]+'])->name('empresas.comprobantes.reenviar');
+        Route::post('empresas/{tenant}/comprobantes/{tipo}/{id}/anular', [\App\Http\Controllers\Admin\EmpresaComprobanteController::class, 'anular'])
+            ->where(['id' => '[0-9]+'])->name('empresas.comprobantes.anular');
         Route::get('empresas/{tenant}/comprobantes/{tipo}/{id}/{formato}', [\App\Http\Controllers\Admin\EmpresaComprobanteController::class, 'download'])
             ->where(['formato' => 'xml|cdr|pdf', 'id' => '[0-9]+'])
             ->name('empresas.comprobantes.download');

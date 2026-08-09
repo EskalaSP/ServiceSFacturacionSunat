@@ -1,6 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Download, FileCode2, FileText, FileX, Search, X } from 'lucide-react';
+import { Ban, Check, Copy, Download, Eye, FileCode2, FileText, FileX, RefreshCw, Search, X } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions, type RowAction } from '@/components/ui/data-table-row-actions';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Pagination, type PaginationLink } from '@/components/ui/pagination';
 import type { BreadcrumbItem } from '@/types';
@@ -22,6 +23,10 @@ type Comprobante = {
     moneda: string | null;
     total: number | string | null;
     estado: string;
+    sunat_code: string | null;
+    sunat_description: string | null;
+    sunat_notes: unknown;
+    hash_cpe: string | null;
     fecha_emision: string | null;
     fecha_envio: string | null;
     has_xml: number;
@@ -63,6 +68,8 @@ type Props = {
     tipos: Record<string, string>;
 };
 
+type RespuestaJson = Record<string, unknown>;
+
 const ESTADO_STYLE: Record<string, string> = {
     aceptado: 'bg-[#00BA5D]/15 text-[#00BA5D]',
     aceptada: 'bg-[#00BA5D]/15 text-[#00BA5D]',
@@ -102,6 +109,11 @@ export default function EmpresaComprobantes({ empresa, comprobantes, stats, filt
     ];
 
     const [f, setF] = useState<Filtros>(filtros ?? {});
+    const [respuesta, setRespuesta] = useState<Comprobante | null>(null);
+    const [respuestaJsonData, setRespuestaJsonData] = useState<RespuestaJson | null>(null);
+    const [cargandoRespuesta, setCargandoRespuesta] = useState(false);
+    const [errorRespuesta, setErrorRespuesta] = useState<string | null>(null);
+    const [copiado, setCopiado] = useState(false);
     const base = `/admin/empresas/${empresa.id}/comprobantes`;
     const dl = (c: Comprobante, formato: string) => `${base}/${c.tipo}/${c.id}/${formato}`;
 
@@ -114,6 +126,67 @@ export default function EmpresaComprobantes({ empresa, comprobantes, stats, filt
     const limpiar = () => {
         setF({});
         router.get(base, {}, { preserveScroll: true, replace: true });
+    };
+
+    const respuestaJson = () => JSON.stringify(respuestaJsonData ?? {}, null, 4);
+
+    const resaltarJson = (json: string) => {
+        const escaped = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return escaped.replace(/("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"\s*:)|("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*")|\b(true|false)\b|\b(null)\b|(-?\d+(?:\.\d+)?)/g, (token, key, string, boolean, nil, number) => {
+            if (key) return `<span class="text-sky-300">${key}</span>`;
+            if (string) return `<span class="text-amber-300">${string}</span>`;
+            if (boolean) return `<span class="text-purple-300">${boolean}</span>`;
+            if (nil) return `<span class="text-slate-400">${nil}</span>`;
+            return `<span class="text-emerald-300">${number}</span>`;
+        });
+    };
+
+    const abrirRespuesta = async (c: Comprobante) => {
+        setRespuesta(c);
+        setRespuestaJsonData(null);
+        setErrorRespuesta(null);
+        setCargandoRespuesta(true);
+        try {
+            const response = await fetch(`${base}/${c.tipo}/${c.id}/respuesta`, { headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error('No se pudo cargar la respuesta completa.');
+            setRespuestaJsonData(await response.json());
+        } catch (error) {
+            setErrorRespuesta(error instanceof Error ? error.message : 'No se pudo cargar la respuesta completa.');
+        } finally {
+            setCargandoRespuesta(false);
+        }
+    };
+
+    const copiarRespuesta = async () => {
+        if (!respuesta) return;
+        await navigator.clipboard.writeText(respuestaJson(respuesta));
+        setCopiado(true);
+        window.setTimeout(() => setCopiado(false), 1500);
+    };
+
+    const ejecutarAccion = (c: Comprobante, accion: 'reenviar' | 'anular') => {
+        const motivo = accion === 'anular' ? window.prompt('Motivo de anulación:', 'Anulación solicitada por el administrador') : null;
+        if (accion === 'anular' && !motivo?.trim()) return;
+        if (!window.confirm(accion === 'anular' ? `¿Anular ${c.numero}? SUNAT validará esta operación.` : `¿Reenviar ${c.numero} a SUNAT?`)) return;
+
+        fetch(`${base}/${c.tipo}/${c.id}/${accion}`, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '',
+            },
+            body: JSON.stringify(accion === 'anular' ? { motivo } : {}),
+        })
+            .then(async (response) => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.mensaje ?? 'No se pudo completar la operación.');
+                window.alert(data.mensaje ?? 'Operación completada correctamente.');
+                window.location.reload();
+            })
+            .catch((error: unknown) => {
+                window.alert(error instanceof Error ? error.message : `No se pudo ${accion === 'anular' ? 'anular' : 'reenviar'} el comprobante.`);
+            });
     };
 
     const columns: ColumnDef<Comprobante>[] = [
@@ -157,6 +230,17 @@ export default function EmpresaComprobantes({ empresa, comprobantes, stats, filt
             cell: ({ row }) => <EstadoBadge estado={row.original.estado} />,
         },
         {
+            id: 'respuesta',
+            header: 'Respuesta',
+            meta: { label: 'Respuesta' },
+            cell: ({ row }) => (
+                    <Button variant="ghost" size="sm" className="gap-1.5 px-2" onClick={() => abrirRespuesta(row.original)}>
+                    <Eye className="size-4" />
+                    Ver JSON
+                </Button>
+            ),
+        },
+        {
             accessorKey: 'fecha_emision',
             header: 'Emisión',
             meta: { label: 'Emisión' },
@@ -175,6 +259,12 @@ export default function EmpresaComprobantes({ empresa, comprobantes, stats, filt
             cell: ({ row }) => {
                 const c = row.original;
                 const acts: RowAction[] = [];
+                if (c.estado !== 'aceptado' && ['01', '03', '07', '08'].includes(c.tipo)) {
+                    acts.push({ label: 'Reenviar a SUNAT', icon: RefreshCw, iconClassName: 'text-[#3599E6]', onSelect: () => ejecutarAccion(c, 'reenviar') });
+                }
+                if (c.estado === 'aceptado' && ['01', '03', '07', '08'].includes(c.tipo)) {
+                    acts.push({ label: 'Anular comprobante', icon: Ban, iconClassName: 'text-[#E63946]', danger: true, separatorBefore: acts.length > 0, onSelect: () => ejecutarAccion(c, 'anular') });
+                }
                 if (c.has_pdf) acts.push({ label: 'Ver / PDF', icon: FileText, iconClassName: 'text-[#E63946]', onSelect: () => window.open(dl(c, 'pdf'), '_blank') });
                 if (c.has_xml) acts.push({ label: 'Descargar XML', icon: FileCode2, iconClassName: 'text-[#3599E6]', onSelect: () => { window.location.href = dl(c, 'xml'); } });
                 if (c.has_cdr) acts.push({ label: 'Descargar CDR', icon: Download, iconClassName: 'text-[#00BA5D]', onSelect: () => { window.location.href = dl(c, 'cdr'); } });
@@ -295,6 +385,28 @@ export default function EmpresaComprobantes({ empresa, comprobantes, stats, filt
                     manualPagination
                     emptyMessage="No se encontraron comprobantes con esos filtros."
                 />
+
+                <Dialog open={respuesta !== null} onOpenChange={(open) => !open && setRespuesta(null)}>
+                    <DialogContent className="max-h-[90vh] max-w-5xl overflow-hidden bg-[#1e1e1e] p-0 text-slate-100">
+                        <DialogHeader>
+                            <DialogTitle className="px-6 pt-6 text-slate-100">Respuesta SUNAT</DialogTitle>
+                            <DialogDescription className="px-6 text-slate-400">
+                                {respuesta?.numero} · estado {respuesta?.estado}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="relative min-h-0 min-w-0 px-4 pb-4">
+                            <pre className="max-h-[calc(90vh-9rem)] w-full min-w-0 overflow-x-auto overflow-y-auto overscroll-contain rounded-md border border-slate-700 bg-[#111827] p-5 pt-14 text-[13px] leading-6 whitespace-pre-wrap break-words [overflow-wrap:anywhere] shadow-inner">
+                                {cargandoRespuesta && <span className="text-slate-400">Cargando respuesta completa...</span>}
+                                {errorRespuesta && <span className="text-red-300">{errorRespuesta}</span>}
+                                {respuestaJsonData && <code dangerouslySetInnerHTML={{ __html: resaltarJson(respuestaJson()) }} />}
+                            </pre>
+                            <Button variant="outline" size="sm" className="absolute right-7 top-3 gap-1.5 border-slate-600 bg-[#1e1e1e] text-slate-200 hover:bg-slate-700" onClick={copiarRespuesta} disabled={!respuestaJsonData}>
+                                {copiado ? <Check className="size-4 text-emerald-400" /> : <Copy className="size-4" />}
+                                {copiado ? 'Copiado' : 'Copiar'}
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Paginación circular */}
                 <Pagination

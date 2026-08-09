@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 class EmpresaComprobantesQuery
 {
     /** Columnas de salida (mismo orden en cada SELECT del UNION). */
-    private const COLS = 'tipo, id, serie, correlativo, numero, cliente, cliente_doc, moneda, total, subtotal, igv, estado, fecha_emision, fecha_envio, sucursal_id, observacion, has_xml, has_cdr, has_pdf';
+    private const COLS = 'tipo, id, serie, correlativo, numero, cliente, cliente_doc, moneda, total, subtotal, igv, estado, sunat_code, sunat_description, sunat_notes, hash_cpe, fecha_emision, fecha_envio, sucursal_id, observacion, has_xml, has_cdr, has_pdf';
 
     /** Etiquetas legibles por tipo. */
     public const TIPOS = [
@@ -110,7 +110,8 @@ class EmpresaComprobantesQuery
                     "'$tipo' AS tipo, id, serie, $correlativo, $numeroCore AS numero, "
                     .'client_razon_social AS cliente, client_num_doc AS cliente_doc, tipo_moneda AS moneda, '
                     .'mto_imp_venta AS total, sub_total AS subtotal, mto_igv AS igv, '
-                    .'sunat_status AS estado, fecha_emision, sent_at AS fecha_envio, sucursal_id, observacion, '
+                    .'sunat_status AS estado, sunat_code, sunat_description, sunat_notes, hash_cpe, '
+                    .'fecha_emision, sent_at AS fecha_envio, sucursal_id, observacion, '
                     .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', 'pdf_path IS NOT NULL')
                 )
                 ->where('tenant_id', $tenantId)
@@ -129,7 +130,8 @@ class EmpresaComprobantesQuery
                     "tipo_documento AS tipo, id, serie, $correlativo, $numeroCore AS numero, "
                     .'destinatario_razon_social AS cliente, destinatario_num_doc AS cliente_doc, NULL AS moneda, '
                     .'NULL AS total, NULL AS subtotal, NULL AS igv, '
-                    .'sunat_status AS estado, fecha_emision, sent_at AS fecha_envio, sucursal_id, observacion, '
+                    .'sunat_status AS estado, sunat_code, sunat_description, NULL AS sunat_notes, hash_cpe, '
+                    .'fecha_emision, sent_at AS fecha_envio, sucursal_id, observacion, '
                     .$flags('xml_path IS NOT NULL OR xml_content IS NOT NULL', 'cdr_path IS NOT NULL OR cdr_content IS NOT NULL', 'pdf_path IS NOT NULL')
                 )
                 ->where('tenant_id', $tenantId)
@@ -143,7 +145,8 @@ class EmpresaComprobantesQuery
                     "'20' AS tipo, id, serie, $correlativo, $numeroCore AS numero, "
                     ."proveedor_razon_social AS cliente, proveedor_num_doc AS cliente_doc, 'PEN' AS moneda, "
                     .'imp_retenido AS total, NULL AS subtotal, NULL AS igv, '
-                    .'sunat_status AS estado, fecha_emision, sent_at AS fecha_envio, NULL AS sucursal_id, observacion, '
+                    .'sunat_status AS estado, sunat_code, sunat_description, sunat_notes, hash_cpe, '
+                    .'fecha_emision, sent_at AS fecha_envio, NULL AS sucursal_id, observacion, '
                     .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', 'pdf_path IS NOT NULL')
                 )
                 ->where('tenant_id', $tenantId)
@@ -157,7 +160,8 @@ class EmpresaComprobantesQuery
                     "'40' AS tipo, id, serie, $correlativo, $numeroCore AS numero, "
                     ."cliente_razon_social AS cliente, cliente_num_doc AS cliente_doc, 'PEN' AS moneda, "
                     .'imp_percibido AS total, NULL AS subtotal, NULL AS igv, '
-                    .'sunat_status AS estado, fecha_emision, sent_at AS fecha_envio, NULL AS sucursal_id, observacion, '
+                    .'sunat_status AS estado, sunat_code, sunat_description, sunat_notes, hash_cpe, '
+                    .'fecha_emision, sent_at AS fecha_envio, NULL AS sucursal_id, observacion, '
                     .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', 'pdf_path IS NOT NULL')
                 )
                 ->where('tenant_id', $tenantId)
@@ -170,7 +174,8 @@ class EmpresaComprobantesQuery
                 ->selectRaw(
                     "'RC' AS tipo, id, NULL AS serie, $correlativo, identifier AS numero, "
                     .'NULL AS cliente, NULL AS cliente_doc, NULL AS moneda, NULL AS total, NULL AS subtotal, NULL AS igv, '
-                    .'sunat_status AS estado, fecha_referencia AS fecha_emision, fecha_envio, NULL AS sucursal_id, NULL AS observacion, '
+                    .'sunat_status AS estado, sunat_code, sunat_description, sunat_notes, NULL AS hash_cpe, '
+                    .'fecha_referencia AS fecha_emision, fecha_envio, NULL AS sucursal_id, NULL AS observacion, '
                     .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', null)
                 )
                 ->where('tenant_id', $tenantId)
@@ -182,7 +187,8 @@ class EmpresaComprobantesQuery
                 ->selectRaw(
                     "'RA' AS tipo, id, NULL AS serie, $correlativo, identifier AS numero, "
                     .'NULL AS cliente, NULL AS cliente_doc, NULL AS moneda, NULL AS total, NULL AS subtotal, NULL AS igv, '
-                    .'sunat_status AS estado, fecha_generacion AS fecha_emision, fecha_comunicacion AS fecha_envio, NULL AS sucursal_id, NULL AS observacion, '
+                    .'sunat_status AS estado, sunat_code, sunat_description, sunat_notes, NULL AS hash_cpe, '
+                    .'fecha_generacion AS fecha_emision, fecha_comunicacion AS fecha_envio, NULL AS sucursal_id, NULL AS observacion, '
                     .$flags('xml_path IS NOT NULL', null, null)
                 )
                 ->where('tenant_id', $tenantId)
@@ -195,7 +201,8 @@ class EmpresaComprobantesQuery
                     "(CASE WHEN type = 'quotation' THEN 'COT' ELSE 'NV' END) AS tipo, id, NULL AS serie, NULL AS correlativo, numero, "
                     .'client_razon_social AS cliente, client_num_doc AS cliente_doc, tipo_moneda AS moneda, '
                     .'mto_imp_venta AS total, sub_total AS subtotal, mto_igv AS igv, '
-                    .'status AS estado, fecha_emision, NULL AS fecha_envio, NULL AS sucursal_id, observacion, '
+                    ."status AS estado, NULL AS sunat_code, NULL AS sunat_description, NULL AS sunat_notes, NULL AS hash_cpe, "
+                    .'fecha_emision, NULL AS fecha_envio, NULL AS sucursal_id, observacion, '
                     .$flags(null, null, 'pdf_path IS NOT NULL')
                 )
                 ->where('tenant_id', $tenantId)
