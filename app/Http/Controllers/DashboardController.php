@@ -52,6 +52,7 @@ class DashboardController extends Controller
             'estado_sunat' => $this->estadoSunat($inicioMes),
             'top_empresas' => $this->topEmpresas($inicioMes),
             'empresas_por_entorno' => $this->empresasPorEntorno(),
+            'ultimos_envios' => $this->ultimosEnvios(),
             'periodo' => [
                 'inicio_mes' => $inicioMes->format('Y-m-d'),
                 'hoy' => $hoy->format('Y-m-d'),
@@ -273,6 +274,32 @@ class DashboardController extends Controller
                 'entorno' => $r->environment === 'production' ? 'Producción' : 'Beta',
                 'total' => (int) $r->total,
             ])
+            ->all();
+    }
+
+    private function ultimosEnvios(): array
+    {
+        $tablas = [
+            ['invoices', 'Factura'],
+            ['boletas', 'Boleta'],
+            ['credit_notes', 'Nota de crédito'],
+            ['debit_notes', 'Nota de débito'],
+        ];
+
+        $union = null;
+        foreach ($tablas as [$tabla, $tipo]) {
+            $part = DB::table($tabla)
+                ->selectRaw("'{$tipo}' AS tipo, {$tabla}.id, {$tabla}.tenant_id, {$tabla}.serie, {$tabla}.correlativo, {$tabla}.sunat_status AS estado, {$tabla}.sunat_code AS codigo, {$tabla}.sunat_description AS descripcion, {$tabla}.fecha_emision, {$tabla}.sent_at, tenants.razon_social, tenants.ruc")
+                ->join('tenants', 'tenants.id', '=', "{$tabla}.tenant_id")
+                ->whereNull("{$tabla}.deleted_at");
+            $union = $union ? $union->unionAll($part) : $part;
+        }
+
+        return DB::query()->fromSub($union, 'logs')->select('*')
+            ->orderByRaw('COALESCE(sent_at, fecha_emision) DESC')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row) => (array) $row)
             ->all();
     }
 }

@@ -162,6 +162,7 @@ Route::middleware(['auth', 'admin'])
         Route::post('empresas/{tenant}/series/{serie}/toggle',    [\App\Http\Controllers\Admin\SerieController::class, 'toggle'])->name('series.toggle');
 
         // Comprobantes de la empresa (todos los tipos, unificados)
+        Route::get('logs-envios', [\App\Http\Controllers\Admin\EnvioLogController::class, 'index'])->name('logs-envios.index');
         Route::get('empresas/{tenant}/comprobantes', [\App\Http\Controllers\Admin\EmpresaComprobanteController::class, 'index'])->name('empresas.comprobantes');
         Route::get('empresas/{tenant}/comprobantes/{tipo}/{id}/respuesta', [\App\Http\Controllers\Admin\EmpresaComprobanteController::class, 'respuesta'])
             ->where(['id' => '[0-9]+'])

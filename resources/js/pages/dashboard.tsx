@@ -55,6 +55,7 @@ type Metricas = {
     estado_sunat: { estado: string; valor: number }[];
     top_empresas: { ruc: string; razon_social: string; total_ventas: number; total_docs: number }[];
     empresas_por_entorno: { entorno: string; total: number }[];
+    ultimos_envios: { tipo: string; id: number; tenant_id: number; serie: string; correlativo: string | number; estado: string; codigo: string | null; descripcion: string | null; fecha_emision: string | null; sent_at: string | null; razon_social: string; ruc: string }[];
     periodo: { inicio_mes: string; hoy: string };
 };
 
@@ -189,7 +190,7 @@ export default function Dashboard({ esAdmin, metricas }: Props) {
         );
     }
 
-    const { kpis, documentos_por_dia, documentos_por_tipo, empresas_por_plan, empresas_por_regimen, estado_sunat, top_empresas, empresas_por_entorno } = metricas;
+    const { kpis, documentos_por_dia, documentos_por_tipo, empresas_por_plan, empresas_por_regimen, estado_sunat, top_empresas, empresas_por_entorno, ultimos_envios } = metricas;
 
     const totalDocsMes = documentos_por_tipo.reduce((s, d) => s + d.valor, 0);
     const totalEmpresasEntorno = empresas_por_entorno.reduce((s, d) => s + d.total, 0);
@@ -477,6 +478,11 @@ export default function Dashboard({ esAdmin, metricas }: Props) {
                         </ResponsiveContainer>
                     </ChartCard>
                 </div>
+
+                <ChartCard title="Últimos envíos SUNAT" subtitle="Actividad global de todas las empresas">
+                    <div className="mb-3 flex justify-end"><Link href="/admin/logs-envios" className="text-xs font-medium text-sky-600 hover:underline">Ver log completo</Link></div>
+                    <div className="overflow-x-auto"><table className="w-full min-w-[700px] text-sm"><thead className="border-b text-left text-xs uppercase text-muted-foreground"><tr><th className="pb-2">Empresa</th><th className="pb-2">Comprobante</th><th className="pb-2">Estado</th><th className="pb-2">Respuesta</th><th className="pb-2 text-right">Hora</th></tr></thead><tbody className="divide-y">{ultimos_envios.map((log) => <tr key={`${log.tipo}-${log.id}-${log.tenant_id}`}><td className="max-w-[220px] truncate py-2.5">{log.razon_social}<div className="font-mono text-[11px] text-muted-foreground">{log.ruc}</div></td><td className="py-2.5 font-mono text-xs">{log.tipo} {log.serie}-{String(log.correlativo).padStart(8, '0')}</td><td className="py-2.5"><Badge variant="secondary" className="capitalize">{log.estado}</Badge></td><td className="max-w-[300px] truncate py-2.5 text-xs text-muted-foreground">{log.codigo ? `${log.codigo} · ` : ''}{log.descripcion ?? 'Sin respuesta todavía'}</td><td className="whitespace-nowrap py-2.5 text-right text-xs text-muted-foreground">{log.sent_at ?? log.fecha_emision ?? '—'}</td></tr>)}</tbody></table></div>
+                </ChartCard>
             </div>
         </AppLayout>
     );

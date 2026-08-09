@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Download, KeyRound, Pencil, Power } from 'lucide-react';
+import { ArrowLeft, Download, Infinity as InfinityIcon, KeyRound, Pencil, Power } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ type Tenant = {
     environment: string;
     tax_regime: string | null;
     plan: string;
+    emission_mode: string;
     max_documents_month: number;
     is_active: boolean;
     webhook_url: string | null;
@@ -306,9 +307,17 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                                 </div>
                                 <div>
                                     <dt className="text-xs uppercase text-muted-foreground">Plan / Límite</dt>
-                                    <dd className="uppercase">
-                                        {tenant.plan} — {tenant.max_documents_month} docs/mes
-                                    </dd>
+                                    {tenant.emission_mode === 'unlimited' ? (
+                                        <dd className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                                            <InfinityIcon className="size-4" />
+                                            Ilimitada
+                                            <span className="font-normal text-muted-foreground">· plan {tenant.plan}</span>
+                                        </dd>
+                                    ) : (
+                                        <dd className="uppercase">
+                                            {tenant.plan} — {tenant.max_documents_month} docs/mes
+                                        </dd>
+                                    )}
                                 </div>
                             </dl>
                         </Card>
