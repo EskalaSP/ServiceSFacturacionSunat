@@ -439,7 +439,11 @@ class DocumentDataMapper
         return [
             'telefonos' => $tenant->telefonos ?? [],
             'emails' => $tenant->emails ?? [],
-            'cuentas_bancarias' => $tenant->cuentas_bancarias ?? [],
+            'cuentas_bancarias' => array_map(static function (array $cuenta): array {
+                $cuenta['tipo_cuenta'] = $cuenta['tipo_cuenta'] ?? '';
+
+                return $cuenta;
+            }, $tenant->cuentas_bancarias ?? []),
             'billeteras_digitales' => $tenant->billeteras_digitales ?? [],
             'mensaje_agradecimiento' => $tenant->mensaje_agradecimiento,
             'mensaje_promocional' => $tenant->mensaje_promocional,

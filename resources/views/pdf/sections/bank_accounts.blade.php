@@ -4,7 +4,7 @@
         <div class="payment-title">Cuentas para depósito / transferencia</div>
         @foreach($cuentas_bancarias as $cuenta)
         <div class="info-line">
-            {{ $cuenta['banco'] }} ({{ $cuenta['moneda'] ?? 'PEN' }}) {{ $cuenta['tipo_cuenta'] }}: {{ $cuenta['numero'] }}
+            {{ $cuenta['banco'] }} ({{ $cuenta['moneda'] ?? 'PEN' }}) {{ $cuenta['tipo_cuenta'] ?? '' }}: {{ $cuenta['numero'] }}
             @if(!empty($cuenta['cci'])) | CCI: {{ $cuenta['cci'] }} @endif
         </div>
         @endforeach
@@ -22,7 +22,7 @@
             @foreach($cuentas_bancarias as $cuenta)
             <tr>
                 <td style="width: 80px;">{{ $cuenta['banco'] }}</td>
-                <td>{{ $cuenta['tipo_cuenta'] }} ({{ $cuenta['moneda'] ?? 'PEN' }}): {{ $cuenta['numero'] }}</td>
+                <td>{{ $cuenta['tipo_cuenta'] ?? '' }} ({{ $cuenta['moneda'] ?? 'PEN' }}): {{ $cuenta['numero'] }}</td>
                 <td>@if(!empty($cuenta['cci'])) CCI: {{ $cuenta['cci'] }} @endif</td>
             </tr>
             @endforeach
