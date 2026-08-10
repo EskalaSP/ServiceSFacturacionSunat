@@ -1,73 +1,81 @@
+<div align="center">
+
 # SUNAT API
 
-Facturación electrónica peruana, lista para integrarse
+### Plataforma profesional de facturación electrónica para Perú
 
-API REST multiempresa para emitir, consultar y administrar comprobantes electrónicos ante SUNAT desde cualquier aplicación.
+API REST multiempresa para emitir, consultar y administrar comprobantes electrónicos ante **SUNAT**.
 
-Producción: apisunatv2.kodevo.es
-Documentación: documentacion/README.md
+<p>
+  <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" />
+  <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" />
+  <img src="https://img.shields.io/badge/Greenter-SUNAT-0F766E?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Status-Production-16A34A?style=for-the-badge" />
+</p>
+
+**Producción:** https://apisunatv2.kodevo.es
+
+**Documentación:** `documentacion/README.md`
+
+</div>
 
 ---
 
-## Una sola API para todo el ciclo tributario
+## Arquitectura
 
-SUNAT API centraliza la operación de facturación de tus empresas, sucursales y series en una integración consistente. Emite un documento, sigue su estado y descarga sus archivos XML, CDR o PDF sin repartir la lógica tributaria por todo tu producto.
+```text
+                Cliente / ERP / POS / E-commerce
+                            │
+                            ▼
+                    SUNAT API (Laravel 12)
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+        ▼                   ▼                   ▼
+     Empresas            Series            Sucursales
+        │                   │                   │
+        └─────────────── Emisión CPE ───────────┘
+                            │
+                            ▼
+                    XML • CDR • PDF • SUNAT
+```
 
-Emisión:
-- Facturas y boletas
-- Notas de crédito y débito
-- Guías de remisión
-- Retenciones y percepciones
+---
 
-Operación:
-- Envío automático o manual
-- Reenvío y consulta de CPE
-- Resúmenes y anulaciones
-- XML, CDR y PDF
+## Capacidades
 
-Control:
-- Dashboard y KPIs
-- Reportes y alertas
-- Exportación masiva ZIP
-- SIRE / Registro de Compras
+<table>
+<tr>
+<td width="50%">
 
-## Por qué esta API
+### Emisión
 
-- Multiempresa desde el inicio: cada integración trabaja con sus credenciales, empresa, sucursales y series.
-- Lista para el flujo real: soporta documentos pendientes, rechazados, reenvíos, pagos y consultas posteriores.
-- Segura por contrato: autenticación por X-Api-Key y X-Api-Secret en cada endpoint protegido.
-- Pensada para crecer: procesamiento con colas, scheduler y una capa de servicios separada de tu negocio.
+* Facturas
+* Boletas
+* Notas de crédito
+* Notas de débito
+* Guías de remisión
 
-## Flujo de integración
+</td>
+<td width="50%">
 
-❶ REGISTRAR EMPRESA
-        │
-        ▼
-❷ CONFIGURAR SUCURSAL Y SERIE
-        │
-        ├──► 🔑 Obtener credenciales API
-        │
-        ▼
-❸ EMITIR DOCUMENTO
-        │
-        ▼
-❹ CONSULTAR
-   ├──► Estado del documento
-   ├──► Descargar XML
-   ├──► Descargar CDR
-   └──► Descargar PDF
+### Gestión
 
-## Quick start
+* Multiempresa
+* API Key / Secret
+* XML, CDR y PDF
+* Reenvío y consulta
+* Colas (Queues)
 
-### Requisitos
+</td>
+</tr>
+</table>
 
-- PHP 8.2 o superior
-- Composer 2.x
-- Node.js 18.x o superior
-- MySQL 8.0+ o MariaDB 10.6+
+---
 
-### Instalación local
+## Instalación
 
+```bash
 git clone https://github.com/yorchavez9/plataform-api-sunat.git
 cd plataform-api-sunat
 
@@ -77,116 +85,117 @@ npm install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
-npm run build
-
-#### Opción A — Todo en uno (recomendado)
-
-composer dev
-
-#### Opción B — Manual
-
-# Terminal 1: Servidor Laravel + Vite
-php artisan serve
-npm run dev
-
-# Terminal 2: Procesador de colas
-php artisan queue:listen --tries=1
-
-### Variables esenciales
-
-APP_NAME="SUNAT API"
-APP_URL=http://localhost:8000
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=sunat_api
-DB_USERNAME=root
-DB_PASSWORD=
-
-QUEUE_CONNECTION=database
-FILESYSTEM_DISK=local
+```
 
 ---
 
-## Emitir una factura
+## Iniciar el proyecto
 
-Una vez registrada la empresa y configurada la serie, crea tu primer comprobante:
+### Opción recomendada
 
-curl -X POST https://tu-api.com/api/v1/facturas \
-    -H "X-Api-Key: {tu_api_key}" \
-    -H "X-Api-Secret: {tu_api_secret}" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "serie": "F001",
-        "fecha_emision": "2026-08-10",
-        "tipo_operacion": "0101",
-        "tipo_moneda": "PEN",
-        "forma_pago": "Contado",
-        "cliente": {
-            "tipo_doc": "6",
-            "num_doc": "20512345678",
-            "razon_social": "CLIENTE DEMO SAC",
-            "direccion": "AV. AREQUIPA 1234, LIMA"
-        },
-        "items": [{
-            "codigo": "P001",
-            "descripcion": "Lapicero",
-            "unidad": "NIU",
-            "cantidad": 1,
-            "precio_unitario": 1.50,
-            "tip_afe_igv": "10"
-        }]
-    }'
+```bash
+composer dev
+```
 
-Nota: Puedes agregar "correlativo": 600 para un número específico. Si lo omites, la API continuará el flujo según la configuración de la serie. La respuesta incluye la identificación del documento y permite acceder a sus endpoints de estado, reenvío, XML, CDR y PDF.
+### Opción manual
+
+```bash
+# Terminal 1
+php artisan serve
+
+# Terminal 2
+php artisan queue:listen --tries=1
+
+# Terminal 3
+npm run dev
+```
+
+**Aplicación:** http://localhost:8000
+
+---
+
+## Flujo de integración
+
+```text
+Registrar empresa
+        │
+        ▼
+Configurar sucursal y serie
+        │
+        ▼
+Emitir comprobante
+        │
+        ▼
+Enviar a SUNAT
+        │
+        ▼
+Consultar estado
+        │
+        ▼
+Descargar XML / CDR / PDF
+```
 
 ---
 
 ## Autenticación
 
-Todos los endpoints, excepto /registro y /planes, requieren estas cabeceras:
+Todos los endpoints protegidos requieren:
 
-X-Api-Key: {tu_api_key}
-X-Api-Secret: {tu_api_secret}
-
-Importante: Mantén api_secret exclusivamente en tu backend. Nunca lo expongas en una aplicación frontend.
+```http
+X-Api-Key: {API_KEY}
+X-Api-Secret: {API_SECRET}
+```
 
 ---
 
-## Documentación
+## Ejemplo
 
-Guías disponibles:
-- Configuración inicial: Empresa, credenciales, certificado, logo, sucursales y series
-- Facturas: CRUD, envío, XML, CDR, PDF y pagos
-- Boletas: Emisión y ciclo de vida de boletas
-- Notas de crédito: Anulaciones, devoluciones y descuentos
-- Guías de remisión: Traslado de mercadería y documentos relacionados
-- Panel de control: KPIs, alertas, aging y reportes
-- SIRE: Registro de Compras y endpoints SIRE
-- Despliegue en VPS: Nginx, SSL, Supervisor, cron y producción
-
-Ver toda la documentación: documentacion/README.md
+```bash
+curl -X POST http://localhost:8000/api/v1/facturas \
+  -H "X-Api-Key: TU_API_KEY" \
+  -H "X-Api-Secret: TU_API_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"serie":"F001","tipo_moneda":"PEN"}'
+```
 
 ---
 
 ## Stack
 
-Laravel 12 · PHP 8.2 · MySQL · Greenter · Queues (database)
-Inertia 2 · React 19 · TypeScript · Vite 7 · Pest 4
-
-## Desarrollo y calidad
-
-composer dev             # Servidor, queue y Vite (todo en uno)
-composer test            # Suite de tests y validaciones
-composer lint:check      # Estilo PHP
-npm run lint:check       # ESLint
-npm run types:check      # TypeScript
-
-## Licencia
-
-Software propietario. Todos los derechos reservados.
+```text
+Laravel 12
+PHP 8.2
+MySQL
+Greenter
+React 19
+TypeScript
+Inertia
+Vite
+```
 
 ---
 
-SUNAT API · Integraciones tributarias que siguen el ritmo de tu negocio.
+## Documentación
+
+| Módulo            | Archivo                                |
+| ----------------- | -------------------------------------- |
+| Configuración     | `documentacion/01-Configuracion.md`    |
+| Facturas          | `documentacion/04-Facturas.md`         |
+| Boletas           | `documentacion/05-Boletas.md`          |
+| Notas de crédito  | `documentacion/06-Notas-credito.md`    |
+| Guías de remisión | `documentacion/10-Guia-remision-RM.md` |
+| Panel de control  | `documentacion/15-Panel-de-control.md` |
+| SIRE              | `documentacion/17-Sire.md`             |
+| Despliegue VPS    | `documentacion/20-Despliegue-VPS.md`   |
+
+---
+
+## Licencia
+
+**Software propietario. Todos los derechos reservados.**
+
+<div align="center">
+
+**SUNAT API** · Integración profesional con SUNAT para aplicaciones empresariales.
+
+</div>
