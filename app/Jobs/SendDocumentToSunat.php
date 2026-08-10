@@ -79,6 +79,9 @@ class SendDocumentToSunat implements ShouldQueue
             // Certificado inválido → error permanente, no reintentar
             $this->markAsRejected($document, $tenant, 'CERT_ERROR', 'Error de certificado: ' . $e->getMessage());
             return;
+        } catch (\RuntimeException $e) {
+            $this->markAsRejected($document, $tenant, 'CERT_ERROR', $e->getMessage());
+            return;
         }
 
         if ($result['success']) {

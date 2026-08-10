@@ -657,35 +657,12 @@ class GreenterService
 
     /**
      * Devuelve el certificado en formato PEM para firmar XMLs.
-     * Prioridad: (1) Certificado PSE global (.env CERTIFICATE_PATH)
-     *            (2) Certificado individual del tenant
+     * Cada tenant debe firmar con su propio certificado.
      * Convierte automáticamente de .p12/.pfx a PEM si es necesario.
      */
     private function resolveCertificatePem(): string
     {
-        // 0. Base64 en env var (ideal para Railway/cloud sin volúmenes de archivos)
-        $pemB64 = config('facturacion.certificate.pem_b64', '');
-        if (! empty($pemB64)) {
-            $content = base64_decode($pemB64, strict: true);
-            if ($content !== false && ! empty($content)) {
-                return $this->toPem($content);
-            }
-        }
-
-        // 1. Certificado PSE global como archivo (desarrollo local y servidores con storage)
-        $psePath = config('facturacion.certificate.path', '');
-        if (! empty($psePath)) {
-            $fullPath = str_starts_with($psePath, '/') || str_contains($psePath, ':')
-                ? $psePath
-                : base_path($psePath);
-
-            if (file_exists($fullPath)) {
-                $content = file_get_contents($fullPath);
-                return $this->toPem($content);
-            }
-        }
-
-        // 2. Certificado individual del tenant
+        // El certificado es propiedad de la empresa que emite el documento.
         $tenantCert = $this->tenant->getCertificateContent();
         if ($tenantCert) {
             return $this->toPem($tenantCert, $this->tenant->certificate_password);
@@ -693,7 +670,7 @@ class GreenterService
 
         throw new \RuntimeException(
             'Certificado digital no encontrado. '
-            . 'Configure CERTIFICATE_PEM_B64 (Railway) o CERTIFICATE_PATH en .env.'
+            . 'Cargue el certificado .p12/.pfx de esta empresa desde su configuración.'
         );
     }
 
