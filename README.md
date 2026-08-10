@@ -4,7 +4,7 @@
 
 ### Plataforma profesional de facturación electrónica para Perú
 
-API REST multiempresa para emitir, consultar y administrar comprobantes electrónicos ante **SUNAT**.
+API REST **multiempresa** para emitir, consultar y administrar comprobantes electrónicos ante **SUNAT** desde cualquier aplicación.
 
 <p>
   <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" />
@@ -13,9 +13,11 @@ API REST multiempresa para emitir, consultar y administrar comprobantes electró
   <img src="https://img.shields.io/badge/Status-Production-16A34A?style=for-the-badge" />
 </p>
 
-**Producción:** https://apisunatv2.kodevo.es
+**Producción**
+https://apisunatv2.kodevo.es
 
-**Documentación:** `documentacion/README.md`
+**Documentación**
+`documentacion/README.md`
 
 </div>
 
@@ -24,20 +26,20 @@ API REST multiempresa para emitir, consultar y administrar comprobantes electró
 ## Arquitectura
 
 ```text
-                Cliente / ERP / POS / E-commerce
-                            │
-                            ▼
-                    SUNAT API (Laravel 12)
-                            │
-        ┌───────────────────┼───────────────────┐
-        │                   │                   │
-        ▼                   ▼                   ▼
-     Empresas            Series            Sucursales
-        │                   │                   │
-        └─────────────── Emisión CPE ───────────┘
-                            │
-                            ▼
-                    XML • CDR • PDF • SUNAT
+                   Cliente / ERP / POS / E-commerce
+                               │
+                               ▼
+                       SUNAT API (Laravel 12)
+                               │
+          ┌────────────────────┼────────────────────┐
+          │                    │                    │
+          ▼                    ▼                    ▼
+      Empresas             Sucursales             Series
+          │                    │                    │
+          └──────────────── Emisión CPE ───────────┘
+                               │
+                               ▼
+                       XML • CDR • PDF • SUNAT
 ```
 
 ---
@@ -89,6 +91,25 @@ php artisan migrate --seed
 
 ---
 
+## Configuración
+
+```env
+APP_NAME=SUNAT_API
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=sunat_api
+DB_USERNAME=root
+DB_PASSWORD=
+
+QUEUE_CONNECTION=database
+FILESYSTEM_DISK=local
+```
+
+---
+
 ## Iniciar el proyecto
 
 ### Opción recomendada
@@ -98,6 +119,8 @@ composer dev
 ```
 
 ### Opción manual
+
+Ejecuta cada proceso en una terminal diferente.
 
 ```bash
 # Terminal 1
@@ -139,24 +162,84 @@ Descargar XML / CDR / PDF
 
 ## Autenticación
 
-Todos los endpoints protegidos requieren:
+Todos los endpoints protegidos requieren las siguientes cabeceras:
 
 ```http
 X-Api-Key: {API_KEY}
 X-Api-Secret: {API_SECRET}
 ```
 
+Mantén `API_SECRET` únicamente en tu backend.
+
 ---
 
-## Ejemplo
+## Ejemplo de emisión de factura
 
-```bash
-curl -X POST http://localhost:8000/api/v1/facturas \
-  -H "X-Api-Key: TU_API_KEY" \
-  -H "X-Api-Secret: TU_API_SECRET" \
-  -H "Content-Type: application/json" \
-  -d '{"serie":"F001","tipo_moneda":"PEN"}'
+Una vez registrada la empresa y configurada la serie, puedes emitir una factura electrónica enviando una solicitud **POST**.
+
+### Endpoint
+
+```http
+POST /api/v1/facturas
 ```
+
+### Cabeceras
+
+```http
+X-Api-Key: {API_KEY}
+X-Api-Secret: {API_SECRET}
+Content-Type: application/json
+```
+
+### Cuerpo de la solicitud
+
+```json
+{
+  "serie": "F001",
+  // "correlativo": 600,
+  "fecha_emision": "2026-08-10",
+  "tipo_operacion": "0101",
+  "tipo_moneda": "PEN",
+  "forma_pago": "Contado",
+  "cliente": {
+    "tipo_doc": "6",
+    "num_doc": "20512345678",
+    "razon_social": "CLIENTE DEMO SAC",
+    "direccion": "AV. AREQUIPA 1234, LIMA"
+  },
+  "items": [
+    {
+      "codigo": "P001",
+      "descripcion": "Lapicero",
+      "unidad": "NIU",
+      "cantidad": 1,
+      "precio_unitario": 1.50,
+      "tip_afe_igv": "10"
+    }
+  ]
+}
+```
+
+El campo `correlativo` es opcional. Si no se envía, la API utilizará la numeración configurada para la serie correspondiente.
+
+La respuesta permite continuar con las operaciones de **consulta de estado**, **reenvío**, **XML**, **CDR** y **PDF**.
+
+---
+
+## Documentación
+
+| Módulo            | Archivo                                |
+| ----------------- | -------------------------------------- |
+| Configuración     | `documentacion/01-Configuracion.md`    |
+| Facturas          | `documentacion/04-Facturas.md`         |
+| Boletas           | `documentacion/05-Boletas.md`          |
+| Notas de crédito  | `documentacion/06-Notas-credito.md`    |
+| Guías de remisión | `documentacion/10-Guia-remision-RM.md` |
+| Panel de control  | `documentacion/15-Panel-de-control.md` |
+| SIRE              | `documentacion/17-Sire.md`             |
+| Despliegue VPS    | `documentacion/20-Despliegue-VPS.md`   |
+
+**Documentación completa:** `documentacion/README.md`
 
 ---
 
@@ -175,18 +258,16 @@ Vite
 
 ---
 
-## Documentación
+## Comandos útiles
 
-| Módulo            | Archivo                                |
-| ----------------- | -------------------------------------- |
-| Configuración     | `documentacion/01-Configuracion.md`    |
-| Facturas          | `documentacion/04-Facturas.md`         |
-| Boletas           | `documentacion/05-Boletas.md`          |
-| Notas de crédito  | `documentacion/06-Notas-credito.md`    |
-| Guías de remisión | `documentacion/10-Guia-remision-RM.md` |
-| Panel de control  | `documentacion/15-Panel-de-control.md` |
-| SIRE              | `documentacion/17-Sire.md`             |
-| Despliegue VPS    | `documentacion/20-Despliegue-VPS.md`   |
+```bash
+composer dev
+composer test
+composer lint:check
+
+npm run lint:check
+npm run types:check
+```
 
 ---
 
@@ -196,6 +277,7 @@ Vite
 
 <div align="center">
 
-**SUNAT API** · Integración profesional con SUNAT para aplicaciones empresariales.
+**SUNAT API**
+Integración profesional con SUNAT para aplicaciones empresariales.
 
 </div>
