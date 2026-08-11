@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Tenant extends Model
@@ -223,10 +224,26 @@ class Tenant extends Model
 
     public function getCertificateContent(): ?string
     {
-        if (! $this->certificate_path || ! file_exists($this->certificate_path)) {
-            return null;
+        $paths = array_filter([
+            $this->certificate_path,
+            'certificates/'.$this->ruc.'/cert.pem',
+        ]);
+
+        foreach ($paths as $path) {
+            if (str_starts_with($path, '/') || str_contains($path, ':')) {
+                if (is_file($path) && is_readable($path)) {
+                    return file_get_contents($path) ?: null;
+                }
+
+                continue;
+            }
+
+            $disk = Storage::disk('local');
+            if ($disk->exists($path)) {
+                return $disk->get($path);
+            }
         }
 
-        return file_get_contents($this->certificate_path);
+        return null;
     }
 }

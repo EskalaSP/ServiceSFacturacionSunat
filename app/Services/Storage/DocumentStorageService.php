@@ -126,7 +126,7 @@ class DocumentStorageService
 
         Storage::disk('local')->put($path, $certContent);
 
-        return Storage::disk('local')->path($path);
+        return $path;
     }
 
     public function getCertificatePath(Tenant $tenant, string $filename = 'cert.pem'): ?string
