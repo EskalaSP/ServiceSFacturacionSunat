@@ -227,6 +227,7 @@ class Tenant extends Model
         $paths = array_filter([
             $this->certificate_path,
             'certificates/'.$this->ruc.'/cert.pem',
+            'tenants/'.$this->getKey().'/certs/cert.pem',
         ]);
 
         foreach ($paths as $path) {
