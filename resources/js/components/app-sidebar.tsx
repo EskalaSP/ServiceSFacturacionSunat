@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Activity, Building2, CreditCard, Hash, LayoutGrid, MapPin, Settings2, ShieldCheck } from 'lucide-react';
+import { Activity, Building2, CreditCard, ListOrdered, LayoutGrid, MapPin, Settings2, ShieldCheck, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import {
@@ -24,19 +24,24 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const adminNavItems: NavItem[] = [
-    { title: 'Logs de envíos', href: '/admin/logs-envios', icon: Activity },
-    { title: 'Empresas',   href: '/admin/empresas',   icon: Building2 },
-    { title: 'Sucursales', href: '/admin/sucursales', icon: MapPin },
-    { title: 'Series',     href: '/admin/series',     icon: Hash },
-    { title: 'Planes',     href: '/admin/planes',     icon: CreditCard },
-    { title: 'Configuración', href: '/admin/configuracion', icon: Settings2 },
-];
+const PANEL_ROLES = ['super_admin', 'admin', 'soporte', 'lectura'];
 
 export function AppSidebar() {
     const { isCurrentOrParentUrl } = useCurrentUrl();
-    const { auth } = usePage<{ auth: { user: { is_admin?: boolean } } }>().props;
-    const isAdmin = auth?.user?.is_admin === true;
+    const { auth } = usePage<{ auth: { user: { is_admin?: boolean; role?: string } } }>().props;
+    const role = auth?.user?.role;
+    const isAdmin = auth?.user?.is_admin === true || (!!role && PANEL_ROLES.includes(role));
+    const canManageUsers = role === 'super_admin' || role === 'admin';
+
+    const adminNavItems: NavItem[] = [
+        { title: 'Logs de envíos', href: '/admin/logs-envios', icon: Activity },
+        { title: 'Empresas',   href: '/admin/empresas',   icon: Building2 },
+        { title: 'Sucursales', href: '/admin/sucursales', icon: MapPin },
+        { title: 'Series',     href: '/admin/series',     icon: ListOrdered },
+        { title: 'Planes',     href: '/admin/planes',     icon: CreditCard },
+        ...(canManageUsers ? [{ title: 'Usuarios', href: '/admin/usuarios', icon: Users }] : []),
+        { title: 'Configuración', href: '/admin/configuracion', icon: Settings2 },
+    ];
 
     return (
         <Sidebar collapsible="icon" variant="inset">

@@ -1,11 +1,11 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import {
     ArrowLeft,
     Calculator,
     CreditCard,
     Database,
     IdCard,
-    Infinity as InfinityIcon,
     MapPin,
     Plus,
     ShieldCheck,
@@ -55,6 +55,7 @@ type Tenant = {
     is_active: boolean;
     has_certificado?: boolean;
     has_logo?: boolean;
+    logo_url?: string | null;
 };
 
 type Option = { slug: string; name: string };
@@ -74,15 +75,20 @@ const breadcrumbs = (modo: 'crear' | 'editar', razon?: string): BreadcrumbItem[]
     { title: modo === 'crear' ? 'Nueva empresa' : `Editar: ${razon ?? ''}`, href: '#' },
 ];
 
+/** Marca de campo obligatorio: (*) en rojo, bien visible. */
+const Req = () => <span className="font-bold text-[#EF233C]">(*)</span>;
+
 const Section = ({
     icon: Icon,
     title,
     subtitle,
+    required,
     children,
 }: {
     icon: LucideIcon;
     title: string;
     subtitle?: string;
+    required?: boolean;
     children: React.ReactNode;
 }) => (
     <Card className="p-6">
@@ -91,7 +97,9 @@ const Section = ({
                 <Icon className="size-5" />
             </div>
             <div className="flex-1">
-                <h3 className="text-base font-semibold leading-tight">{title}</h3>
+                <h3 className="text-base font-semibold leading-tight">
+                    {title} {required && <Req />}
+                </h3>
                 {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
             </div>
         </div>
@@ -101,6 +109,7 @@ const Section = ({
 
 export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGlobalIlimitada }: Props) {
     const editando = modo === 'editar';
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const { data, setData, post, put, processing, errors, progress } = useForm({
         ruc: tenant.ruc,
         razon_social: tenant.razon_social,
@@ -199,10 +208,10 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                 )}
 
                 {/* 1. Identidad */}
-                <Section icon={IdCard} title="1. Identidad" subtitle="RUC y datos legales de la empresa">
+                <Section icon={IdCard} title="1. Identidad" required subtitle="RUC y datos legales de la empresa">
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
-                            <Label htmlFor="ruc">RUC *</Label>
+                            <Label htmlFor="ruc">RUC <Req /></Label>
                             <Input
                                 id="ruc"
                                 value={data.ruc}
@@ -222,7 +231,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                             )}
                         </div>
                         <div className="md:col-span-2">
-                            <Label htmlFor="razon_social">Razón social *</Label>
+                            <Label htmlFor="razon_social">Razón social <Req /></Label>
                             <Input
                                 id="razon_social"
                                 value={data.razon_social}
@@ -247,10 +256,10 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                 </Section>
 
                 {/* 2. Ubicación */}
-                <Section icon={MapPin} title="2. Ubicación" subtitle="Dirección fiscal y contacto">
+                <Section icon={MapPin} title="2. Ubicación" required subtitle="Dirección fiscal y contacto">
                     <div className="grid gap-4 md:grid-cols-6">
                         <div className="md:col-span-6">
-                            <Label htmlFor="direccion">Dirección fiscal</Label>
+                            <Label htmlFor="direccion">Dirección fiscal <Req /></Label>
                             <Input
                                 id="direccion"
                                 value={data.direccion}
@@ -260,7 +269,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                             />
                         </div>
                         <div>
-                            <Label htmlFor="ubigeo">Ubigeo</Label>
+                            <Label htmlFor="ubigeo">Ubigeo <Req /></Label>
                             <Input
                                 id="ubigeo"
                                 value={data.ubigeo}
@@ -271,7 +280,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <Label htmlFor="departamento">Departamento</Label>
+                            <Label htmlFor="departamento">Departamento <Req /></Label>
                             <Input
                                 id="departamento"
                                 value={data.departamento}
@@ -280,7 +289,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <Label htmlFor="provincia">Provincia</Label>
+                            <Label htmlFor="provincia">Provincia <Req /></Label>
                             <Input
                                 id="provincia"
                                 value={data.provincia}
@@ -289,7 +298,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                             />
                         </div>
                         <div>
-                            <Label htmlFor="distrito">Distrito</Label>
+                            <Label htmlFor="distrito">Distrito <Req /></Label>
                             <Input
                                 id="distrito"
                                 value={data.distrito}
@@ -376,10 +385,10 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                 </Section>
 
                 {/* 3. Credenciales SUNAT */}
-                <Section icon={ShieldCheck} title="3. Credenciales SUNAT" subtitle="Usuario SOL, certificado y entorno">
+                <Section icon={ShieldCheck} title="3. Credenciales SUNAT" required subtitle="Usuario secundario, certificado y entorno">
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
-                            <Label htmlFor="sol_user">Usuario SOL *</Label>
+                            <Label htmlFor="sol_user">Usuario secundario <Req /></Label>
                             <Input
                                 id="sol_user"
                                 value={data.sol_user}
@@ -390,7 +399,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                             />
                         </div>
                         <div>
-                            <Label htmlFor="sol_pass">Clave SOL {editando ? '' : '*'}</Label>
+                            <Label htmlFor="sol_pass">Clave del usuario secundario {!editando && <Req />}</Label>
                             <PasswordInput
                                 id="sol_pass"
                                 value={data.sol_pass}
@@ -401,7 +410,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                             />
                         </div>
                         <div>
-                            <Label htmlFor="environment">Entorno *</Label>
+                            <Label htmlFor="environment">Entorno <Req /></Label>
                             <Combobox
                                 value={data.environment}
                                 onChange={(v) => setData('environment', v)}
@@ -412,7 +421,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <Label htmlFor="certificado">Certificado digital (.pfx / .p12 / .pem)</Label>
+                            <Label htmlFor="certificado">Certificado digital (.pfx / .p12 / .pem) {!editando && <Req />}</Label>
                             <Input
                                 id="certificado"
                                 type="file"
@@ -424,7 +433,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                             )}
                         </div>
                         <div>
-                            <Label htmlFor="contrasena_certificado">Contraseña del certificado</Label>
+                            <Label htmlFor="contrasena_certificado">Contraseña del certificado {!editando && <Req />}</Label>
                             <PasswordInput
                                 id="contrasena_certificado"
                                 value={data.contrasena_certificado}
@@ -435,8 +444,8 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                     </div>
                 </Section>
 
-                {/* 4. SIRE */}
-                <Section icon={Database} title="4. SIRE (opcional)" subtitle="Registro de Compras Electrónico">
+                {/* 4. Credenciales API REST SUNAT */}
+                <Section icon={Database} title="4. Credenciales API SUNAT (opcional)" subtitle="Para GRE (guías), consulta de comprobantes, SIRE y más">
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
                             <Checkbox
@@ -445,27 +454,27 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                                 onCheckedChange={(v) => setData('sire_enabled', v === true)}
                             />
                             <Label htmlFor="sire_enabled" className="font-normal">
-                                Activar SIRE para esta empresa
+                                Activar servicios de la API REST SUNAT para esta empresa
                             </Label>
                         </div>
                         <div className="grid gap-4 md:grid-cols-3">
                             <div>
-                                <Label htmlFor="sire_client_id">Client ID SIRE</Label>
+                                <Label htmlFor="sire_client_id">Client ID</Label>
                                 <Input
                                     id="sire_client_id"
                                     value={data.sire_client_id}
                                     onChange={(e) => setData('sire_client_id', e.target.value)}
                                     maxLength={100}
-                                    placeholder="Ej: 00abc123-4567-... (Client ID SIRE)"
+                                    placeholder="Ej: 00abc123-4567-... (Client ID)"
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <Label htmlFor="sire_client_secret">Client Secret SIRE</Label>
+                                <Label htmlFor="sire_client_secret">Client Secret</Label>
                                 <PasswordInput
                                     id="sire_client_secret"
                                     value={data.sire_client_secret}
                                     onChange={(e) => setData('sire_client_secret', e.target.value)}
-                                    placeholder={editando ? '••••• (dejar vacío = sin cambios)' : 'Client Secret otorgado por SUNAT SIRE'}
+                                    placeholder={editando ? '••••• (dejar vacío = sin cambios)' : 'Client Secret otorgado por SUNAT'}
                                     maxLength={200}
                                 />
                             </div>
@@ -474,10 +483,10 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                 </Section>
 
                 {/* 5. Régimen tributario */}
-                <Section icon={Calculator} title="5. Régimen tributario" subtitle="Define cómo se calcula el IGV">
+                <Section icon={Calculator} title="5. Régimen tributario" required subtitle="Define cómo se calcula el IGV">
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
-                            <Label htmlFor="tax_regime">Régimen *</Label>
+                            <Label htmlFor="tax_regime">Régimen <Req /></Label>
                             <Combobox
                                 value={data.tax_regime}
                                 onChange={(v) => setData('tax_regime', v)}
@@ -521,7 +530,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                 </Section>
 
                 {/* 6. Emisión: modo + plan */}
-                <Section icon={CreditCard} title="6. Emisión y plan" subtitle="Define si la empresa emite ilimitado o según un plan">
+                <Section icon={CreditCard} title="6. Emisión y plan" required subtitle="Define si la empresa emite ilimitado o según un plan">
                     {emisionGlobalIlimitada && (
                         <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/20 dark:text-amber-300">
                             <strong>Emisión ilimitada global activa.</strong>{' '}
@@ -530,46 +539,39 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                         </div>
                     )}
 
-                    {/* Selector de modo de emisión */}
+                    {/* Selector de modo de emisión (radio) */}
                     <div className="mb-5">
-                        <Label>Modo de emisión *</Label>
-                        <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                            <button
-                                type="button"
-                                onClick={() => setData('emission_mode', 'unlimited')}
-                                className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-colors ${
-                                    data.emission_mode === 'unlimited'
-                                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                                        : 'hover:bg-muted/40'
-                                }`}
-                            >
-                                <InfinityIcon className="mt-0.5 size-5 shrink-0 text-primary" />
-                                <div>
-                                    <div className="font-medium">Ilimitada</div>
-                                    <p className="text-muted-foreground text-xs">
-                                        Emite sin restricciones. Ideal para programadores e integradores. No
-                                        requiere plan.
-                                    </p>
-                                </div>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setData('emission_mode', 'plan')}
-                                className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-colors ${
-                                    data.emission_mode === 'plan'
-                                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                                        : 'hover:bg-muted/40'
-                                }`}
-                            >
-                                <CreditCard className="mt-0.5 size-5 shrink-0 text-primary" />
-                                <div>
-                                    <div className="font-medium">Por plan / suscripción</div>
-                                    <p className="text-muted-foreground text-xs">
-                                        Respeta los límites del plan (comprobantes/mes, vencimiento). Ideal para
-                                        revendedores y SaaS.
-                                    </p>
-                                </div>
-                            </button>
+                        <Label>Modo de emisión <Req /></Label>
+                        <div className="mt-2 flex flex-col gap-2">
+                            {[
+                                { value: 'unlimited', label: 'Ilimitada', hint: 'Emite sin restricciones. No requiere plan.' },
+                                { value: 'plan', label: 'Por plan / suscripción', hint: 'Respeta los límites del plan (comprobantes/mes).' },
+                            ].map((opt) => {
+                                const active = data.emission_mode === opt.value;
+                                return (
+                                    <label key={opt.value} className="flex cursor-pointer items-start gap-2.5">
+                                        <input
+                                            type="radio"
+                                            name="emission_mode"
+                                            value={opt.value}
+                                            checked={active}
+                                            onChange={() => setData('emission_mode', opt.value)}
+                                            className="sr-only"
+                                        />
+                                        <span
+                                            className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border ${
+                                                active ? 'border-primary' : 'border-muted-foreground/40'
+                                            }`}
+                                        >
+                                            <span className={`size-2 rounded-full ${active ? 'bg-primary' : 'bg-transparent'}`} />
+                                        </span>
+                                        <span>
+                                            <span className="text-sm font-medium">{opt.label}</span>
+                                            <span className="block text-xs text-muted-foreground">{opt.hint}</span>
+                                        </span>
+                                    </label>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -577,7 +579,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                     {data.emission_mode === 'plan' && (
                         <div className="grid gap-4 md:grid-cols-2">
                             <div>
-                                <Label htmlFor="plan">Plan *</Label>
+                                <Label htmlFor="plan">Plan <Req /></Label>
                                 <Combobox
                                     value={data.plan}
                                     onChange={(v) => setData('plan', v)}
@@ -646,15 +648,37 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
                         </div>
                         <div>
                             <Label htmlFor="logo">Logo (jpg/png/webp)</Label>
-                            <Input
-                                id="logo"
-                                type="file"
-                                accept=".jpg,.jpeg,.png,.webp"
-                                onChange={(e) => setData('logo', e.target.files?.[0] ?? null)}
-                            />
-                            {tenant.has_logo && (
-                                <p className="mt-1 text-xs text-emerald-600">✔ Logo actual cargado</p>
-                            )}
+                            <div className="flex items-start gap-4">
+                                {/* Vista previa del logo */}
+                                <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/40">
+                                    {logoPreview ? (
+                                        <img src={logoPreview} alt="Vista previa del logo" className="size-full object-contain p-1" />
+                                    ) : tenant.logo_url ? (
+                                        <img src={tenant.logo_url} alt="Logo actual" className="size-full object-contain p-1" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                    ) : (
+                                        <Store className="size-7 text-muted-foreground/40" />
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <Input
+                                        id="logo"
+                                        type="file"
+                                        accept=".jpg,.jpeg,.png,.webp"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] ?? null;
+                                            setData('logo', file);
+                                            if (logoPreview) URL.revokeObjectURL(logoPreview);
+                                            setLogoPreview(file ? URL.createObjectURL(file) : null);
+                                        }}
+                                    />
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        Cuadrado <strong>300×300 px</strong>, PNG. Máx. 2 MB.
+                                    </p>
+                                    {tenant.has_logo && !logoPreview && (
+                                        <p className="mt-1 text-xs text-emerald-600">✔ Logo actual cargado</p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                         <div className="md:col-span-2">
                             <Label htmlFor="mensaje_agradecimiento">Mensaje de agradecimiento (PDFs)</Label>

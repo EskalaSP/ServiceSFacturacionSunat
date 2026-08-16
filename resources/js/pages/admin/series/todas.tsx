@@ -1,6 +1,6 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Hash, Pencil, Power, Trash2 } from 'lucide-react';
+import { ListOrdered, Pencil, Power, Trash2 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -163,7 +163,7 @@ export default function SeriesTodas({ series, empresas, tipos, filtros }: Props)
             <div className="flex flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center gap-3">
                     <div className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-lg">
-                        <Hash className="size-5" />
+                        <ListOrdered className="size-5" />
                     </div>
                     <div>
                         <h1 className="text-xl font-semibold tracking-tight">Series</h1>

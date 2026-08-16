@@ -35,6 +35,8 @@ class CreateNewUser implements CreatesNewUsers
             'email' => $input['email'],
             'password' => $input['password'],
             'is_admin' => $esPrimerUsuario,
+            'role' => $esPrimerUsuario ? User::ROLE_SUPER_ADMIN : null,
+            'is_active' => true,
         ]);
     }
 }

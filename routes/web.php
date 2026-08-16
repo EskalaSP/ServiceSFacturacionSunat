@@ -129,7 +129,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // ── Panel de Administración ─────────────────────────────────────────────────
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin', 'panel.write'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -180,6 +180,17 @@ Route::middleware(['auth', 'admin'])
 
         // Series (listado global, cross-empresa)
         Route::get('series',                  [\App\Http\Controllers\Admin\SerieGlobalController::class, 'index'])->name('series.todas');
+
+        // Usuarios del panel (roles predefinidos) — solo super_admin y admin
+        Route::middleware('can:manage-users')->group(function () {
+            Route::get('usuarios',                 [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('usuarios.index');
+            Route::get('usuarios/nuevo',           [\App\Http\Controllers\Admin\UserController::class, 'create'])->name('usuarios.create');
+            Route::post('usuarios',                [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('usuarios.store');
+            Route::get('usuarios/{usuario}/editar', [\App\Http\Controllers\Admin\UserController::class, 'edit'])->name('usuarios.edit');
+            Route::put('usuarios/{usuario}',       [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('usuarios.update');
+            Route::post('usuarios/{usuario}/toggle', [\App\Http\Controllers\Admin\UserController::class, 'toggle'])->name('usuarios.toggle');
+            Route::delete('usuarios/{usuario}',    [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('usuarios.destroy');
+        });
 
         // Planes
         Route::get('planes',                  [\App\Http\Controllers\Admin\PlanController::class, 'index'])->name('planes.index');

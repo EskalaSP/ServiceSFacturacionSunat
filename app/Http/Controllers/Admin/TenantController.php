@@ -117,7 +117,8 @@ class TenantController extends Controller
                 'api_secret' => $tenant->api_secret,
                 'ruc' => $tenant->ruc,
                 'razon_social' => $tenant->razon_social,
-            ]);
+            ])
+            ->with('empresa_creada', true);
     }
 
     /**
@@ -187,6 +188,7 @@ class TenantController extends Controller
                 'is_active' => (bool) $tenant->is_active,
                 'webhook_url' => $tenant->webhook_url,
                 'has_certificado' => ! empty($tenant->certificate_path),
+                'logo_url' => $tenant->logo_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($tenant->logo_path) : null,
                 'sire_enabled' => (bool) $tenant->sire_enabled,
                 'created_at' => $tenant->created_at?->toIso8601String(),
                 'sucursales_count' => $tenant->sucursales->count(),
@@ -236,6 +238,7 @@ class TenantController extends Controller
                 'emission_mode' => $tenant->emission_mode ?? Tenant::EMISSION_PLAN,
                 'has_certificado' => ! empty($tenant->certificate_path),
                 'has_logo' => ! empty($tenant->logo_path),
+                'logo_url' => $tenant->logo_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($tenant->logo_path) : null,
             ],
             'planes' => $this->planesOpciones(),
             'usuarios' => $this->usuariosOpciones(),
@@ -328,10 +331,48 @@ class TenantController extends Controller
     public function destroy(Tenant $tenant): RedirectResponse
     {
         $this->olvidarCacheTenant($tenant);
-        $tenant->delete();
+
+        // Borra TODOS los archivos en disco de la empresa (no debe quedar rastro).
+        $this->borrarArchivosTenant($tenant);
+
+        // Borrado DEFINITIVO: las FK con cascadeOnDelete eliminan en cascada
+        // comprobantes, series, clientes, sucursales, suscripciones, etc.
+        $tenant->forceDelete();
 
         return redirect()->route('admin.empresas.index')
-            ->with('success', 'Empresa eliminada (soft delete).');
+            ->with('success', 'Empresa y todos sus datos fueron eliminados definitivamente.');
+    }
+
+    /**
+     * Elimina todos los directorios en disco asociados a una empresa. Los
+     * archivos se reparten en 2 discos y 2 cachés; se limpian todos. Best-effort
+     * (los directorios inexistentes se ignoran sin lanzar excepción).
+     */
+    private function borrarArchivosTenant(Tenant $tenant): void
+    {
+        $id = $tenant->id;
+        $ruc = $tenant->ruc;
+
+        $public = \Illuminate\Support\Facades\Storage::disk('public');
+        $local = \Illuminate\Support\Facades\Storage::disk('local');
+
+        // Disco público (storage/app/public)
+        $public->deleteDirectory("tenants/{$id}");        // logos admin, etc.
+        if ($ruc) {
+            $public->deleteDirectory($ruc);               // XML/CDR/PDF por RUC
+            $public->deleteDirectory("logos/{$ruc}");     // logos (API)
+        }
+
+        // Disco privado (storage/app/private)
+        $local->deleteDirectory("tenants/{$id}");         // certificados en tenants/{id}/certs
+        $local->deleteDirectory("sire/{$id}");            // archivos SIRE
+        if ($ruc) {
+            $local->deleteDirectory("certificates/{$ruc}"); // certificado .pem
+        }
+
+        // Cachés fuera de los discos (storage/app/*)
+        \Illuminate\Support\Facades\File::deleteDirectory(storage_path("app/pdf-cache/{$id}"));
+        \Illuminate\Support\Facades\File::deleteDirectory(storage_path("app/sire-temp/{$id}"));
     }
 
     public function toggle(Tenant $tenant): RedirectResponse

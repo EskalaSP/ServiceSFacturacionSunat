@@ -23,11 +23,67 @@ class User extends Authenticatable
         'email',
         'password',
         'is_admin',
+        'role',
+        'is_active',
+    ];
+
+    // ── Roles del panel ──────────────────────────────────────────────
+    public const ROLE_SUPER_ADMIN = 'super_admin';
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_SOPORTE = 'soporte';
+    public const ROLE_LECTURA = 'lectura';
+
+    /** Roles que tienen acceso al panel administrativo, con su etiqueta. */
+    public const ROLES = [
+        self::ROLE_SUPER_ADMIN => 'Super administrador',
+        self::ROLE_ADMIN => 'Administrador',
+        self::ROLE_SOPORTE => 'Soporte',
+        self::ROLE_LECTURA => 'Solo lectura',
     ];
 
     public function tenants(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Tenant::class);
+    }
+
+    /** ¿Puede entrar al panel administrativo? (cualquiera de los 4 roles) */
+    public function hasPanelAccess(): bool
+    {
+        return $this->is_active && array_key_exists((string) $this->role, self::ROLES);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
+    }
+
+    /** Gestión de usuarios: super admin y admin. */
+    public function canManageUsers(): bool
+    {
+        return in_array($this->role, [self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN], true);
+    }
+
+    /** Crear/editar/eliminar empresas, planes, series, sucursales. */
+    public function canWrite(): bool
+    {
+        return in_array($this->role, [self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN], true);
+    }
+
+    /** Eliminar (empresas, usuarios): solo super admin. */
+    public function canDelete(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
+    }
+
+    /** Reenviar comprobantes a SUNAT: super admin, admin, soporte. */
+    public function canResend(): bool
+    {
+        return in_array($this->role, [self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN, self::ROLE_SOPORTE], true);
+    }
+
+    public function roleLabel(): string
+    {
+        return self::ROLES[$this->role] ?? '—';
     }
 
     /**
@@ -54,6 +110,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'is_admin' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 }

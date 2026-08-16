@@ -53,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'usage.headers' => UsageWarningHeader::class,
             'sire.enabled' => EnsureSireEnabled::class,
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
+            'panel.write' => \App\Http\Middleware\EnsurePanelWrite::class,
         ]);
 
         // Forzar respuesta JSON en todas las rutas /api/*.

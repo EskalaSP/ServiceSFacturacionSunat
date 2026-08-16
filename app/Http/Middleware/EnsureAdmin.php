@@ -18,8 +18,15 @@ class EnsureAdmin
             return redirect()->route('login');
         }
 
-        if (! $user->is_admin) {
+        // Acceso al panel: cualquiera de los roles (super_admin, admin, soporte,
+        // lectura), siempre que la cuenta esté activa. is_admin se mantiene como
+        // compatibilidad para cuentas antiguas sin rol.
+        if (! $user->hasPanelAccess() && ! $user->is_admin) {
             abort(403, 'Requiere permisos de administrador.');
+        }
+
+        if (! $user->is_active) {
+            abort(403, 'Tu cuenta está desactivada. Contacta a un administrador.');
         }
 
         return $next($request);

@@ -32,12 +32,12 @@ class TenantRequest extends FormRequest
             'razon_social' => [$reqOSometimes, 'string', 'max:255'],
             'nombre_comercial' => 'nullable|string|max:255',
 
-            // ── Ubicación ───────────────────────────────────────────────
-            'direccion' => 'nullable|string|max:500',
-            'ubigeo' => 'nullable|string|size:6',
-            'departamento' => 'nullable|string|max:100',
-            'provincia' => 'nullable|string|max:100',
-            'distrito' => 'nullable|string|max:100',
+            // ── Ubicación (obligatoria al crear: aparece en el comprobante) ──
+            'direccion' => [$reqOSometimes, 'string', 'max:500'],
+            'ubigeo' => [$reqOSometimes, 'string', 'size:6'],
+            'departamento' => [$reqOSometimes, 'string', 'max:100'],
+            'provincia' => [$reqOSometimes, 'string', 'max:100'],
+            'distrito' => [$reqOSometimes, 'string', 'max:100'],
 
             'telefonos' => 'nullable|array|max:5',
             'telefonos.*' => 'nullable|string|max:20',
@@ -49,8 +49,9 @@ class TenantRequest extends FormRequest
             'sol_pass' => $creando ? 'required|string|min:4|max:100' : 'nullable|string|min:4|max:100',
             'environment' => [$reqOSometimes, Rule::in(['beta', 'production'])],
 
-            'certificado' => 'nullable|file|extensions:pfx,p12,pem|max:2048',
-            'contrasena_certificado' => 'nullable|string|max:100',
+            // Certificado obligatorio al crear (se necesita para firmar y emitir).
+            'certificado' => [$creando ? 'required' : 'nullable', 'file', 'extensions:pfx,p12,pem', 'max:2048'],
+            'contrasena_certificado' => 'required_with:certificado|string|max:100',
 
             // ── SIRE ────────────────────────────────────────────────────
             'sire_enabled' => 'nullable|boolean',

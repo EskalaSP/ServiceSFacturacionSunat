@@ -130,12 +130,20 @@ class SucursalController extends Controller
         $data = $request->validate([
             'nombre' => 'required|string|max:100',
             'cod_local' => 'required|string|size:4',
-            'direccion' => 'nullable|string|max:500',
-            'ubigeo' => 'nullable|string|size:6',
+            'direccion' => 'required|string|max:500',
+            'ubigeo' => 'required|string|size:6',
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'is_principal' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
+        ], [
+            'nombre.required' => 'El nombre de la sucursal es obligatorio.',
+            'cod_local.required' => 'El código de local es obligatorio.',
+            'cod_local.size' => 'El código de local debe tener 4 dígitos (ej: 0000).',
+            'direccion.required' => 'La dirección es obligatoria.',
+            'ubigeo.required' => 'El ubigeo es obligatorio.',
+            'ubigeo.size' => 'El ubigeo debe tener 6 dígitos (ej: 150101).',
+            'email.email' => 'El correo no tiene un formato válido.',
         ]);
 
         $data['is_principal'] = $request->boolean('is_principal');

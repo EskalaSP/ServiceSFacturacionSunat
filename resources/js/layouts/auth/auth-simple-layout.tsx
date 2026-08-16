@@ -19,8 +19,8 @@ export default function AuthSimpleLayout({
                 </p>
             </Link>
 
-            {/* Card del formulario — sin borde, con sombra suave */}
-            <div className="w-full max-w-sm rounded-2xl bg-card p-8 shadow-soft">
+            {/* Card del formulario — sencillo: borde sutil, radius bonito, sin sombra */}
+            <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8">
                 <div className="mb-6 space-y-1.5 text-center">
                     <h1 className="text-xl font-bold tracking-tight text-card-foreground">
                         {title}

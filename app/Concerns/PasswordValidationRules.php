@@ -2,8 +2,8 @@
 
 namespace App\Concerns;
 
+use App\Rules\PasswordPolicy;
 use Illuminate\Contracts\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 trait PasswordValidationRules
 {
@@ -14,7 +14,7 @@ trait PasswordValidationRules
      */
     protected function passwordRules(): array
     {
-        return ['required', 'string', Password::default(), 'confirmed'];
+        return ['required', 'string', PasswordPolicy::rule(), 'confirmed'];
     }
 
     /**

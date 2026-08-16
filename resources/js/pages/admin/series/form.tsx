@@ -27,14 +27,14 @@ type Props = {
 };
 
 const TIPO_LABEL: Record<string, string> = {
-    '01': 'Factura (01) — F',
-    '03': 'Boleta (03) — B',
-    '07': 'Nota de Crédito (07) — F/B',
-    '08': 'Nota de Débito (08) — F/B',
-    '09': 'Guía Remitente (09) — T',
-    '31': 'Guía Transportista (31) — V',
-    '20': 'Retención (20) — R',
-    '40': 'Percepción (40) — P',
+    '01': 'Factura (01) - F',
+    '03': 'Boleta (03) - B',
+    '07': 'Nota de Crédito (07) - F/B',
+    '08': 'Nota de Débito (08) - F/B',
+    '09': 'Guía Remitente (09) - T',
+    '31': 'Guía Transportista (31) - V',
+    '20': 'Retención (20) - R',
+    '40': 'Percepción (40) - P',
 };
 
 const breadcrumbs = (razon: string, id: number, modo: 'crear' | 'editar'): BreadcrumbItem[] => [
@@ -44,6 +44,9 @@ const breadcrumbs = (razon: string, id: number, modo: 'crear' | 'editar'): Bread
     { title: 'Series', href: `/admin/empresas/${id}/series` },
     { title: modo === 'crear' ? 'Nueva' : 'Editar', href: '#' },
 ];
+
+/** Marca de campo obligatorio: (*) en rojo, igual que en el form de empresa. */
+const Req = () => <span className="font-bold text-[#EF233C]">(*)</span>;
 
 export default function SeriesForm({ tenant, serie, sucursales, prefijos, modo }: Props) {
     const editando = modo === 'editar';
@@ -86,7 +89,7 @@ export default function SeriesForm({ tenant, serie, sucursales, prefijos, modo }
                 <Card className="max-w-2xl p-6">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                            <Label htmlFor="tipo_documento">Tipo de documento *</Label>
+                            <Label htmlFor="tipo_documento">Tipo de documento <Req /></Label>
                             <Combobox
                                 value={data.tipo_documento}
                                 onChange={(v) => setData('tipo_documento', v)}
@@ -102,7 +105,7 @@ export default function SeriesForm({ tenant, serie, sucursales, prefijos, modo }
                         </div>
 
                         <div>
-                            <Label htmlFor="serie">Serie *</Label>
+                            <Label htmlFor="serie">Serie <Req /></Label>
                             <Input
                                 id="serie"
                                 value={data.serie}
@@ -143,10 +146,10 @@ export default function SeriesForm({ tenant, serie, sucursales, prefijos, modo }
                                 value={String(data.sucursal_id)}
                                 onChange={(v) => setData('sucursal_id', v)}
                                 options={[
-                                    { value: '', label: '— Sin asignar —' },
+                                    { value: '', label: 'Sin asignar' },
                                     ...sucursales.map((s) => ({ value: String(s.id), label: `${s.nombre} (${s.cod_local})` })),
                                 ]}
-                                placeholder="— Sin asignar —"
+                                placeholder="Sin asignar"
                                 searchable
                             />
                         </div>

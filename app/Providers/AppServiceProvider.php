@@ -41,6 +41,18 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureRateLimiting();
         $this->configureEventListeners();
+        $this->configureGates();
+    }
+
+    /**
+     * Gates de autorización del panel según el rol del usuario.
+     */
+    protected function configureGates(): void
+    {
+        \Illuminate\Support\Facades\Gate::define('manage-users', fn (\App\Models\User $u) => $u->canManageUsers());
+        \Illuminate\Support\Facades\Gate::define('write', fn (\App\Models\User $u) => $u->canWrite());
+        \Illuminate\Support\Facades\Gate::define('delete', fn (\App\Models\User $u) => $u->canDelete());
+        \Illuminate\Support\Facades\Gate::define('resend', fn (\App\Models\User $u) => $u->canResend());
     }
 
     protected function configureEventListeners(): void

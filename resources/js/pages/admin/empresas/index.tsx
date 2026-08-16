@@ -1,9 +1,10 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Building2, Eye, FileText, Hash, Infinity as InfinityIcon, MapPin, Pencil, Plus, Power } from 'lucide-react';
+import { Building2, Eye, FileText, ListOrdered, Infinity as InfinityIcon, MapPin, Pencil, Plus, Power, Trash2 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
 import { Pagination } from '@/components/ui/pagination';
@@ -61,8 +62,24 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Props) {
+    const confirm = useConfirm();
     const toggle = (t: Empresa) =>
         router.post(`/admin/empresas/${t.id}/toggle`, {}, { preserveScroll: true });
+
+    const eliminar = async (t: Empresa) => {
+        if (
+            await confirm({
+                title: `¿Eliminar "${t.razon_social}"?`,
+                description:
+                    'Se borrarán DEFINITIVAMENTE la empresa y TODOS sus datos: comprobantes, series, ' +
+                    'clientes, sucursales y archivos (XML/CDR/PDF). Esta acción es IRREVERSIBLE.',
+                variant: 'danger',
+                confirmText: 'Eliminar todo',
+            })
+        ) {
+            router.delete(`/admin/empresas/${t.id}`, { preserveScroll: true });
+        }
+    };
 
     const columns: ColumnDef<Empresa>[] = [
         {
@@ -149,7 +166,7 @@ export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Prop
                     href={`/admin/empresas/${row.original.id}/series`}
                     className="text-primary inline-flex items-center gap-1 text-xs hover:underline"
                 >
-                    <Hash className="size-3" />
+                    <ListOrdered className="size-3" />
                     {row.original.series_count}
                 </Link>
             ),
@@ -190,7 +207,7 @@ export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Prop
                             },
                             {
                                 label: 'Series',
-                                icon: Hash,
+                                icon: ListOrdered,
                                 onSelect: () => router.visit(`/admin/empresas/${t.id}/series`),
                             },
                             {
@@ -203,6 +220,12 @@ export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Prop
                                 icon: Power,
                                 separatorBefore: true,
                                 onSelect: () => toggle(t),
+                            },
+                            {
+                                label: 'Eliminar',
+                                icon: Trash2,
+                                danger: true,
+                                onSelect: () => eliminar(t),
                             },
                         ]}
                     />

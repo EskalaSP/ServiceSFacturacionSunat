@@ -1,13 +1,13 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Download, Infinity as InfinityIcon, KeyRound, Pencil, Power } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Download, Infinity as InfinityIcon, KeyRound, Pencil, Power, Store, Trash2 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
+import { ConfettiBurst } from '@/components/ui/confetti-burst';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import type { BreadcrumbItem } from '@/types';
 
 type Tenant = {
@@ -30,6 +30,7 @@ type Tenant = {
     is_active: boolean;
     webhook_url: string | null;
     has_certificado: boolean;
+    logo_url: string | null;
     sire_enabled: boolean;
     created_at: string | null;
     sucursales_count: number;
@@ -59,6 +60,13 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
     const [credOpen, setCredOpen] = useState<boolean>(Boolean(credencialesNuevas));
     const [copied, setCopied] = useState<'key' | 'secret' | null>(null);
     const confirm = useConfirm();
+
+    // Confeti solo cuando la empresa se acaba de REGISTRAR (no al regenerar).
+    const flash = usePage<{ flash?: { empresa_creada?: boolean } }>().props.flash;
+    const [celebrar, setCelebrar] = useState(false);
+    useEffect(() => {
+        if (flash?.empresa_creada) setCelebrar(true);
+    }, [flash?.empresa_creada]);
 
     // Abrir el modal cada vez que Inertia entrega credencialesNuevas
     // (POST /regenerar-credenciales redirige al mismo show sin remontar,
@@ -130,61 +138,81 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
         router.post(`/admin/empresas/${tenant.id}/toggle`, {}, { preserveScroll: true });
     };
 
+    const eliminar = async () => {
+        if (
+            await confirm({
+                title: `¿Eliminar "${tenant.razon_social}"?`,
+                description:
+                    'Se borrarán DEFINITIVAMENTE la empresa y TODOS sus datos: comprobantes, series, ' +
+                    'clientes, sucursales y archivos (XML/CDR/PDF). Esta acción es IRREVERSIBLE.',
+                variant: 'danger',
+                confirmText: 'Eliminar todo',
+            })
+        ) {
+            router.delete(`/admin/empresas/${tenant.id}`);
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs(tenant.razon_social)}>
             <Head title={tenant.razon_social} />
+            <ConfettiBurst show={celebrar} />
 
             {/* Modal credenciales */}
             {credencialesNuevas && (
                 <Dialog open={credOpen} onOpenChange={setCredOpen}>
-                    <DialogContent className="sm:max-w-lg">
+                    <DialogContent className="rounded-2xl border-border shadow-none sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
-                                <KeyRound className="size-5" />
+                                <KeyRound className="size-5 text-muted-foreground" />
                                 Credenciales de la API
                             </DialogTitle>
                             <DialogDescription>
-                                Copia estas credenciales ahora. Son las únicas que debes darle al cliente.
+                                Cópialas ahora: son las únicas que debes darle al cliente. El{' '}
+                                <span className="font-medium text-foreground">api_secret</span> no se volverá a mostrar.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
-                            ⚠️ El <strong>api_secret</strong> no se volverá a mostrar. Descarga el archivo o cópialo antes de cerrar.
-                        </div>
-
                         <div className="space-y-3">
-                            <div>
-                                <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">Empresa</div>
-                                <div className="text-sm">
+                            {/* Empresa */}
+                            <div className="rounded-xl border border-border bg-muted/30 px-3.5 py-2.5">
+                                <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                    Empresa
+                                </div>
+                                <div className="mt-0.5 text-sm font-medium">
                                     {credencialesNuevas.ruc} — {credencialesNuevas.razon_social}
                                 </div>
                             </div>
-                            <div>
-                                <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">X-Api-Key</div>
-                                <div className="flex gap-2">
-                                    <Input value={credencialesNuevas.api_key} readOnly className="font-mono text-xs" />
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        onClick={() => copy(credencialesNuevas.api_key, 'key')}
-                                    >
-                                        {copied === 'key' ? 'Copiado ✓' : 'Copiar'}
-                                    </Button>
+
+                            {/* Credenciales */}
+                            {([
+                                { label: 'X-Api-Key', value: credencialesNuevas.api_key, which: 'key' as const },
+                                { label: 'X-Api-Secret', value: credencialesNuevas.api_secret, which: 'secret' as const },
+                            ]).map((c) => (
+                                <div key={c.which} className="rounded-xl bg-muted/40 px-3.5 py-2.5">
+                                    <div className="mb-1.5 flex items-center justify-between">
+                                        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                            {c.label}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => copy(c.value, c.which)}
+                                            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                        >
+                                            {copied === c.which ? (
+                                                <>
+                                                    <Check className="size-3.5" /> Copiado
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="size-3.5" /> Copiar
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <div className="break-all font-mono text-xs leading-relaxed">{c.value}</div>
                                 </div>
-                            </div>
-                            <div>
-                                <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">X-Api-Secret</div>
-                                <div className="flex gap-2">
-                                    <Input value={credencialesNuevas.api_secret} readOnly className="font-mono text-xs" />
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        onClick={() => copy(credencialesNuevas.api_secret, 'secret')}
-                                    >
-                                        {copied === 'secret' ? 'Copiado ✓' : 'Copiar'}
-                                    </Button>
-                                </div>
-                            </div>
+                            ))}
                         </div>
 
                         <DialogFooter className="gap-2 sm:justify-between">
@@ -211,9 +239,24 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                 )}
 
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-semibold tracking-tight">{tenant.razon_social}</h1>
-                        <p className="text-sm text-muted-foreground font-mono">{tenant.ruc}</p>
+                    <div className="flex items-center gap-4">
+                        {/* Logo de la empresa */}
+                        <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/40">
+                            {tenant.logo_url ? (
+                                <img
+                                    src={tenant.logo_url}
+                                    alt={`Logo ${tenant.razon_social}`}
+                                    className="size-full object-contain p-1"
+                                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                                />
+                            ) : (
+                                <Store className="size-6 text-muted-foreground/40" />
+                            )}
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-semibold tracking-tight">{tenant.razon_social}</h1>
+                            <p className="text-sm text-muted-foreground font-mono">{tenant.ruc}</p>
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button variant="ghost" asChild>
@@ -235,6 +278,10 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                         <Button variant={tenant.is_active ? 'destructive' : 'default'} onClick={toggle}>
                             <Power className="size-4" />
                             {tenant.is_active ? 'Desactivar' : 'Activar'}
+                        </Button>
+                        <Button variant="destructive" onClick={eliminar}>
+                            <Trash2 className="size-4" />
+                            Eliminar
                         </Button>
                     </div>
                 </div>

@@ -1,6 +1,8 @@
 import { Form, Head } from '@inertiajs/react';
 import { ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
+import { PasswordRequirements } from '@/components/ui/password-requirements';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +18,8 @@ type Props = {
 };
 
 export default function Register({ esPrimerUsuario = true }: Props) {
+    const [password, setPassword] = useState('');
+
     return (
         <AuthLayout
             title="Crear super administrador"
@@ -24,11 +28,11 @@ export default function Register({ esPrimerUsuario = true }: Props) {
             <Head title="Crear super administrador" />
 
             {esPrimerUsuario && (
-                <div className="mb-5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-200">
+                <div className="mb-5 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
                     <div className="flex items-start gap-2.5">
-                        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+                        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                         <div>
-                            <p className="font-semibold">
+                            <p className="font-semibold text-foreground">
                                 Registro de super administrador
                             </p>
                             <p className="mt-1">
@@ -91,7 +95,10 @@ export default function Register({ esPrimerUsuario = true }: Props) {
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                 />
+                                <PasswordRequirements value={password} />
                                 <InputError message={errors.password} />
                             </div>
 

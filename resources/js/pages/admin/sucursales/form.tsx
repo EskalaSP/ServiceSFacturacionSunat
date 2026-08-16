@@ -34,6 +34,9 @@ const breadcrumbs = (razon: string, id: number, modo: 'crear' | 'editar'): Bread
     { title: modo === 'crear' ? 'Nueva' : 'Editar', href: '#' },
 ];
 
+/** Marca de campo obligatorio: (*) en rojo, igual que en el form de empresa. */
+const Req = () => <span className="font-bold text-[#EF233C]">(*)</span>;
+
 export default function SucursalesForm({ tenant, sucursal, modo }: Props) {
     const editando = modo === 'editar';
     const { data, setData, post, put, processing, errors } = useForm({
@@ -76,7 +79,7 @@ export default function SucursalesForm({ tenant, sucursal, modo }: Props) {
                 <Card className="max-w-3xl p-6">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                            <Label htmlFor="nombre">Nombre *</Label>
+                            <Label htmlFor="nombre">Nombre <Req /></Label>
                             <Input
                                 id="nombre"
                                 value={data.nombre}
@@ -88,7 +91,7 @@ export default function SucursalesForm({ tenant, sucursal, modo }: Props) {
                             {errors.nombre && <p className="mt-1 text-xs text-red-600">{errors.nombre}</p>}
                         </div>
                         <div>
-                            <Label htmlFor="cod_local">Código local (SUNAT) *</Label>
+                            <Label htmlFor="cod_local">Código local (SUNAT) <Req /></Label>
                             <Input
                                 id="cod_local"
                                 value={data.cod_local}
@@ -100,31 +103,39 @@ export default function SucursalesForm({ tenant, sucursal, modo }: Props) {
                                 className="font-mono"
                                 placeholder="0000"
                             />
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                4 dígitos. Principal usa 0000.
-                            </p>
+                            {errors.cod_local ? (
+                                <p className="mt-1 text-xs text-red-600">{errors.cod_local}</p>
+                            ) : (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    4 dígitos. Principal usa 0000.
+                                </p>
+                            )}
                         </div>
                         <div className="md:col-span-2">
-                            <Label htmlFor="direccion">Dirección</Label>
+                            <Label htmlFor="direccion">Dirección <Req /></Label>
                             <Input
                                 id="direccion"
                                 value={data.direccion}
                                 onChange={(e) => setData('direccion', e.target.value)}
+                                required
                                 maxLength={500}
                                 placeholder="Av. Arequipa 1234, San Isidro"
                             />
+                            {errors.direccion && <p className="mt-1 text-xs text-red-600">{errors.direccion}</p>}
                         </div>
                         <div>
-                            <Label htmlFor="ubigeo">Ubigeo</Label>
+                            <Label htmlFor="ubigeo">Ubigeo <Req /></Label>
                             <Input
                                 id="ubigeo"
                                 value={data.ubigeo}
                                 onChange={(e) => setData('ubigeo', e.target.value)}
+                                required
                                 maxLength={6}
                                 pattern="\d{6}"
                                 className="font-mono"
                                 placeholder="150101"
                             />
+                            {errors.ubigeo && <p className="mt-1 text-xs text-red-600">{errors.ubigeo}</p>}
                         </div>
                         <div>
                             <Label htmlFor="telefono">Teléfono</Label>
@@ -146,6 +157,7 @@ export default function SucursalesForm({ tenant, sucursal, modo }: Props) {
                                 maxLength={100}
                                 placeholder="sucursal@empresa.com"
                             />
+                            {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
                         </div>
                         <label className="inline-flex items-center gap-2 text-sm">
                             <Checkbox
