@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Check, Copy, Download, Infinity as InfinityIcon, KeyRound, Pencil, Power, Store, Trash2 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { ConfettiBurst } from '@/components/ui/confetti-burst';
+import { usePermissions } from '@/hooks/use-permissions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -60,6 +61,7 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
     const [credOpen, setCredOpen] = useState<boolean>(Boolean(credencialesNuevas));
     const [copied, setCopied] = useState<'key' | 'secret' | null>(null);
     const confirm = useConfirm();
+    const perms = usePermissions();
 
     // Confeti solo cuando la empresa se acaba de REGISTRAR (no al regenerar).
     const flash = usePage<{ flash?: { empresa_creada?: boolean } }>().props.flash;
@@ -265,24 +267,30 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                                 Volver
                             </Link>
                         </Button>
-                        <Button variant="secondary" asChild>
-                            <Link href={`/admin/empresas/${tenant.id}/editar`}>
-                                <Pencil className="size-4" />
-                                Editar
-                            </Link>
-                        </Button>
-                        <Button variant="secondary" onClick={regenerar}>
-                            <KeyRound className="size-4" />
-                            Regenerar credenciales
-                        </Button>
-                        <Button variant={tenant.is_active ? 'destructive' : 'default'} onClick={toggle}>
-                            <Power className="size-4" />
-                            {tenant.is_active ? 'Desactivar' : 'Activar'}
-                        </Button>
-                        <Button variant="destructive" onClick={eliminar}>
-                            <Trash2 className="size-4" />
-                            Eliminar
-                        </Button>
+                        {perms.canWrite && (
+                            <>
+                                <Button variant="secondary" asChild>
+                                    <Link href={`/admin/empresas/${tenant.id}/editar`}>
+                                        <Pencil className="size-4" />
+                                        Editar
+                                    </Link>
+                                </Button>
+                                <Button variant="secondary" onClick={regenerar}>
+                                    <KeyRound className="size-4" />
+                                    Regenerar credenciales
+                                </Button>
+                                <Button variant={tenant.is_active ? 'destructive' : 'default'} onClick={toggle}>
+                                    <Power className="size-4" />
+                                    {tenant.is_active ? 'Desactivar' : 'Activar'}
+                                </Button>
+                            </>
+                        )}
+                        {perms.canDelete && (
+                            <Button variant="destructive" onClick={eliminar}>
+                                <Trash2 className="size-4" />
+                                Eliminar
+                            </Button>
+                        )}
                     </div>
                 </div>
 

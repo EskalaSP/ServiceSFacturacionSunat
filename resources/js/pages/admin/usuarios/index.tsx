@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { BreadcrumbItem } from '@/types';
 
 type Usuario = {
@@ -46,6 +47,7 @@ const roleBadge = (role: string) => {
 
 export default function UsuariosIndex({ usuarios }: Props) {
     const confirm = useConfirm();
+    const perms = usePermissions();
 
     const toggle = (u: Usuario) =>
         router.post(`/admin/usuarios/${u.id}/toggle`, {}, { preserveScroll: true });
@@ -127,14 +129,16 @@ export default function UsuariosIndex({ usuarios }: Props) {
                                 disabled: u.es_actual,
                                 onSelect: () => toggle(u),
                             },
-                            {
-                                label: 'Eliminar',
-                                icon: Trash2,
-                                danger: true,
-                                separatorBefore: true,
-                                disabled: u.es_actual,
-                                onSelect: () => eliminar(u),
-                            },
+                            ...(perms.canDelete
+                                ? [{
+                                      label: 'Eliminar',
+                                      icon: Trash2,
+                                      danger: true,
+                                      separatorBefore: true,
+                                      disabled: u.es_actual,
+                                      onSelect: () => eliminar(u),
+                                  }]
+                                : []),
                         ]}
                     />
                 );

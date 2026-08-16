@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { BreadcrumbItem } from '@/types';
 
 type Plan = {
@@ -34,6 +35,7 @@ const fmt = (n: number) =>
 
 export default function PlanesIndex({ planes }: Props) {
     const confirm = useConfirm();
+    const perms = usePermissions();
 
     const toggle = (p: Plan) =>
         router.post(`/admin/planes/${p.id}/toggle`, {}, { preserveScroll: true });
@@ -128,23 +130,29 @@ export default function PlanesIndex({ planes }: Props) {
                 return (
                     <DataTableRowActions
                         actions={[
-                            {
-                                label: 'Editar',
-                                icon: Pencil,
-                                onSelect: () => router.visit(`/admin/planes/${p.id}/editar`),
-                            },
-                            {
-                                label: p.is_active ? 'Desactivar' : 'Activar',
-                                icon: Power,
-                                onSelect: () => toggle(p),
-                            },
-                            {
-                                label: 'Eliminar',
-                                icon: Trash2,
-                                danger: true,
-                                separatorBefore: true,
-                                onSelect: () => eliminar(p),
-                            },
+                            ...(perms.canWrite
+                                ? [
+                                      {
+                                          label: 'Editar',
+                                          icon: Pencil,
+                                          onSelect: () => router.visit(`/admin/planes/${p.id}/editar`),
+                                      },
+                                      {
+                                          label: p.is_active ? 'Desactivar' : 'Activar',
+                                          icon: Power,
+                                          onSelect: () => toggle(p),
+                                      },
+                                  ]
+                                : []),
+                            ...(perms.canDelete
+                                ? [{
+                                      label: 'Eliminar',
+                                      icon: Trash2,
+                                      danger: true,
+                                      separatorBefore: true,
+                                      onSelect: () => eliminar(p),
+                                  }]
+                                : []),
                         ]}
                     />
                 );
@@ -175,12 +183,14 @@ export default function PlanesIndex({ planes }: Props) {
                     searchPlaceholder="Buscar plan..."
                     emptyMessage="Aún no hay planes definidos."
                     toolbar={
-                        <Button asChild>
-                            <Link href="/admin/planes/nuevo">
-                                <Plus className="size-4" />
-                                Nuevo plan
-                            </Link>
-                        </Button>
+                        perms.canWrite ? (
+                            <Button asChild>
+                                <Link href="/admin/planes/nuevo">
+                                    <Plus className="size-4" />
+                                    Nuevo plan
+                                </Link>
+                            </Button>
+                        ) : undefined
                     }
                 />
             </div>

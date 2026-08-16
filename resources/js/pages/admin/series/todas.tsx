@@ -10,6 +10,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
 import { Pagination } from '@/components/ui/pagination';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { BreadcrumbItem } from '@/types';
 
 type Serie = {
@@ -48,6 +49,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function SeriesTodas({ series, empresas, tipos, filtros }: Props) {
     const confirm = useConfirm();
+    const perms = usePermissions();
     const { data, setData, get, processing } = useForm({
         buscar: filtros.buscar || '',
         tenant_id: filtros.tenant_id || '',
@@ -131,24 +133,30 @@ export default function SeriesTodas({ series, empresas, tipos, filtros }: Props)
                 return (
                     <DataTableRowActions
                         actions={[
-                            {
-                                label: 'Editar',
-                                icon: Pencil,
-                                onSelect: () =>
-                                    router.visit(`/admin/empresas/${s.tenant.id}/series/${s.id}/editar`),
-                            },
-                            {
-                                label: s.is_active ? 'Desactivar' : 'Activar',
-                                icon: Power,
-                                onSelect: () => toggle(s),
-                            },
-                            {
-                                label: 'Eliminar',
-                                icon: Trash2,
-                                danger: true,
-                                separatorBefore: true,
-                                onSelect: () => eliminar(s),
-                            },
+                            ...(perms.canWrite
+                                ? [
+                                      {
+                                          label: 'Editar',
+                                          icon: Pencil,
+                                          onSelect: () =>
+                                              router.visit(`/admin/empresas/${s.tenant.id}/series/${s.id}/editar`),
+                                      },
+                                      {
+                                          label: s.is_active ? 'Desactivar' : 'Activar',
+                                          icon: Power,
+                                          onSelect: () => toggle(s),
+                                      },
+                                  ]
+                                : []),
+                            ...(perms.canDelete
+                                ? [{
+                                      label: 'Eliminar',
+                                      icon: Trash2,
+                                      danger: true,
+                                      separatorBefore: true,
+                                      onSelect: () => eliminar(s),
+                                  }]
+                                : []),
                         ]}
                     />
                 );
@@ -199,7 +207,7 @@ export default function SeriesTodas({ series, empresas, tipos, filtros }: Props)
                         <Button type="submit" variant="secondary" disabled={processing}>
                             Filtrar
                         </Button>
-                        {data.tenant_id && (
+                        {data.tenant_id && perms.canWrite && (
                             <Button asChild className="sm:ml-auto">
                                 <Link href={`/admin/empresas/${data.tenant_id}/series/nueva`}>Nueva serie</Link>
                             </Button>

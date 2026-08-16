@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { BreadcrumbItem } from '@/types';
 
 type Sucursal = {
@@ -35,6 +36,7 @@ const breadcrumbs = (razon: string, id: number): BreadcrumbItem[] => [
 
 export default function SucursalesIndex({ tenant, sucursales }: Props) {
     const confirm = useConfirm();
+    const perms = usePermissions();
 
     const eliminar = async (s: Sucursal) => {
         if (
@@ -102,19 +104,23 @@ export default function SucursalesIndex({ tenant, sucursales }: Props) {
             cell: ({ row }) => (
                 <DataTableRowActions
                     actions={[
-                        {
-                            label: 'Editar',
-                            icon: Pencil,
-                            onSelect: () =>
-                                router.visit(`/admin/empresas/${tenant.id}/sucursales/${row.original.id}/editar`),
-                        },
-                        {
-                            label: 'Eliminar',
-                            icon: Trash2,
-                            danger: true,
-                            separatorBefore: true,
-                            onSelect: () => eliminar(row.original),
-                        },
+                        ...(perms.canWrite
+                            ? [{
+                                  label: 'Editar',
+                                  icon: Pencil,
+                                  onSelect: () =>
+                                      router.visit(`/admin/empresas/${tenant.id}/sucursales/${row.original.id}/editar`),
+                              }]
+                            : []),
+                        ...(perms.canDelete
+                            ? [{
+                                  label: 'Eliminar',
+                                  icon: Trash2,
+                                  danger: true,
+                                  separatorBefore: true,
+                                  onSelect: () => eliminar(row.original),
+                              }]
+                            : []),
                     ]}
                 />
             ),
@@ -145,12 +151,14 @@ export default function SucursalesIndex({ tenant, sucursales }: Props) {
                     searchPlaceholder="Buscar sucursal..."
                     emptyMessage="Aún no hay sucursales."
                     toolbar={
-                        <Button asChild>
-                            <Link href={`/admin/empresas/${tenant.id}/sucursales/nueva`}>
-                                <Plus className="size-4" />
-                                Nueva sucursal
-                            </Link>
-                        </Button>
+                        perms.canWrite ? (
+                            <Button asChild>
+                                <Link href={`/admin/empresas/${tenant.id}/sucursales/nueva`}>
+                                    <Plus className="size-4" />
+                                    Nueva sucursal
+                                </Link>
+                            </Button>
+                        ) : undefined
                     }
                 />
             </div>

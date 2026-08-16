@@ -44,7 +44,9 @@ class SerieController extends Controller
                 'id' => null,
                 'tipo_documento' => '01',
                 'serie' => '',
-                'correlativo' => 0,
+                // El campo representa el PRÓXIMO número a emitir (el primero será
+                // exactamente este). Internamente se guarda como "último usado".
+                'correlativo' => 1,
                 'sucursal_id' => null,
                 'is_active' => true,
             ],
@@ -74,7 +76,8 @@ class SerieController extends Controller
                 'id' => $serie->id,
                 'tipo_documento' => $serie->tipo_documento,
                 'serie' => $serie->serie,
-                'correlativo' => (int) $serie->correlativo,
+                // Mostrar el PRÓXIMO número (guardado + 1), no el último usado.
+                'correlativo' => (int) $serie->correlativo + 1,
                 'sucursal_id' => $serie->sucursal_id,
                 'is_active' => (bool) $serie->is_active,
             ],
@@ -139,7 +142,7 @@ class SerieController extends Controller
         $data = $request->validate([
             'tipo_documento' => 'required|string|in:' . implode(',', array_keys(Serie::TIPOS_NOMBRE)),
             'serie' => 'required|string|size:4|regex:/^[A-Z][A-Z0-9]{3}$/',
-            'correlativo' => 'nullable|integer|min:0',
+            'correlativo' => 'nullable|integer|min:1',
             'sucursal_id' => 'nullable|exists:sucursales,id',
             'is_active' => 'nullable|boolean',
         ]);
@@ -166,7 +169,11 @@ class SerieController extends Controller
             ])->withInput()->send(), 302);
         }
 
-        $data['correlativo'] = $data['correlativo'] ?? 0;
+        // El campo llega como PRÓXIMO número (el primero a emitir). Se guarda
+        // como "último usado" = próximo − 1, para que resolveCorrelativo() (que
+        // incrementa y luego devuelve) entregue exactamente ese número.
+        $proximo = max(1, (int) ($data['correlativo'] ?? 1));
+        $data['correlativo'] = $proximo - 1;
         $data['is_active'] = $request->boolean('is_active');
 
         return $data;

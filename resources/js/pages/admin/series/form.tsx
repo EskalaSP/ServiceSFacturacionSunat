@@ -125,19 +125,23 @@ export default function SeriesForm({ tenant, serie, sucursales, prefijos, modo }
                         </div>
 
                         <div>
-                            <Label htmlFor="correlativo">Correlativo actual</Label>
+                            <Label htmlFor="correlativo">Número inicial</Label>
                             <Input
                                 id="correlativo"
                                 type="number"
                                 value={data.correlativo}
                                 onChange={(e) => setData('correlativo', Number(e.target.value))}
-                                min={0}
+                                min={1}
                                 className="font-mono"
-                                placeholder="0"
+                                placeholder="1"
                             />
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                Próximo doc será correlativo + 1.
-                            </p>
+                            {errors.correlativo ? (
+                                <p className="mt-1 text-xs text-red-600">{errors.correlativo}</p>
+                            ) : (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    El primer comprobante usará este número. Ej: 1 → {data.serie || 'F001'}-1.
+                                </p>
+                            )}
                         </div>
 
                         <div>

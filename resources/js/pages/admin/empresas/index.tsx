@@ -8,6 +8,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
 import { Pagination } from '@/components/ui/pagination';
+import { usePermissions } from '@/hooks/use-permissions';
 import type { BreadcrumbItem } from '@/types';
 
 type Empresa = {
@@ -63,6 +64,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Props) {
     const confirm = useConfirm();
+    const perms = usePermissions();
     const toggle = (t: Empresa) =>
         router.post(`/admin/empresas/${t.id}/toggle`, {}, { preserveScroll: true });
 
@@ -195,11 +197,13 @@ export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Prop
                     <DataTableRowActions
                         actions={[
                             { label: 'Ver', icon: Eye, onSelect: () => router.visit(`/admin/empresas/${t.id}`) },
-                            {
-                                label: 'Editar',
-                                icon: Pencil,
-                                onSelect: () => router.visit(`/admin/empresas/${t.id}/editar`),
-                            },
+                            ...(perms.canWrite
+                                ? [{
+                                      label: 'Editar',
+                                      icon: Pencil,
+                                      onSelect: () => router.visit(`/admin/empresas/${t.id}/editar`),
+                                  }]
+                                : []),
                             {
                                 label: 'Sucursales',
                                 icon: MapPin,
@@ -215,18 +219,22 @@ export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Prop
                                 icon: FileText,
                                 onSelect: () => router.visit(`/admin/empresas/${t.id}/comprobantes`),
                             },
-                            {
-                                label: t.is_active ? 'Desactivar' : 'Activar',
-                                icon: Power,
-                                separatorBefore: true,
-                                onSelect: () => toggle(t),
-                            },
-                            {
-                                label: 'Eliminar',
-                                icon: Trash2,
-                                danger: true,
-                                onSelect: () => eliminar(t),
-                            },
+                            ...(perms.canWrite
+                                ? [{
+                                      label: t.is_active ? 'Desactivar' : 'Activar',
+                                      icon: Power,
+                                      separatorBefore: true,
+                                      onSelect: () => toggle(t),
+                                  }]
+                                : []),
+                            ...(perms.canDelete
+                                ? [{
+                                      label: 'Eliminar',
+                                      icon: Trash2,
+                                      danger: true,
+                                      onSelect: () => eliminar(t),
+                                  }]
+                                : []),
                         ]}
                     />
                 );
@@ -258,12 +266,14 @@ export default function EmpresasIndex({ empresas, emisionGlobalIlimitada }: Prop
                     searchPlaceholder="Buscar por RUC, razón social..."
                     emptyMessage="No hay empresas registradas."
                     toolbar={
-                        <Button asChild>
-                            <Link href="/admin/empresas/nueva">
-                                <Plus className="size-4" />
-                                Nueva empresa
-                            </Link>
-                        </Button>
+                        perms.canWrite ? (
+                            <Button asChild>
+                                <Link href="/admin/empresas/nueva">
+                                    <Plus className="size-4" />
+                                    Nueva empresa
+                                </Link>
+                            </Button>
+                        ) : undefined
                     }
                 />
 
