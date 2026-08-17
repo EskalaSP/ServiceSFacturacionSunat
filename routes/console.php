@@ -36,6 +36,14 @@ Schedule::command('sire:reconcile-all')
     ->dailyAt('03:00')
     ->withoutOverlapping();
 
+// === Recuperación automática de comprobantes atascados ===
+// Reencola facturas/boletas en pendiente/enviado que no llegaron a estado final
+// (SUNAT estuvo caído, o el worker no corría al crearlas). NO toca los rechazados.
+Schedule::command('sunat:reintentar-pendientes')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
+
 // === Resúmenes diarios de boletas ===
 // Vuelve a consultar el ticket de los resúmenes sin estado final. El comando
 // decide a cuáles les toca (seguido la primera hora, cada 4h después), así que

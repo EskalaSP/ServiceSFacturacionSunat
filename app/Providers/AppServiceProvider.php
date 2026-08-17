@@ -100,6 +100,16 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(config('sire.rate_limit.per_tenant_per_minute', 30))
                 ->by("sire:{$tenantId}");
         });
+
+        // Equidad multi-tenant para el envío de comprobantes (facturas/boletas/notas).
+        // Cada RUC drena a su propio ritmo → un cliente masivo no ahoga a los demás.
+        // Si se excede el límite, el job se re-libera y reintenta (no se pierde).
+        RateLimiter::for('sunat-tenant', function ($job) {
+            $tenantId = method_exists($job, 'tenantId') ? $job->tenantId() : 'global';
+
+            return Limit::perMinute(config('facturacion.throughput.per_tenant_per_minute', 120))
+                ->by("sunat:{$tenantId}");
+        });
     }
 
     protected function configureDefaults(): void

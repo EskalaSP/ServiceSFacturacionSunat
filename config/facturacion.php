@@ -18,6 +18,20 @@ return [
         'documents_disk' => 'public',          // storage/app/public/
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Throughput / equidad multi-tenant
+    |--------------------------------------------------------------------------
+    |
+    | Máx. de comprobantes por minuto que un mismo RUC puede enviar a SUNAT
+    | desde la cola. Protege a los demás tenants de un cliente que sube miles
+    | de golpe (el exceso se re-libera y reintenta, no se pierde). Ajusta según
+    | lo que SUNAT tolere por RUC. Usado por el rate limiter 'sunat-tenant'.
+    */
+    'throughput' => [
+        'per_tenant_per_minute' => (int) env('SUNAT_PER_TENANT_PER_MINUTE', 120),
+    ],
+
     'sunat' => [
         'beta' => [
             'fe' => 'https://e-beta.sunat.gob.pe/ol-ti-itcpfegem-beta/billService',

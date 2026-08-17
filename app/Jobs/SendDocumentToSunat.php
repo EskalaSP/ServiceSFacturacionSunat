@@ -14,6 +14,7 @@ use App\Services\Sunat\SunatCircuitBreaker;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\RateLimited;
 
 class SendDocumentToSunat implements ShouldQueue
 {
@@ -28,10 +29,33 @@ class SendDocumentToSunat implements ShouldQueue
 
     public int $timeout = 90;
 
+    /** Cache del tenant_id para el rate limiter (se resuelve una sola vez). */
+    private ?int $tenantId = null;
+
     public function __construct(
         private string $modelClass,
         private int $documentId
-    ) {}
+    ) {
+        // Cola dedicada: los envíos a SUNAT no compiten con correos ni webhooks.
+        $this->onQueue('sunat');
+    }
+
+    /**
+     * Equidad multi-tenant: cada empresa (RUC) drena a su propio ritmo. Así un
+     * cliente que sube 100k facturas NO monopoliza los workers ni ahoga a los
+     * demás — su exceso se re-libera y reintenta, dando turno a otros tenants.
+     * El límite por minuto es configurable (facturacion.throughput...).
+     */
+    public function middleware(): array
+    {
+        return [new RateLimited('sunat-tenant')];
+    }
+
+    /** tenant_id del documento (lookup barato por PK, cacheado en la instancia). */
+    public function tenantId(): int
+    {
+        return $this->tenantId ??= (int) $this->modelClass::whereKey($this->documentId)->value('tenant_id');
+    }
 
     public function handle(): void
     {

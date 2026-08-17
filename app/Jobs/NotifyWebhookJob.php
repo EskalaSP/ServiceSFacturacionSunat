@@ -31,7 +31,10 @@ class NotifyWebhookJob implements ShouldQueue
         private string $modelClass,
         private int $documentId,
         private string $event
-    ) {}
+    ) {
+        // Cola propia: los webhooks no se atrasan detrás de un flood de facturas.
+        $this->onQueue('webhooks');
+    }
 
     public function handle(): void
     {
