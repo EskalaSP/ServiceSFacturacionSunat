@@ -31,8 +31,10 @@ return [
         'production' => [
             'fe' => 'https://e-factura.sunat.gob.pe/ol-ti-itcpfegem/billService',
             'retention' => 'https://e-factura.sunat.gob.pe/ol-ti-itemision-otroscpe-gem/billService',
-            'guias_auth' => 'https://api-cpe.sunat.gob.pe/v1',
-            'guias_cpe' => 'https://api-cpe.sunat.gob.pe/v1',
+            // El token OAuth2 se pide en api-seguridad; el comprobante se envía a api-cpe.
+            // Son hosts DISTINTOS en SUNAT producción (en beta el proxy nubefact unifica ambos).
+            'guias_auth' => env('SUNAT_GRE_AUTH', 'https://api-seguridad.sunat.gob.pe/v1'),
+            'guias_cpe' => env('SUNAT_GRE_CPE', 'https://api-cpe.sunat.gob.pe/v1'),
             'gre_client_id' => env('SUNAT_GRE_CLIENT_ID', ''),
             'gre_client_secret' => env('SUNAT_GRE_CLIENT_SECRET', ''),
             'consulta_cdr' => 'https://e-factura.sunat.gob.pe/ol-it-wsconscpegem/billConsultService',

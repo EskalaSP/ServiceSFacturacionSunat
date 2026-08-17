@@ -59,9 +59,13 @@ const breadcrumbs = (razon: string): BreadcrumbItem[] => [
 
 export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
     const [credOpen, setCredOpen] = useState<boolean>(Boolean(credencialesNuevas));
-    const [copied, setCopied] = useState<'key' | 'secret' | null>(null);
+    const [copied, setCopied] = useState<'key' | 'secret' | 'base' | null>(null);
     const confirm = useConfirm();
     const perms = usePermissions();
+
+    // Base URL de la API según el dominio donde está desplegado el proyecto
+    // (localhost, miapi.kodevo.es, etc.). El panel y la API viven en el mismo host.
+    const baseUrl = `${window.location.origin}/api/v1`;
 
     // Confeti solo cuando la empresa se acaba de REGISTRAR (no al regenerar).
     const flash = usePage<{ flash?: { empresa_creada?: boolean } }>().props.flash;
@@ -79,7 +83,7 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
         }
     }, [credencialesNuevas]);
 
-    const copy = (text: string, which: 'key' | 'secret') => {
+    const copy = (text: string, which: 'key' | 'secret' | 'base') => {
         navigator.clipboard.writeText(text);
         setCopied(which);
         setTimeout(() => setCopied(null), 1500);
@@ -98,11 +102,15 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
             `Empresa: ${c.razon_social}`,
             `RUC:     ${c.ruc}`,
             '',
+            '-- Endpoint --',
+            `Base URL:     ${baseUrl}`,
+            '',
             '-- Credenciales de acceso --',
             `X-Api-Key:    ${c.api_key}`,
             `X-Api-Secret: ${c.api_secret}`,
             '',
             'Envía ambos como headers HTTP en cada request a la API.',
+            `Ejemplo: GET ${baseUrl}/empresa`,
             '',
             'IMPORTANTE: guarda este archivo en un lugar seguro.',
             'El api_secret no se puede volver a mostrar. Si lo pierdes,',
@@ -186,8 +194,9 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                                 </div>
                             </div>
 
-                            {/* Credenciales */}
+                            {/* Base URL + Credenciales */}
                             {([
+                                { label: 'Base URL', value: baseUrl, which: 'base' as const },
                                 { label: 'X-Api-Key', value: credencialesNuevas.api_key, which: 'key' as const },
                                 { label: 'X-Api-Secret', value: credencialesNuevas.api_secret, which: 'secret' as const },
                             ]).map((c) => (
