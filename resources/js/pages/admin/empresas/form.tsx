@@ -110,7 +110,7 @@ const Section = ({
 export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGlobalIlimitada }: Props) {
     const editando = modo === 'editar';
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
-    const { data, setData, post, put, processing, errors, progress } = useForm({
+    const { data, setData, post, put, transform, processing, errors, progress } = useForm({
         ruc: tenant.ruc,
         razon_social: tenant.razon_social,
         nombre_comercial: tenant.nombre_comercial ?? '',
@@ -149,15 +149,24 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Solo forzamos multipart cuando realmente hay un archivo — con
-        // JSON el flujo es más simple y evita el PUT+multipart que en
-        // algunos setups deja el body vacío antes de llegar a Laravel.
         const hayArchivos = data.certificado instanceof File || data.logo instanceof File;
-        const options = hayArchivos ? { forceFormData: true } : {};
+
         if (editando && tenant.id) {
-            put(`/admin/empresas/${tenant.id}`, options);
+            if (hayArchivos) {
+                // Inertia + PUT NO envía archivos: PHP no parsea el body multipart
+                // en peticiones PUT. La solución de Inertia es POST con method
+                // spoofing (_method: 'put') → así los archivos (logo/certificado)
+                // llegan a Laravel y se enruta igual al handler PUT.
+                transform((d) => ({ ...d, _method: 'put' }));
+                post(`/admin/empresas/${tenant.id}`, { forceFormData: true });
+            } else {
+                // Sin archivos: un PUT en JSON funciona sin problema.
+                transform((d) => d);
+                put(`/admin/empresas/${tenant.id}`);
+            }
         } else {
-            post('/admin/empresas', options);
+            transform((d) => d);
+            post('/admin/empresas', { forceFormData: hayArchivos });
         }
     };
 
