@@ -67,6 +67,27 @@ class GreenterService
         return $see;
     }
 
+    /**
+     * Intenta obtener la respuesta SOAP cruda de SUNAT del último envío.
+     * Solo devuelve contenido si el trace del SoapClient está activo; si no,
+     * o si algo falla, devuelve null (nunca rompe el flujo de envío).
+     */
+    private function respuestaSoapCruda(): ?string
+    {
+        try {
+            $client = $this->currentSee?->getFactory()?->getSender()?->getClient();
+            if ($client instanceof \SoapClient) {
+                $resp = $client->__getLastResponse();
+
+                return $resp ? mb_substr($resp, 0, 4000) : null;
+            }
+        } catch (\Throwable) {
+            // Silencioso a propósito: es solo diagnóstico, no debe afectar el envío.
+        }
+
+        return null;
+    }
+
     public function createSeeRetention(): See
     {
         $env = $this->tenant->environment;
@@ -452,6 +473,23 @@ class GreenterService
         if (! $result->isSuccess()) {
             $error = $result->getError();
             $errorCode = (string) $error->getCode();
+
+            // Log detallado del fallo — imprescindible para diagnosticar los errores
+            // de transporte ('HTTP'/'Bad Request'), donde SUNAT descarta el motivo
+            // real y solo queda el reason phrase. Guardamos documento, RUC, entorno y,
+            // para errores de transporte, el XML enviado y la respuesta SOAP cruda
+            // (si el trace estuviera activo). Así se ve QUÉ documento y con qué falló.
+            $esTransporte = $errorCode === '' || ! ctype_digit($errorCode);
+            \Illuminate\Support\Facades\Log::warning('sunat.send.failed', [
+                'documento'     => $document->getName(),
+                'ruc'           => $this->tenant->ruc,
+                'entorno'       => $this->tenant->environment,
+                'error_code'    => $errorCode,
+                'error_message' => $this->sanitizeUtf8($error->getMessage()),
+                'transporte'    => $esTransporte,
+                'soap_response' => $esTransporte ? $this->respuestaSoapCruda() : null,
+                'request_xml'   => $esTransporte ? mb_substr((string) $this->lastXml, 0, 8000) : null,
+            ]);
 
             // Observaciones 3xxx: documento aceptado por SUNAT con advertencia
             // (aunque venga como SOAP fault, tratarlo como aceptado)

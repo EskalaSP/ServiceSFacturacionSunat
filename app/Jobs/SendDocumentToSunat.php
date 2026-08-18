@@ -198,7 +198,18 @@ class SendDocumentToSunat implements ShouldQueue
         // 4000+: Observaciones → aceptado con advertencias (manejado en la rama de éxito)
         $retryableCodes = ['0', '100', '109', '500', '1033', '2800'];
 
-        return in_array($errorCode, $retryableCodes, true);
+        if (in_array($errorCode, $retryableCodes, true)) {
+            return true;
+        }
+
+        // Errores de TRANSPORTE (no de validación): SUNAT devolvió un HTTP crudo
+        // (400/500 "Bad Request") o hubo un fallo de red. SUNAT ni siquiera validó
+        // el comprobante — el XML ya está firmado —, así que casi siempre son hipos
+        // transitorios del gateway de SUNAT → reintentar con backoff. Si tras los 20
+        // intentos sigue fallando, queda 'pendiente' (revisable), NO 'rechazado' falso.
+        $transportCodes = ['HTTP', 'NETWORK_ERROR'];
+
+        return in_array($errorCode, $transportCodes, true);
     }
 
     private function handleRetryableError($document, string $message): void
