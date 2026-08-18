@@ -126,14 +126,37 @@ Ejecuta cada proceso en una terminal diferente.
 # Terminal 1
 php artisan serve
 
-# Terminal 2
-php artisan queue:listen --tries=1
+# Terminal 2 — el worker DEBE escuchar las colas dedicadas (ver nota abajo)
+php artisan queue:work --queue=sunat,webhooks,mail,default --tries=1 --timeout=120 --sleep=1
 
 # Terminal 3
 npm run dev
 ```
 
 **Aplicación:** http://localhost:8000
+
+> ### ⚠️ Importante: colas dedicadas
+>
+> Los jobs **no** van todos a la cola `default`. Cada tipo se enruta a su propia cola
+> para que un pico de facturas no retrase los correos, y un SMTP lento/caído no bloquee
+> los envíos a SUNAT:
+>
+> | Cola       | Qué procesa                          |
+> | ---------- | ------------------------------------ |
+> | `sunat`    | Envío de comprobantes a SUNAT        |
+> | `webhooks` | Notificaciones a webhooks del cliente|
+> | `mail`     | Correos (credenciales, avisos, etc.) |
+> | `default`  | Todo lo demás                        |
+>
+> Por eso el worker **debe** escuchar todas con `--queue=sunat,webhooks,mail,default`
+> (el orden define la prioridad). Un `queue:work` **sin** `--queue` solo consume
+> `default` → los jobs quedan encolados en `sunat`/`mail`/`webhooks` y parece que
+> "el job no llega". `composer dev` ya lo hace por ti.
+>
+> **Tip (dev):** si solo quieres ver que un flujo funciona sin levantar el worker,
+> pon `QUEUE_CONNECTION=sync` en tu `.env` y los jobs corren al instante dentro del
+> request (no prueba reintentos/backoff). En producción usa Supervisor/servicios con
+> la misma lista de colas — ver `documentacion/20-Despliegue-VPS.md`.
 
 ---
 
