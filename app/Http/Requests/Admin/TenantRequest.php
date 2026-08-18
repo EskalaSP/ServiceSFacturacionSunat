@@ -51,7 +51,10 @@ class TenantRequest extends FormRequest
 
             // Certificado obligatorio al crear (se necesita para firmar y emitir).
             'certificado' => [$creando ? 'required' : 'nullable', 'file', 'extensions:pfx,p12,pem', 'max:2048'],
-            'contrasena_certificado' => 'required_with:certificado|string|max:100',
+            // nullable: en un update parcial (ej. solo el logo) NO se reingresa la
+            // clave → llega null y debe pasar. required_with sigue exigiéndola solo
+            // cuando SÍ se sube un certificado nuevo.
+            'contrasena_certificado' => 'nullable|required_with:certificado|string|max:100',
 
             // ── SIRE ────────────────────────────────────────────────────
             'sire_enabled' => 'nullable|boolean',
