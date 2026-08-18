@@ -40,11 +40,14 @@ php artisan migrate --force
 echo "==> [5/5] Limpiando TODA la cache (config, rutas, vistas, eventos, datos)"
 php artisan optimize:clear
 
+PHP_FPM_VER="$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo '8.x')"
+
 echo ""
 echo "======================================================================"
-echo " LISTO. Cache limpia — el código nuevo está activo."
+echo " LISTO. Frontend compilado + cache limpia — el código nuevo está activo."
 echo ""
 echo " Si NO ves los cambios reflejados, es OPcache. Como root:"
-echo "     systemctl reload php8.3-fpm"
+echo "     systemctl reload php${PHP_FPM_VER}-fpm"
 echo " (o pon opcache.validate_timestamps=1 en php.ini para no repetirlo)."
+echo " En el navegador: Ctrl+Shift+R para cargar el JS nuevo."
 echo "======================================================================"
