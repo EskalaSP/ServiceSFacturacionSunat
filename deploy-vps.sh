@@ -21,13 +21,23 @@ cd "$(dirname "$0")"
 echo "==> [1/4] Actualizando código (git pull)"
 git pull origin main
 
-echo "==> [2/4] Dependencias (composer, prod)"
+echo "==> [2/5] Dependencias PHP (composer, prod)"
 composer install --no-dev --optimize-autoloader
 
-echo "==> [3/4] Migraciones"
+echo "==> [3/5] Compilando frontend (npm) — genera public/build"
+# public/build está en .gitignore: NUNCA llega por git, hay que compilarlo aquí.
+# Sin esto, los cambios de frontend (React/Inertia) NO se reflejan.
+if command -v npm >/dev/null 2>&1; then
+    npm ci
+    npm run build
+else
+    echo "  ⚠ npm no está instalado — instala Node.js o compila el frontend a mano."
+fi
+
+echo "==> [4/5] Migraciones"
 php artisan migrate --force
 
-echo "==> [4/4] Limpiando TODA la cache (config, rutas, vistas, eventos, datos)"
+echo "==> [5/5] Limpiando TODA la cache (config, rutas, vistas, eventos, datos)"
 php artisan optimize:clear
 
 echo ""
