@@ -35,7 +35,13 @@ declare(strict_types=1);
 // CONFIGURACIÓN
 // ============================================================================
 
-const QUEUE_NAME           = 'default';   // Cola que usa la API (config/queue.php)
+// Colas dedicadas (en orden de prioridad). Los jobs NO van todos a `default`:
+//   sunat    → envío de comprobantes a SUNAT
+//   webhooks → notificaciones a webhooks del cliente
+//   mail     → correos (credenciales, avisos, etc.)
+//   default  → todo lo demás
+// El worker DEBE escuchar todas o los jobs quedan encolados sin procesarse.
+const QUEUE_NAME           = 'sunat,webhooks,mail,default';
 const MAX_EXECUTION_TIME   = 55;          // segundos (deja margen antes del próximo cron)
 const QUEUE_MAX_TIME       = 45;          // segundos máx para queue:work
 const QUEUE_SLEEP          = 3;           // segundos entre polls cuando no hay jobs

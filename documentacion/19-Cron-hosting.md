@@ -3,12 +3,17 @@
 Esta API usa colas (`queue`) y tareas programadas (`scheduler`). En un VPS normal:
 
 ```bash
-# Worker persistente
-php artisan queue:work --queue=default
+# Worker persistente — DEBE escuchar TODAS las colas dedicadas
+php artisan queue:work --queue=sunat,webhooks,mail,default
 
 # Scheduler (vía cron del sistema)
 * * * * * cd /var/www/api-pro && php artisan schedule:run >> /dev/null 2>&1
 ```
+
+> ⚠️ **Colas dedicadas:** los jobs NO van todos a `default`. Cada tipo se enruta a su
+> propia cola (`sunat`, `webhooks`, `mail`, `default`) para que un pico de facturas no
+> retrase los correos ni bloquee los envíos a SUNAT. Un worker que solo escuche
+> `default` **dejará los comprobantes/correos/webhooks encolados sin procesar**.
 
 Pero en **hosting compartido** (Hostinger, cPanel, GoDaddy, etc.) NO puedes ejecutar procesos persistentes — solo tareas cron a intervalos. Para esto se incluye `cron-jobs.php` en la raíz del proyecto.
 
@@ -41,7 +46,7 @@ En cada ejecución (1 vez por minuto):
    - `logs:purge --days=90` (domingos 03:00) — limpieza api_logs
    - `sire:reconcile-all` (diario 03:00) — reconciliación SIRE
 
-2. **`queue:work --stop-when-empty`** — Procesa todos los jobs pendientes en la cola `default`:
+2. **`queue:work --stop-when-empty`** — Procesa todos los jobs pendientes en las colas `sunat,webhooks,mail,default` (en ese orden de prioridad):
    - `SendDocumentToSunat` (facturas, boletas, NC, ND)
    - `SendDispatchGuideToSunat` (guías GRR/GRT)
    - `SendSummaryToSunat` (resúmenes diarios)
@@ -63,7 +68,7 @@ En cada ejecución (1 vez por minuto):
 Las constantes del archivo permiten ajustar el comportamiento:
 
 ```php
-const QUEUE_NAME         = 'default';   // cola a procesar
+const QUEUE_NAME         = 'sunat,webhooks,mail,default'; // colas a procesar (prioridad)
 const MAX_EXECUTION_TIME = 55;          // límite global del script
 const QUEUE_MAX_TIME     = 45;          // límite del queue:work
 const QUEUE_SLEEP        = 3;           // segundos entre polls
