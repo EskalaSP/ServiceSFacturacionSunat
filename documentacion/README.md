@@ -1,49 +1,49 @@
-# 📚 API-PRO — Documentación completa
+# 📚 API-PRO - Documentación completa
 
 > API REST de facturación electrónica multi-empresa para SUNAT Perú.
 
 ## 🗺️ Navegación
 
-> Léelos en orden — los archivos están numerados según el flujo de uso.
+> Léelos en orden - los archivos están numerados según el flujo de uso.
 
 ### 🏗️ Setup inicial (configura tu empresa antes de emitir)
-1. [**01-Configuracion.md**](./01-Configuracion.md) — Registro de empresa, tenant, sucursales, series, clientes, certificado, logo, suscripciones
-2. [**02-Tasas-IGV.md**](./02-Tasas-IGV.md) — Configurar régimen tributario (general 18%, MYPE restaurantes, override manual)
-3. [**03-NRUS.md**](./03-NRUS.md) — Guía completa NRUS: registro, operación real, ejemplos, errores comunes
+1. [**01-Configuracion.md**](./01-Configuracion.md) - Registro de empresa, tenant, sucursales, series, clientes, certificado, logo, suscripciones
+2. [**02-Tasas-IGV.md**](./02-Tasas-IGV.md) - Configurar régimen tributario (general 18%, MYPE restaurantes, override manual)
+3. [**03-NRUS.md**](./03-NRUS.md) - Guía completa NRUS: registro, operación real, ejemplos, errores comunes
 
 ### 📄 Comprobantes SUNAT (emisión)
-4. [**04-Facturas.md**](./04-Facturas.md) — Facturas (Tipo 01) — CRUD + XML/CDR/PDF + pagos
-5. [**05-Boletas.md**](./05-Boletas.md) — Boletas de venta (Tipo 03)
-6. [**06-Notas-credito.md**](./06-Notas-credito.md) — Notas de crédito (Tipo 07) — anular/devolver/descontar
-7. [**07-Notas-debito.md**](./07-Notas-debito.md) — Notas de débito (Tipo 08) — intereses/penalidades/cargos
-8. [**08-Resumen-diario.md**](./08-Resumen-diario.md) — Resumen Diario de Boletas (envío en lote + anulación)
-9. [**09-Anular.md**](./09-Anular.md) — Comunicaciones de Baja (Facturas/NC/ND/Retención/Percepción)
-10. [**10-Guia-remision-RM.md**](./10-Guia-remision-RM.md) — Guías de remisión remitente (Tipo 09)
-11. [**11-Guia-transportista.md**](./11-Guia-transportista.md) — Guías de remisión transportista (Tipo 31) — GRE REST OAuth2
+4. [**04-Facturas.md**](./04-Facturas.md) - Facturas (Tipo 01) - CRUD + XML/CDR/PDF + pagos
+5. [**05-Boletas.md**](./05-Boletas.md) - Boletas de venta (Tipo 03)
+6. [**06-Notas-credito.md**](./06-Notas-credito.md) - Notas de crédito (Tipo 07) - anular/devolver/descontar
+7. [**07-Notas-debito.md**](./07-Notas-debito.md) - Notas de débito (Tipo 08) - intereses/penalidades/cargos
+8. [**08-Resumen-diario.md**](./08-Resumen-diario.md) - Resumen Diario de Boletas (envío en lote + anulación)
+9. [**09-Anular.md**](./09-Anular.md) - Comunicaciones de Baja (Facturas/NC/ND/Retención/Percepción)
+10. [**10-Guia-remision-RM.md**](./10-Guia-remision-RM.md) - Guías de remisión remitente (Tipo 09)
+11. [**11-Guia-transportista.md**](./11-Guia-transportista.md) - Guías de remisión transportista (Tipo 31) - GRE REST OAuth2
 
 ### 🆕 Novedades normativas SUNAT 2026 / 2027
-24. [**24-Novedades-SUNAT-2026-2027.md**](./24-Novedades-SUNAT-2026-2027.md) — Código de producto SUNAT (UNSPSC), Contrato de colaboración empresarial, ND motivo 13 (Penalidades), validación de montos en NC, catálogos actualizados (54/51/10) y vigencias
-25. [**25-Buscar-codigo-producto.md**](./25-Buscar-codigo-producto.md) — Buscador de Código de Producto SUNAT (UNSPSC): búsqueda por texto/código, validación y navegación jerárquica (drill-down como el Excel oficial)
+24. [**24-Novedades-SUNAT-2026-2027.md**](./24-Novedades-SUNAT-2026-2027.md) - Código de producto SUNAT (UNSPSC), Contrato de colaboración empresarial, ND motivo 13 (Penalidades), validación de montos en NC, catálogos actualizados (54/51/10) y vigencias
+25. [**25-Buscar-codigo-producto.md**](./25-Buscar-codigo-producto.md) - Buscador de Código de Producto SUNAT (UNSPSC): búsqueda por texto/código, validación y navegación jerárquica (drill-down como el Excel oficial)
 
 ### ⚙️ Operaciones (ciclo de vida)
-12. [**12-Envio-manual.md**](./12-Envio-manual.md) — Envío manual a SUNAT (`enviar_automatico=false` + `POST /xxx/{id}/enviar`)
-13. [**13-Actualizar.md**](./13-Actualizar.md) — Cómo actualizar documentos rechazados/pendientes
-14. [**14-Consultar-CPE.md**](./14-Consultar-CPE.md) — Consulta integrada de comprobantes en SUNAT
+12. [**12-Envio-manual.md**](./12-Envio-manual.md) - Envío manual a SUNAT (`enviar_automatico=false` + `POST /xxx/{id}/enviar`)
+13. [**13-Actualizar.md**](./13-Actualizar.md) - Cómo actualizar documentos rechazados/pendientes
+14. [**14-Consultar-CPE.md**](./14-Consultar-CPE.md) - Consulta integrada de comprobantes en SUNAT
 
 ### 📊 Análisis y reportes
-15. [**15-Panel-de-control.md**](./15-Panel-de-control.md) — Dashboard: KPIs, gráficos, aging, alertas, reportes
-16. [**16-Dashboard.md**](./16-Dashboard.md) — Dashboard (versión anterior, ver `15-Panel-de-control.md`)
+15. [**15-Panel-de-control.md**](./15-Panel-de-control.md) - Dashboard: KPIs, gráficos, aging, alertas, reportes
+16. [**16-Dashboard.md**](./16-Dashboard.md) - Dashboard (versión anterior, ver `15-Panel-de-control.md`)
 
 ### 🏦 Módulo SIRE (Registro de Compras)
-17. [**17-Sire.md**](./17-Sire.md) — SIRE RCE completo: 25 endpoints, Postman collection
-18. [**18-Plan-implementacion-sire.md**](./18-Plan-implementacion-sire.md) — Arquitectura y plan técnico SIRE
+17. [**17-Sire.md**](./17-Sire.md) - SIRE RCE completo: 25 endpoints, Postman collection
+18. [**18-Plan-implementacion-sire.md**](./18-Plan-implementacion-sire.md) - Arquitectura y plan técnico SIRE
 
 ### 📦 Exportación masiva
-21. [**21-Exportar-ZIP.md**](./21-Exportar-ZIP.md) — Descarga masiva de XMLs y PDFs en ZIP por rango de fechas, tipo y sucursal
+21. [**21-Exportar-ZIP.md**](./21-Exportar-ZIP.md) - Descarga masiva de XMLs y PDFs en ZIP por rango de fechas, tipo y sucursal
 
 ### 🚀 Despliegue
-19. [**19-Cron-hosting.md**](./19-Cron-hosting.md) — Cómo correr jobs + scheduler en hosting compartido (`cron-jobs.php`)
-20. [**20-Despliegue-VPS.md**](./20-Despliegue-VPS.md) — Guía completa: VPS Ubuntu 24 (Hostinger) + MySQL + Nginx + SSL + Supervisor + cron
+19. [**19-Cron-hosting.md**](./19-Cron-hosting.md) - Cómo correr jobs + scheduler en hosting compartido (`cron-jobs.php`)
+20. [**20-Despliegue-VPS.md**](./20-Despliegue-VPS.md) - Guía completa: VPS Ubuntu 24 (Hostinger) + MySQL + Nginx + SSL + Supervisor + cron
 
 ---
 
@@ -118,7 +118,7 @@ X-Api-Key: {tu_api_key}
 X-Api-Secret: {tu_api_secret}
 ```
 
-⚠️ Nunca expongas `api_secret` en frontend — úsalo solo en backend.
+⚠️ Nunca expongas `api_secret` en frontend - úsalo solo en backend.
 
 ---
 
@@ -163,7 +163,7 @@ GET    /facturas/{id}/pagos
 DELETE /facturas/{id}/pagos/{paymentId}
 ```
 
-### Boletas (12 rutas) — como facturas + `DELETE /boletas/{id}`
+### Boletas (12 rutas) - como facturas + `DELETE /boletas/{id}`
 
 ### Notas de Crédito (8 rutas)
 ```
@@ -177,7 +177,7 @@ GET    /notas-credito/{id}/pdf
 POST   /notas-credito/{id}/reenviar
 ```
 
-### Notas de Débito (8 rutas) — idéntico a NC
+### Notas de Débito (8 rutas) - idéntico a NC
 
 ### Guías de Remisión (7 rutas)
 ```
@@ -245,7 +245,7 @@ GET    /reportes/por-cliente
 GET    /reportes/por-sucursal
 ```
 
-### Internos — no SUNAT (18 rutas)
+### Internos - no SUNAT (18 rutas)
 ```
 POST|GET|GET|PUT|PUT|GET /cotizaciones[/{id}[/estado|/pdf]]
 POST|GET|GET|PUT|GET     /notas-venta[/{id}[/pdf]]
@@ -253,7 +253,7 @@ POST|GET|DELETE          /notas-venta/{id}/pagos[/{paymentId}]
 ```
 
 ### SIRE (25 rutas)
-Ver [`17-Sire.md`](./17-Sire.md) — módulo completo con RCE + tickets + uploads TUS + reconciliación.
+Ver [`17-Sire.md`](./17-Sire.md) - módulo completo con RCE + tickets + uploads TUS + reconciliación.
 
 ---
 
@@ -293,7 +293,7 @@ Estados comunes en todos los documentos:
 |--------|-------------|----------------|
 | `pendiente` | Encolado | Esperar / PUT para cambios |
 | `enviado` | En SUNAT | Esperar respuesta |
-| `aceptado` | ✅ OK | Inmutable — usar NC/NB para cambios |
+| `aceptado` | ✅ OK | Inmutable - usar NC/NB para cambios |
 | `rechazado` | ❌ Error | PUT para corregir (auto-reenvía) |
 | `anulado` | Anulada | Revisar NC si valor debe revertirse |
 | `anulacion_en_proceso` | Baja en curso | Esperar |
@@ -345,7 +345,7 @@ Estados comunes en todos los documentos:
 
 ## 📦 Colección Postman
 
-- **`API SUNAT PRO V2.1 ✅✅✅✅✅.postman_collection.json`** — colección completa en español con cobertura 100% de las 162 rutas (240+ requests organizados en 25 folders por flujo de uso).
+- **`API SUNAT PRO V2.1 ✅✅✅✅✅.postman_collection.json`** - colección completa en español con cobertura 100% de las 162 rutas (240+ requests organizados en 25 folders por flujo de uso).
 - Variables requeridas: `base_url`, `api_key`, `api_secret`, `ruc_empresa`, `periodo`.
 - Todos los requests incluyen `Accept: application/json` en los headers.
 - Para regenerar: `php tools/build-postman.php`. Las secciones modulares están en `tools/postman-sections/`.
@@ -407,4 +407,4 @@ Los mensajes de validación también vienen en español (locale `es`):
 - Código fuente: `app/Http/Controllers/Api/V1/`, `app/Sire/`
 - Configuración: `config/facturacion.php`, `config/sunat_catalogs.php`, `config/sire.php`
 
-✨ **Documentación v1.1** — completa, en español, alineada con el formato de respuesta `{estado, mensaje, datos}`.
+✨ **Documentación v1.1** - completa, en español, alineada con el formato de respuesta `{estado, mensaje, datos}`.
