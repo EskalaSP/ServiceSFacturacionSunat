@@ -87,6 +87,10 @@ npm install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
+
+# Enlace simbólico public/storage -> storage/app/public
+# (necesario para servir logos, PDFs y demás archivos públicos)
+php artisan storage:link
 ```
 
 ---
