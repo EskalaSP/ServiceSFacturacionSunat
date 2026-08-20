@@ -232,18 +232,7 @@ La respuesta permite continuar con las operaciones de **consulta de estado**, **
 
 ## Documentación
 
-| Módulo            | Archivo                                |
-| ----------------- | -------------------------------------- |
-| Configuración     | `documentacion/01-Configuracion.md`    |
-| Facturas          | `documentacion/04-Facturas.md`         |
-| Boletas           | `documentacion/05-Boletas.md`          |
-| Notas de crédito  | `documentacion/06-Notas-credito.md`    |
-| Guías de remisión | `documentacion/10-Guia-remision-RM.md` |
-| Panel de control  | `documentacion/15-Panel-de-control.md` |
-| SIRE              | `documentacion/17-Sire.md`             |
-| Despliegue VPS    | `documentacion/20-Despliegue-VPS.md`   |
-
-**Documentación completa:** `documentacion/README.md`
+📚 **[Ver documentación completa](https://github.com/yorchavez9/plataform-api-sunat/blob/main/documentacion/README.md)**
 
 ---
 
