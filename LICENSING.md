@@ -41,12 +41,31 @@ Encripta **solo estos** (son el candado; el resto del sistema no hace falta):
 app/Services/License/LicenseClient.php
 app/Services/License/LicenseCheck.php
 app/Services/License/MachineId.php
+app/Services/License/BuildInfo.php          # sello/fingerprint de la copia
 app/Http/Middleware/CheckLicense.php
 app/Services/Greenter/GreenterService.php   # contiene el guard de envío
 ```
 
 > Nota: `GreenterService.php` también hace el firmado/envío real, así que
 > ofuscarlo protege el guard sin romper la funcionalidad.
+
+## Antes de ofuscar: sellar la copia (rastreo anti-filtración)
+
+Cada copia lleva un **fingerprint** embebido que identifica al comprador. Al
+activar/validar, la instalación lo reporta al servidor. Si una copia se filtra
+y alguien la corre con **otras** credenciales, en el panel de licencias esa
+instalación aparece con la etiqueta **"Copia ajena"** (su fingerprint no
+coincide con el de la licencia) → sabes de quién salió.
+
+Al empaquetar cada venta, sella la copia con el fingerprint que da el panel al
+emitir la licencia:
+
+```bash
+php artisan license:stamp fp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Esto escribe el fingerprint dentro de `BuildInfo.php`. Hazlo **antes** de
+ofuscar, para que el sello quede encriptado y no se pueda alterar.
 
 ## Opción A — ionCube Encoder
 
@@ -58,6 +77,7 @@ ioncube_encoder \
   app/Services/License/LicenseClient.php \
   app/Services/License/LicenseCheck.php \
   app/Services/License/MachineId.php \
+  app/Services/License/BuildInfo.php \
   app/Http/Middleware/CheckLicense.php \
   app/Services/Greenter/GreenterService.php \
   -o encoded/ \
@@ -79,6 +99,7 @@ sourceguardian \
   app/Services/License/LicenseClient.php \
   app/Services/License/LicenseCheck.php \
   app/Services/License/MachineId.php \
+  app/Services/License/BuildInfo.php \
   app/Http/Middleware/CheckLicense.php \
   app/Services/Greenter/GreenterService.php
 ```

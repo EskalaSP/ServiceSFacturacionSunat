@@ -140,6 +140,7 @@ class LicenseClient
                     'machine_id' => $this->machineId->get(),
                     'domain' => $this->dominio(),
                     'app_version' => (string) config('license.app_version'),
+                    'fingerprint' => BuildInfo::fingerprint(),
                 ]);
 
             $datos = $respuesta->json() ?? [];
