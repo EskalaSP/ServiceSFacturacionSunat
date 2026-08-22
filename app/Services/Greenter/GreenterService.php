@@ -34,6 +34,26 @@ class GreenterService
         $this->tenant = $tenant;
     }
 
+    /**
+     * Verificación de licencia en el punto más profundo del envío a SUNAT.
+     *
+     * Es la segunda barrera (además del middleware): aunque alguien quite el
+     * middleware, la emisión a producción no ocurre sin licencia válida. En
+     * entorno beta no aplica, para poder probar sin licencia.
+     */
+    private function guardEmisionAutorizada(): void
+    {
+        if ($this->tenant->environment === 'beta') {
+            return;
+        }
+
+        $check = app(\App\Services\License\LicenseClient::class)->check();
+
+        if (! $check->allowed) {
+            throw new \RuntimeException('Emisión no disponible: '.$check->message);
+        }
+    }
+
     public function getLastXml(): ?string
     {
         return $this->lastXml ?? $this->currentSee?->getFactory()->getLastXml();
@@ -235,6 +255,8 @@ class GreenterService
      */
     public function sendDespatch(array $data): array
     {
+        $this->guardEmisionAutorizada();
+
         $despatch = $this->buildDespatch($data);
 
         // 1. XML no firmado
@@ -427,6 +449,8 @@ class GreenterService
 
     public function send(DocumentInterface $document): array
     {
+        $this->guardEmisionAutorizada();
+
         $see = $this->resolveSee($document);
         $this->currentSee = $see;
 

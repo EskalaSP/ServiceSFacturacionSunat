@@ -33,8 +33,11 @@ class LicenseClient
      */
     public function check(): LicenseCheck
     {
-        if (! config('license.enabled')) {
-            return LicenseCheck::allow('deshabilitada', 'Validación de licencia deshabilitada.');
+        // El interruptor de apagado SOLO surte efecto en desarrollo local.
+        // En un servidor real (production/staging) se ignora: poner
+        // LICENSE_ENABLED=false en el .env del cliente no desactiva el candado.
+        if (! config('license.enabled') && app()->environment('local')) {
+            return LicenseCheck::allow('deshabilitada', 'Validación de licencia deshabilitada (entorno local).');
         }
 
         $key = (string) config('license.key');
