@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckDocumentLimit;
+use App\Http\Middleware\CheckLicense;
 use App\Http\Middleware\CheckPlanLimit;
 use App\Http\Middleware\EnsureFirstUserRegistration;
 use App\Http\Middleware\EnsureSireEnabled;
@@ -49,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'resolve.tenant' => ResolveTenant::class,
             'log.api' => LogApiRequest::class,
             'check.limit' => CheckDocumentLimit::class,
+            'license' => CheckLicense::class,
             'plan' => CheckPlanLimit::class,
             'usage.headers' => UsageWarningHeader::class,
             'sire.enabled' => EnsureSireEnabled::class,
