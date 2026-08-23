@@ -32,6 +32,15 @@ class Ability
         self::DESCARGAR,
     ];
 
+    /** Acciones con su etiqueta legible. @var array<string,string> */
+    public const ACCIONES_LABELS = [
+        self::EMITIR => 'Emitir',
+        self::EDITAR => 'Editar',
+        self::ANULAR => 'Anular',
+        self::REENVIAR => 'Reenviar',
+        self::DESCARGAR => 'Descargar',
+    ];
+
     // ── Tipos de comprobante (clave base) ────────────────────────────
     public const TIPO_FACTURA = 'factura';
 
@@ -159,5 +168,26 @@ class Ability
         $abilities[] = self::CLIENTE_GESTIONAR;
 
         return $abilities;
+    }
+
+    /**
+     * Permisos que el dueño NO puede delegar a un cajero (quedan reservados para el dueño).
+     *
+     * @var list<string>
+     */
+    public const NO_ASIGNABLES_A_CAJERO = [
+        self::EQUIPO_GESTIONAR,
+        self::CONFIG_EDITAR,
+        self::APIKEY_VER,
+    ];
+
+    /**
+     * Permisos que un dueño SÍ puede marcarle a un cajero.
+     *
+     * @return list<string>
+     */
+    public static function asignablesACajero(): array
+    {
+        return array_values(array_diff(self::todas(), self::NO_ASIGNABLES_A_CAJERO));
     }
 }

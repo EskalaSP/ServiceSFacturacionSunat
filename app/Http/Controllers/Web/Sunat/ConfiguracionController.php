@@ -74,6 +74,9 @@ class ConfiguracionController extends Controller
                 ->with('error', 'No se ha encontrado ninguna empresa (Tenant) registrada para tu usuario. Primero debes registrar una empresa.');
         }
 
+        // Solo el dueño (o super admin) puede editar credenciales/certificado de la empresa.
+        \Illuminate\Support\Facades\Gate::authorize('editar-empresa', $tenant);
+
         $tenant->update([
             'sol_user' => $data['sol_user'],
             'sol_pass' => $data['sol_pass'],
@@ -128,6 +131,8 @@ class ConfiguracionController extends Controller
         if (! $tenant || ! $tenant->sol_user || ! $tenant->sol_pass) {
             return response()->json(['ok' => false, 'mensaje' => 'Credenciales SOL no configuradas o empresa no registrada.']);
         }
+
+        \Illuminate\Support\Facades\Gate::authorize('editar-empresa', $tenant);
 
         return response()->json([
             'ok' => true,

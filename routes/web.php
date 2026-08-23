@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\Sunat\ConfiguracionController;
 use App\Http\Controllers\Web\Sunat\CotizacionController;
 use App\Http\Controllers\Web\Sunat\DashboardController;
 use App\Http\Controllers\Web\Sunat\EmpresaActivaController;
+use App\Http\Controllers\Web\Sunat\EquipoController;
 use App\Http\Controllers\Web\Sunat\FacturaController;
 use App\Http\Controllers\Web\Sunat\HistorialController;
 use App\Http\Controllers\Web\Sunat\MiApiKeyController;
@@ -132,6 +133,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/buscar-documento', [BuscarClienteController::class, 'buscarDocumento'])->name('buscar-documento');
 
         Route::get('/mi-api-key', [MiApiKeyController::class, 'show'])->name('mi-api-key');
+
+        // Mi equipo — el dueño gestiona los cajeros de su empresa (super admin también).
+        Route::get('/equipo', [EquipoController::class, 'index'])->name('equipo');
+        Route::post('/equipo', [EquipoController::class, 'store'])->name('equipo.store');
+        Route::put('/equipo/{usuario}', [EquipoController::class, 'update'])->name('equipo.update');
+        Route::post('/equipo/{usuario}/toggle', [EquipoController::class, 'toggle'])->name('equipo.toggle');
+        Route::delete('/equipo/{usuario}', [EquipoController::class, 'destroy'])->name('equipo.destroy');
     });
 });
 
