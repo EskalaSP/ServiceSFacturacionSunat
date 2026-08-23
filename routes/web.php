@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\SaasAuthController;
+use App\Http\Controllers\Web\Sunat\AnulacionController;
 use App\Http\Controllers\Web\Sunat\BoletaController;
 use App\Http\Controllers\Web\Sunat\BuscarClienteController;
 use App\Http\Controllers\Web\Sunat\ClienteController;
@@ -119,6 +120,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/nota-debito/nueva', [NotaDebitoController::class, 'create'])->name('nota-debito.create');
         Route::post('/nota-debito', [NotaDebitoController::class, 'store'])->name('nota-debito.store');
+
+        Route::get('/anulaciones/nueva', [AnulacionController::class, 'create'])->name('anulaciones.create');
+        Route::post('/anulaciones', [AnulacionController::class, 'store'])->name('anulaciones.store');
 
         Route::get('/cotizaciones', [CotizacionController::class, 'index'])->name('cotizaciones');
         Route::get('/cotizaciones/nueva', [CotizacionController::class, 'create'])->name('cotizaciones.create');

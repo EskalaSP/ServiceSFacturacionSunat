@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Historial', href: '/sunat/historial', match: '/sunat/historial' },
     { label: 'Nota de Crédito', href: '/sunat/nota-credito/nueva', match: '/sunat/nota-credito', can: 'nota_credito.emitir' },
     { label: 'Nota de Débito', href: '/sunat/nota-debito/nueva', match: '/sunat/nota-debito', can: 'nota_debito.emitir' },
+    { label: 'Anulación', href: '/sunat/anulaciones/nueva', match: '/sunat/anulaciones', can: 'anulacion.emitir' },
     { label: 'Clientes', href: '/sunat/clientes', match: '/sunat/clientes', can: 'cliente.gestionar' },
     { label: 'Mi equipo', href: '/sunat/equipo', match: '/sunat/equipo', can: 'equipo.gestionar' },
     { label: 'Mi API Key', href: '/sunat/mi-api-key', match: '/sunat/mi-api-key', can: 'apikey.ver' },

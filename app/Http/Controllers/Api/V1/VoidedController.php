@@ -13,10 +13,10 @@ use App\Models\CreditNote;
 use App\Models\DebitNote;
 use App\Models\Invoice;
 use App\Models\VoidedDocument;
+use App\Services\Documents\VoidedService;
 use App\Services\Greenter\GreenterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 class VoidedController extends Controller
 {
@@ -49,41 +49,25 @@ class VoidedController extends Controller
                 }
             }
 
-            // Pre-validar contra las reglas de SUNAT antes de enviarles.
-            $errors = $this->validateDetalles($tenant->id, $validated['detalles']);
-            if (! empty($errors)) {
+            $resultado = app(VoidedService::class)->crear(
+                $tenant,
+                $validated['fecha_generacion'],
+                $fechaCom,
+                $validated['detalles'],
+                $enviarAuto,
+            );
+
+            if (! $resultado['ok']) {
                 return response()->json([
                     'estado' => 'error',
-                    'mensaje' => 'No se puede anular: '.implode(' ', $errors),
-                    'errores' => $errors,
+                    'mensaje' => 'No se puede anular: '.implode(' ', $resultado['errores']),
+                    'errores' => $resultado['errores'],
                 ], 422);
             }
 
-            $fechaId = str_replace('-', '', $fechaCom);
-            $lastCorrelativo = VoidedDocument::where('tenant_id', $tenant->id)
-                ->where('fecha_comunicacion', $fechaCom)
-                ->max('correlativo') ?? 0;
-
-            $correlativo = str_pad((string) ((int) $lastCorrelativo + 1), 3, '0', STR_PAD_LEFT);
-            $identifier = "RA-{$fechaId}-{$correlativo}";
-
-            $voided = VoidedDocument::create([
-                'tenant_id' => $tenant->id,
-                'identifier' => $identifier,
-                'correlativo' => $correlativo,
-                'fecha_generacion' => $validated['fecha_generacion'],
-                'fecha_comunicacion' => $fechaCom,
-                'total_documentos' => count($validated['detalles']),
-                'detalles' => $validated['detalles'],
-                'sunat_status' => 'pendiente',
-            ]);
-
-            $this->markDocumentsAsProcessing($tenant->id, $validated['detalles']);
-
-            if ($enviarAuto) {
-                SendVoidedToSunat::dispatch($voided->id);
-                $voided->update(['sunat_status' => 'enviado']);
-            }
+            $voided = $resultado['voided'];
+            $correlativo = $voided->correlativo;
+            $identifier = $voided->identifier;
 
             $message = $enviarAuto
                 ? 'Comunicación de baja encolada para envío a SUNAT.'
@@ -103,127 +87,7 @@ class VoidedController extends Controller
                 ],
             ], 201);
         } catch (\Throwable $e) {
-            return $this->error('Error: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * Valida cada detalle antes de enviar a SUNAT:
-     * - Documento original existe y pertenece al tenant
-     * - Estado es aceptado por SUNAT
-     * - Plazo 7 días calendario respecto a fecha_emision
-     * - No tiene nota de crédito asociada (solo facturas)
-     * - No hay otra comunicación de baja en proceso para el mismo documento
-     *
-     * @return array<int, string>  Lista de mensajes de error. Vacío = todo ok.
-     */
-    private function validateDetalles(int $tenantId, array $detalles): array
-    {
-        $errors = [];
-        $hoy = Carbon::today('America/Lima');
-        $limite = $hoy->copy()->subDays(7)->startOfDay();
-
-        $modelMap = [
-            '01' => Invoice::class,
-            '03' => Boleta::class,
-            '07' => CreditNote::class,
-            '08' => DebitNote::class,
-        ];
-
-        foreach ($detalles as $detalle) {
-            $tipo = $detalle['tipo_documento'] ?? null;
-            $serie = $detalle['serie'] ?? null;
-            $correlativo = $detalle['correlativo'] ?? null;
-
-            if (! $tipo || ! $serie || ! $correlativo) {
-                $errors[] = 'Cada detalle requiere tipo_documento, serie y correlativo.';
-                continue;
-            }
-
-            $model = $modelMap[$tipo] ?? null;
-            if (! $model) {
-                $errors[] = "Tipo de documento {$tipo} no soportado para anulación.";
-                continue;
-            }
-
-            $document = $model::where('tenant_id', $tenantId)
-                ->where('serie', $serie)
-                ->where('correlativo', $correlativo)
-                ->first();
-
-            $ref = "{$serie}-{$correlativo}";
-
-            if (! $document) {
-                $errors[] = "Documento {$ref} no existe.";
-                continue;
-            }
-
-            $status = strtolower((string) $document->sunat_status);
-            if ($status !== 'aceptado') {
-                $errors[] = "Documento {$ref} no está aceptado por SUNAT (estado actual: {$status}).";
-                continue;
-            }
-
-            // Plazo 7 días calendario respecto a la fecha de emisión real
-            $fechaEmision = $document->fecha_emision instanceof Carbon
-                ? $document->fecha_emision
-                : Carbon::parse((string) $document->fecha_emision);
-
-            if ($fechaEmision->lt($limite)) {
-                $errors[] = "Documento {$ref} ya pasó el plazo de 7 días para anulación (emitido el {$fechaEmision->format('Y-m-d')}).";
-                continue;
-            }
-
-            // Facturas: no deben tener NC asociada
-            if ($tipo === '01') {
-                $hasNC = CreditNote::where('tenant_id', $tenantId)
-                    ->where('doc_afectado_tipo', '01')
-                    ->where('doc_afectado_serie', $serie)
-                    ->where('doc_afectado_correlativo', $correlativo)
-                    ->exists();
-
-                if ($hasNC) {
-                    $errors[] = "La factura {$ref} tiene una nota de crédito asociada. Usa la NC en vez de anular la factura.";
-                    continue;
-                }
-            }
-
-            // No debe haber otra comunicación de baja en proceso para el mismo par
-            $duplicate = VoidedDocument::where('tenant_id', $tenantId)
-                ->whereIn('sunat_status', ['pendiente', 'enviado', 'aceptado'])
-                ->whereJsonContains('detalles', [
-                    'tipo_documento' => $tipo,
-                    'serie' => $serie,
-                    'correlativo' => $correlativo,
-                ])
-                ->first();
-
-            if ($duplicate) {
-                $errors[] = "Ya existe una comunicación de baja para {$ref} ({$duplicate->identifier}).";
-                continue;
-            }
-        }
-
-        return $errors;
-    }
-
-    private function markDocumentsAsProcessing(int $tenantId, array $detalles): void
-    {
-        $modelMap = [
-            '01' => Invoice::class,
-            '03' => Boleta::class,
-            '07' => CreditNote::class,
-            '08' => DebitNote::class,
-        ];
-
-        foreach ($detalles as $detalle) {
-            $model = $modelMap[$detalle['tipo_documento']] ?? null;
-            if (! $model) continue;
-
-            $model::where('tenant_id', $tenantId)
-                ->where('serie', $detalle['serie'])
-                ->where('correlativo', $detalle['correlativo'])
-                ->update(['sunat_status' => 'anulacion_en_proceso']);
+            return $this->error('Error: '.$e->getMessage(), 500);
         }
     }
 
@@ -238,7 +102,9 @@ class VoidedController extends Controller
 
         foreach ($voided->detalles ?? [] as $detalle) {
             $model = $modelMap[$detalle['tipo_documento'] ?? null] ?? null;
-            if (! $model) continue;
+            if (! $model) {
+                continue;
+            }
 
             $model::where('tenant_id', $voided->tenant_id)
                 ->where('serie', $detalle['serie'] ?? '')
@@ -261,10 +127,10 @@ class VoidedController extends Controller
                 if ($result['success']) {
                     $accepted = $result['accepted'] ?? false;
                     $updateData = [
-                        'sunat_status'      => $accepted ? 'aceptado' : 'rechazado',
-                        'sunat_code'        => $result['code'] ?? null,
+                        'sunat_status' => $accepted ? 'aceptado' : 'rechazado',
+                        'sunat_code' => $result['code'] ?? null,
                         'sunat_description' => $result['description'] ?? null,
-                        'sunat_notes'       => $result['notes'] ?? null,
+                        'sunat_notes' => $result['notes'] ?? null,
                     ];
                     $voided->update($updateData);
                     $voided->refresh();
@@ -278,8 +144,8 @@ class VoidedController extends Controller
                 ) {
                     // Error SUNAT definitivo (código 1xxx/2xxx/4xxx): actualizar en BD
                     $voided->update([
-                        'sunat_status'      => 'rechazado',
-                        'sunat_code'        => $result['error_code'],
+                        'sunat_status' => 'rechazado',
+                        'sunat_code' => $result['error_code'],
                         'sunat_description' => $result['error_message'] ?? null,
                     ]);
                     $voided->refresh();
@@ -342,20 +208,20 @@ class VoidedController extends Controller
         return response()->json([
             'estado' => 'exito',
             'datos' => [
-                'id_anulacion'     => $voided->id,
-                'identifier'       => $voided->identifier,
-                'correlativo'      => $voided->correlativo,
-                'ticket'           => $voided->ticket,
+                'id_anulacion' => $voided->id,
+                'identifier' => $voided->identifier,
+                'correlativo' => $voided->correlativo,
+                'ticket' => $voided->ticket,
                 'fecha_generacion' => $voided->fecha_generacion?->format('Y-m-d'),
                 'fecha_comunicacion' => $voided->fecha_comunicacion?->format('Y-m-d'),
-                'estado_sunat'     => $voided->sunat_status,
-                'codigo_sunat'     => $voided->sunat_code,
+                'estado_sunat' => $voided->sunat_status,
+                'codigo_sunat' => $voided->sunat_code,
                 'descripcion_sunat' => $voided->sunat_description,
-                'notas_sunat'      => $voided->sunat_notes,
+                'notas_sunat' => $voided->sunat_notes,
                 'total_documentos' => $voided->total_documentos,
-                'detalles'         => $voided->detalles,
-                'creado_en'        => $voided->created_at?->toIso8601String(),
-                'actualizado_en'   => $voided->updated_at?->toIso8601String(),
+                'detalles' => $voided->detalles,
+                'creado_en' => $voided->created_at?->toIso8601String(),
+                'actualizado_en' => $voided->updated_at?->toIso8601String(),
             ],
         ]);
     }
