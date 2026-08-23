@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\SaasAuthController;
+use App\Http\Controllers\Web\Sunat\BoletaController;
 use App\Http\Controllers\Web\Sunat\BuscarClienteController;
 use App\Http\Controllers\Web\Sunat\ClienteController;
 use App\Http\Controllers\Web\Sunat\ConfiguracionController;
@@ -105,6 +106,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/facturas/nueva', [FacturaController::class, 'create'])->name('facturas.create');
         Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
+
+        Route::get('/boletas/nueva', [BoletaController::class, 'create'])->name('boletas.create');
+        Route::post('/boletas', [BoletaController::class, 'store'])->name('boletas.store');
 
         Route::get('/historial', [HistorialController::class, 'index'])->name('historial');
         Route::get('/historial/{tipo}/{id}/pdf', [HistorialController::class, 'pdf'])->name('historial.pdf');

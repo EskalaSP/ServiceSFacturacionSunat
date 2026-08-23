@@ -123,6 +123,10 @@ type Props = {
     clientes: ClienteSunat[];
     tipo_inicial: string;
     cotizacion?: CotizacionPrefill;
+    /** Modo "solo boleta": oculta el selector de tipo y fuerza boleta. */
+    lock_tipo?: boolean;
+    /** Endpoint al que se envía (por defecto /sunat/facturas). */
+    post_url?: string;
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -149,7 +153,7 @@ function defaultItem(): ItemRow {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function NuevaFactura({ tenant, series_factura, series_boleta, clientes, tipo_inicial, cotizacion }: Props) {
+export default function NuevaFactura({ tenant, series_factura, series_boleta, clientes, tipo_inicial, cotizacion, lock_tipo = false, post_url = '/sunat/facturas' }: Props) {
 
     // ── Cabecera ──
     const [tipoDoc, setTipoDoc]   = useState<'01' | '03'>(tipo_inicial === 'boleta' ? '03' : '01');
@@ -369,7 +373,7 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
             enviar_automatico: enviarAuto,
         };
 
-        router.post('/sunat/facturas', payload, {
+        router.post(post_url, payload, {
             onFinish: () => setSubmitting(false),
         });
     }
@@ -418,23 +422,25 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                             </div>
                             <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
 
-                                {/* Tipo */}
-                                <div className="flex flex-col gap-1.5">
-                                    <Label className="text-xs font-medium text-muted-foreground">Tipo</Label>
-                                    <div className="grid grid-cols-2 gap-1.5">
-                                        {[{ v: '01', l: 'Factura' }, { v: '03', l: 'Boleta' }].map(({ v, l }) => (
-                                            <button
-                                                key={v} type="button"
-                                                onClick={() => setTipoDoc(v as '01' | '03')}
-                                                className={`rounded-xl border px-3 py-2 text-sm font-medium transition-all ${
-                                                    tipoDoc === v
-                                                        ? 'border-primary bg-primary/10 text-primary'
-                                                        : 'border-border hover:bg-secondary'
-                                                }`}
-                                            >{l}</button>
-                                        ))}
+                                {/* Tipo — oculto en modo solo boleta */}
+                                {!lock_tipo && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Tipo</Label>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            {[{ v: '01', l: 'Factura' }, { v: '03', l: 'Boleta' }].map(({ v, l }) => (
+                                                <button
+                                                    key={v} type="button"
+                                                    onClick={() => setTipoDoc(v as '01' | '03')}
+                                                    className={`rounded-xl border px-3 py-2 text-sm font-medium transition-all ${
+                                                        tipoDoc === v
+                                                            ? 'border-primary bg-primary/10 text-primary'
+                                                            : 'border-border hover:bg-secondary'
+                                                    }`}
+                                                >{l}</button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Serie */}
                                 <div className="flex flex-col gap-1.5">

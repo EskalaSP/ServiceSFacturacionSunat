@@ -12,7 +12,8 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-    { label: 'Nueva Factura', href: '/sunat/facturas/nueva', match: '/sunat/facturas', can: 'factura.emitir' },
+    { label: 'Factura', href: '/sunat/facturas/nueva', match: '/sunat/facturas', can: 'factura.emitir' },
+    { label: 'Boleta', href: '/sunat/boletas/nueva', match: '/sunat/boletas', can: 'boleta.emitir' },
     { label: 'Cotizaciones', href: '/sunat/cotizaciones', match: '/sunat/cotizaciones', can: 'cotizacion.emitir' },
     { label: 'Historial', href: '/sunat/historial', match: '/sunat/historial' },
     { label: 'Nota de Crédito', href: '/sunat/nota-credito/nueva', match: '/sunat/nota-credito', can: 'nota_credito.emitir' },
