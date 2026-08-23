@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
@@ -103,7 +104,7 @@ class Tenant extends Model
     public function sireCredentials(): array
     {
         return [
-            'client_id'     => $this->sire_client_id     ?? $this->client_id,
+            'client_id' => $this->sire_client_id ?? $this->client_id,
             'client_secret' => $this->sire_client_secret ?? $this->client_secret,
         ];
     }
@@ -128,11 +129,33 @@ class Tenant extends Model
                 $tenant->api_secret = hash('sha256', Str::random(64));
             }
         });
+
+        // El dueño (user_id) queda registrado como owner en el pivote tenant_user,
+        // para que el RBAC del panel lea sus permisos igual que el backfill inicial.
+        static::created(function (Tenant $tenant) {
+            if ($tenant->user_id) {
+                $tenant->miembros()->syncWithoutDetaching([
+                    $tenant->user_id => [
+                        'role' => TenantMembership::ROLE_OWNER,
+                        'is_active' => true,
+                    ],
+                ]);
+            }
+        });
     }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Usuarios miembros de esta empresa (dueño + cajeros) vía el pivote tenant_user. */
+    public function miembros(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'tenant_user')
+            ->using(TenantMembership::class)
+            ->withPivot(['role', 'abilities', 'is_active'])
+            ->withTimestamps();
     }
 
     public function invoices(): HasMany

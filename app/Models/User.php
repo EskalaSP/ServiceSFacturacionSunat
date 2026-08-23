@@ -29,8 +29,11 @@ class User extends Authenticatable
 
     // ── Roles del panel ──────────────────────────────────────────────
     public const ROLE_SUPER_ADMIN = 'super_admin';
+
     public const ROLE_ADMIN = 'admin';
+
     public const ROLE_SOPORTE = 'soporte';
+
     public const ROLE_LECTURA = 'lectura';
 
     /** Roles que tienen acceso al panel administrativo, con su etiqueta. */
@@ -44,6 +47,47 @@ class User extends Authenticatable
     public function tenants(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Tenant::class);
+    }
+
+    /**
+     * Empresas donde el usuario es miembro (dueño o cajero) vía el pivote tenant_user.
+     * Distinto de tenants(): aquí importa la MEMBRESÍA, no la propiedad.
+     */
+    public function empresas(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Tenant::class, 'tenant_user')
+            ->using(TenantMembership::class)
+            ->withPivot(['role', 'abilities', 'is_active'])
+            ->withTimestamps();
+    }
+
+    /** Membresía del usuario en una empresa concreta, o null si no pertenece. */
+    public function membershipFor(Tenant $tenant): ?TenantMembership
+    {
+        $empresa = $this->empresas()->firstWhere('tenants.id', $tenant->getKey());
+
+        /** @var TenantMembership|null $pivot */
+        $pivot = $empresa?->pivot;
+
+        return $pivot;
+    }
+
+    /**
+     * ¿Puede el usuario realizar `$ability` en `$tenant`?
+     * Super admin: siempre. Resto: según su membresía (owner = todo; cajero = sus abilities).
+     */
+    public function puede(string $ability, Tenant $tenant): bool
+    {
+        // Solo bloquea si la cuenta está explícitamente desactivada.
+        if ($this->is_active === false) {
+            return false;
+        }
+
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->membershipFor($tenant)?->permite($ability) ?? false;
     }
 
     /** ¿Puede entrar al panel administrativo? (cualquiera de los 4 roles) */

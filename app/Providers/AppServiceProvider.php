@@ -10,15 +10,19 @@ use App\Listeners\IncrementDocumentUsage;
 use App\Listeners\SendPaymentFailedEmail;
 use App\Listeners\SendTrialEndingEmail;
 use App\Listeners\SendWelcomeEmail;
+use App\Models\Tenant;
+use App\Models\User;
+use App\Services\Pdf\PdfGeneratorService;
 use App\Services\Plan\PlanService;
+use App\Support\Rbac\Ability;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
-use App\Services\Pdf\PdfGeneratorService;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -49,10 +53,32 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureGates(): void
     {
-        \Illuminate\Support\Facades\Gate::define('manage-users', fn (\App\Models\User $u) => $u->canManageUsers());
-        \Illuminate\Support\Facades\Gate::define('write', fn (\App\Models\User $u) => $u->canWrite());
-        \Illuminate\Support\Facades\Gate::define('delete', fn (\App\Models\User $u) => $u->canDelete());
-        \Illuminate\Support\Facades\Gate::define('resend', fn (\App\Models\User $u) => $u->canResend());
+        // Super admin: bypass total (todas las empresas, todas las acciones).
+        Gate::before(fn (User $u) => $u->isSuperAdmin() ? true : null);
+
+        // Gates internos del panel admin (roles predefinidos).
+        Gate::define('manage-users', fn (User $u) => $u->canManageUsers());
+        Gate::define('write', fn (User $u) => $u->canWrite());
+        Gate::define('delete', fn (User $u) => $u->canDelete());
+        Gate::define('resend', fn (User $u) => $u->canResend());
+
+        // Gates por empresa para comprobantes: reciben (User, Tenant, tipo).
+        // Uso: Gate::allows('emitir', [$tenant, 'factura']).
+        foreach (Ability::ACCIONES_DOCUMENTO as $accion) {
+            Gate::define($accion, fn (User $u, Tenant $t, string $tipo) => $u->puede("{$tipo}.{$accion}", $t));
+        }
+
+        // Gates por empresa para módulos transversales: reciben (User, Tenant).
+        Gate::define('gestionar-clientes', fn (User $u, Tenant $t) => $u->puede(Ability::CLIENTE_GESTIONAR, $t));
+        Gate::define('gestionar-series', fn (User $u, Tenant $t) => $u->puede(Ability::SERIE_GESTIONAR, $t));
+        Gate::define('gestionar-sucursales', fn (User $u, Tenant $t) => $u->puede(Ability::SUCURSAL_GESTIONAR, $t));
+        Gate::define('ver-reportes', fn (User $u, Tenant $t) => $u->puede(Ability::REPORTE_VER, $t));
+        Gate::define('exportar', fn (User $u, Tenant $t) => $u->puede(Ability::EXPORTAR, $t));
+        Gate::define('consultar-cpe', fn (User $u, Tenant $t) => $u->puede(Ability::CONSULTA_CPE, $t));
+        Gate::define('editar-empresa', fn (User $u, Tenant $t) => $u->puede(Ability::CONFIG_EDITAR, $t));
+        Gate::define('ver-apikey', fn (User $u, Tenant $t) => $u->puede(Ability::APIKEY_VER, $t));
+        Gate::define('gestionar-equipo', fn (User $u, Tenant $t) => $u->puede(Ability::EQUIPO_GESTIONAR, $t));
+        Gate::define('gestionar-sire', fn (User $u, Tenant $t) => $u->puede(Ability::SIRE_GESTIONAR, $t));
     }
 
     protected function configureEventListeners(): void
