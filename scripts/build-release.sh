@@ -29,6 +29,10 @@ fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# En Windows (git-bash) PHP es nativo y no entiende rutas POSIX (/tmp, /c/...).
+# cygpath -m las pasa a formato C:/... ; en Linux no existe y se usa tal cual.
+win() { cygpath -m "$1" 2>/dev/null || echo "$1"; }
+
 TOOLS="$ROOT/tools/yakpro-po"
 
 # 1. Instalar yakpro-po la primera vez.
@@ -70,8 +74,8 @@ for f in "${CRIT[@]}"; do
 done
 CNF="$(mktemp)"
 cat "$ROOT/scripts/yakpro-laravel.cnf" > "$CNF"
-printf "\n\$conf->source_directory='%s';\n\$conf->target_directory='%s';\n" "$TMPSRC" "$TMPOUT" >> "$CNF"
-( cd "$TOOLS" && php yakpro-po.php --config-file "$CNF" >/dev/null )
+printf "\n\$conf->source_directory='%s';\n\$conf->target_directory='%s';\n" "$(win "$TMPSRC")" "$(win "$TMPOUT")" >> "$CNF"
+( cd "$TOOLS" && php yakpro-po.php --config-file "$(win "$CNF")" >/dev/null )
 for f in "${CRIT[@]}"; do
     OBF="$TMPOUT/yakpro-po/obfuscated/$f"
     [ -f "$OBF" ] || { echo "ERROR: no se genero $f ofuscado."; exit 1; }
