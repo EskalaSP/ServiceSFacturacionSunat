@@ -15,6 +15,7 @@ use App\Http\Controllers\Web\Sunat\HistorialController;
 use App\Http\Controllers\Web\Sunat\MiApiKeyController;
 use App\Http\Controllers\Web\Sunat\NotaCreditoController;
 use App\Http\Controllers\Web\Sunat\NotaDebitoController;
+use App\Http\Controllers\Web\Sunat\ResumenController;
 use Illuminate\Support\Facades\Route;
 
 // ── Home root ───────────────────────────────────────────────────────────────
@@ -123,6 +124,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/anulaciones/nueva', [AnulacionController::class, 'create'])->name('anulaciones.create');
         Route::post('/anulaciones', [AnulacionController::class, 'store'])->name('anulaciones.store');
+
+        Route::get('/resumenes/nueva', [ResumenController::class, 'create'])->name('resumenes.create');
+        Route::post('/resumenes', [ResumenController::class, 'store'])->name('resumenes.store');
 
         Route::get('/cotizaciones', [CotizacionController::class, 'index'])->name('cotizaciones');
         Route::get('/cotizaciones/nueva', [CotizacionController::class, 'create'])->name('cotizaciones.create');
