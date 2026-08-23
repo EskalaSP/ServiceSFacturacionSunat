@@ -1,0 +1,28 @@
+<?php
+// YAK Pro - Php Obfuscator: Config File
+// Config para ofuscar los archivos del candado dentro de este proyecto Laravel.
+// NO renombra clases/namespaces/metodos/propiedades/constantes (Laravel los
+// resuelve por convencion/string); solo ofusca la logica interna. El script
+// build-release.sh anade source_directory y target_directory al final.
+
+$conf->t_ignore_pre_defined_classes = 'all';
+
+// Nombres framework-facing: OFF (romperian el autoloading / contenedor)
+$conf->obfuscate_constant_name        = false;
+$conf->obfuscate_function_name        = false;
+$conf->obfuscate_class_name           = false;
+$conf->obfuscate_interface_name       = false;
+$conf->obfuscate_trait_name           = false;
+$conf->obfuscate_class_constant_name  = false;
+$conf->obfuscate_property_name        = false;
+$conf->obfuscate_method_name          = false;
+$conf->obfuscate_namespace_name       = false;
+
+// Logica interna: ON (seguro y efectivo)
+$conf->obfuscate_variable_name        = true;
+$conf->obfuscate_label_name           = true;
+$conf->obfuscate_if_statement         = true;
+$conf->obfuscate_loop_statement       = true;
+$conf->obfuscate_string_literal       = true;
+$conf->shuffle_stmts                  = true;
+$conf->strip_indentation              = true;

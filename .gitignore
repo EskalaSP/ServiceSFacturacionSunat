@@ -38,3 +38,7 @@ greenter-documentacion/
 # Deployment scripts (Demo)
 sync_to_demo.bat
 
+
+# Build de release (empaquetado de venta) y herramientas de ofuscacion
+/dist
+/tools

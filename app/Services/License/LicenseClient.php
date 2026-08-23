@@ -24,9 +24,14 @@ class LicenseClient
 
     private const CACHE_LAST_OK = 'license:last_ok'; // timestamp de la última validación buena
 
-    public function __construct(
-        private readonly MachineId $machineId,
-    ) {}
+    // Propiedad explícita (no promovida): la promoción no sobrevive a la
+    // ofuscación de variables.
+    private readonly MachineId $machineId;
+
+    public function __construct(MachineId $machineId)
+    {
+        $this->machineId = $machineId;
+    }
 
     /**
      * Comprueba si esta instalación puede operar en producción.

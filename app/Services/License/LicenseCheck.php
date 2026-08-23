@@ -11,12 +11,23 @@ namespace App\Services\License;
  */
 final readonly class LicenseCheck
 {
-    public function __construct(
-        public bool $allowed,
-        public string $code,
-        public string $message,
-        public bool $offlineGrace = false,
-    ) {}
+    // Propiedades explícitas (no promovidas): la promoción en el constructor
+    // no sobrevive a la ofuscación de variables.
+    public bool $allowed;
+
+    public string $code;
+
+    public string $message;
+
+    public bool $offlineGrace;
+
+    public function __construct(bool $allowed, string $code, string $message, bool $offlineGrace = false)
+    {
+        $this->allowed = $allowed;
+        $this->code = $code;
+        $this->message = $message;
+        $this->offlineGrace = $offlineGrace;
+    }
 
     public static function allow(string $code = 'ok', string $message = 'Licencia válida.', bool $offlineGrace = false): self
     {

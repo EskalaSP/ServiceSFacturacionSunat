@@ -17,9 +17,14 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class CheckLicense
 {
-    public function __construct(
-        private LicenseClient $license,
-    ) {}
+    // Propiedad explícita (no promovida): la promoción no sobrevive a la
+    // ofuscación de variables.
+    private LicenseClient $license;
+
+    public function __construct(LicenseClient $license)
+    {
+        $this->license = $license;
+    }
 
     public function handle(Request $request, Closure $next): Response
     {

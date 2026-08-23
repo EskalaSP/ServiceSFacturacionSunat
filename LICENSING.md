@@ -30,8 +30,35 @@ La identidad es por **instalación** (`machine_id`, persistido en
 Como se vende **código fuente en PHP**, un comprador decidido puede editar los
 archivos y quitar ambas barreras. El candado en texto plano frena al cliente
 honesto, **no al pirata**. Para que sea un candado real hay que **ofuscar los
-archivos críticos** con un encoder de pago (ionCube o SourceGuardian), de modo
-que no se puedan leer ni editar. El resto del código queda legible.
+archivos críticos**. Hay dos caminos:
+
+- **Gratis (recomendado aquí):** ofuscación con `yakpro-po` — automatizada en
+  `scripts/build-release.sh` (ver abajo). Hace el código muy difícil de leer;
+  no es encriptación, pero sube bastante la barrera y no cuesta nada ni pide
+  loader en el servidor del cliente.
+- **De pago (más fuerte):** encriptación con ionCube o SourceGuardian
+  (Opción A/B abajo). Es irreversible pero cuesta y necesita el loader en el
+  servidor del cliente.
+
+## Opción recomendada (gratis) — script de empaquetado
+
+Un solo comando deja la copia sellada y ofuscada, lista para entregar:
+
+```bash
+scripts/build-release.sh <fingerprint> [dir_salida]
+```
+
+- `<fingerprint>` lo da el panel de licencias al emitir la licencia.
+- La primera vez descarga `yakpro-po` a `tools/` (gratis, open-source).
+- Genera `dist/` con: código exportado, **fingerprint sellado**, **candado
+  ofuscado** (variables, strings y flujo), y sin los archivos internos
+  (`LICENSING.md`, `scripts/`, `tools/`).
+
+Se entrega el contenido de `dist/`; el comprador corre `composer install`,
+`npm run build` y `php artisan migrate`.
+
+> Los objetos del candado evitan la promoción de propiedades en el constructor
+> a propósito: esa sintaxis no sobrevive a la ofuscación de variables.
 
 ## Archivos críticos a ofuscar
 
