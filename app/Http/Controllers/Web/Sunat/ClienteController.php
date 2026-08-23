@@ -46,6 +46,7 @@ class ClienteController extends Controller
     public function store(Request $request): \Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        \Illuminate\Support\Facades\Gate::authorize('gestionar-clientes', $tenant);
 
         $data = $request->validate([
             'tipo_documento' => 'required|string|max:1',
@@ -72,6 +73,7 @@ class ClienteController extends Controller
     public function update(Request $request, int $id): \Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        \Illuminate\Support\Facades\Gate::authorize('gestionar-clientes', $tenant);
         $cliente = Client::where('tenant_id', $tenant->id)->findOrFail($id);
 
         $data = $request->validate([
@@ -90,6 +92,7 @@ class ClienteController extends Controller
     public function destroy(int $id): \Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        \Illuminate\Support\Facades\Gate::authorize('gestionar-clientes', $tenant);
         Client::where('tenant_id', $tenant->id)->findOrFail($id)->delete();
 
         return back()->with('success', 'Cliente eliminado.');

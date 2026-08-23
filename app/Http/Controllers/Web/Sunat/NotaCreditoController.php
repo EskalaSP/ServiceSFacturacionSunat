@@ -78,6 +78,7 @@ class NotaCreditoController extends Controller
     public function store(Request $request, CreateCreditNoteAction $action): \Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        \Illuminate\Support\Facades\Gate::authorize('emitir', [$tenant, 'nota_credito']);
 
         try {
             $nc = $action->execute($tenant, $request->all(), true);

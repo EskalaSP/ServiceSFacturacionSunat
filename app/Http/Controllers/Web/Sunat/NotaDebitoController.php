@@ -69,6 +69,7 @@ class NotaDebitoController extends Controller
     public function store(Request $request, CreateDebitNoteAction $action): \Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        \Illuminate\Support\Facades\Gate::authorize('emitir', [$tenant, 'nota_debito']);
 
         $serieNombre = $request->input('serie', 'FD01');
 

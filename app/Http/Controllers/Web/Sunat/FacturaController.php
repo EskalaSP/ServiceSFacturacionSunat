@@ -86,6 +86,10 @@ class FacturaController extends Controller
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
 
         $tipo = $request->input('tipo_documento', '01');
+
+        // El usuario debe tener permiso para emitir ESE tipo en la empresa activa.
+        \Illuminate\Support\Facades\Gate::authorize('emitir', [$tenant, $tipo === '03' ? 'boleta' : 'factura']);
+
         $enviar = $request->boolean('enviar_automatico', true);
 
         try {

@@ -79,6 +79,7 @@ class CotizacionController extends Controller
     public function store(Request $request, CreateQuotationAction $action): \Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        \Illuminate\Support\Facades\Gate::authorize('emitir', [$tenant, 'cotizacion']);
 
         try {
             $action->execute($tenant, $request->all());
@@ -93,6 +94,7 @@ class CotizacionController extends Controller
     public function updateEstado(Request $request, int $id): \Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        \Illuminate\Support\Facades\Gate::authorize('emitir', [$tenant, 'cotizacion']);
         $cot = Quotation::where('tenant_id', $tenant->id)->findOrFail($id);
 
         $request->validate(['status' => 'required|in:vigente,aceptada,rechazada,vencida']);
@@ -104,6 +106,7 @@ class CotizacionController extends Controller
     public function convertir(int $id): \Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        \Illuminate\Support\Facades\Gate::authorize('emitir', [$tenant, 'cotizacion']);
         $cot = Quotation::where('tenant_id', $tenant->id)->findOrFail($id);
 
         $cot->update(['status' => 'aceptada']);
@@ -114,6 +117,7 @@ class CotizacionController extends Controller
     public function destroy(int $id): \Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        \Illuminate\Support\Facades\Gate::authorize('emitir', [$tenant, 'cotizacion']);
         Quotation::where('tenant_id', $tenant->id)->findOrFail($id)->delete();
 
         return back()->with('success', 'Cotización eliminada.');
