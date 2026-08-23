@@ -20,7 +20,7 @@ class NotaDebitoController extends Controller
 
     public function create(Request $request): \Inertia\Response|\Illuminate\Http\RedirectResponse
     {
-        $tenant = auth()->user()->tenants()->first();
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
 
         if (! $tenant || ! $tenant->sol_user) {
             return redirect()->route('sunat.configuracion')
@@ -29,25 +29,25 @@ class NotaDebitoController extends Controller
 
         $docOriginal = null;
         if ($docId = $request->query('doc_id')) {
-            $tipo  = $request->query('tipo', '01');
+            $tipo = $request->query('tipo', '01');
             $model = $tipo === '03' ? Boleta::class : Invoice::class;
-            $doc   = $model::where('tenant_id', $tenant->id)->with('items')->find($docId);
+            $doc = $model::where('tenant_id', $tenant->id)->with('items')->find($docId);
 
             if ($doc) {
                 $docOriginal = [
-                    'id'          => $doc->id,
-                    'tipo_doc'    => $tipo,
-                    'serie'       => $doc->serie,
+                    'id' => $doc->id,
+                    'tipo_doc' => $tipo,
+                    'serie' => $doc->serie,
                     'correlativo' => $doc->correlativo,
-                    'numero'      => $doc->serie . '-' . str_pad($doc->correlativo, 8, '0', STR_PAD_LEFT),
-                    'cliente'     => $doc->client_razon_social,
-                    'total'       => $doc->mto_imp_venta,
-                    'moneda'      => $doc->tipo_moneda,
-                    'items'       => $doc->items->map(fn ($it) => [
-                        'descripcion'     => $it->descripcion,
-                        'cantidad'        => $it->cantidad,
+                    'numero' => $doc->serie.'-'.str_pad($doc->correlativo, 8, '0', STR_PAD_LEFT),
+                    'cliente' => $doc->client_razon_social,
+                    'total' => $doc->mto_imp_venta,
+                    'moneda' => $doc->tipo_moneda,
+                    'items' => $doc->items->map(fn ($it) => [
+                        'descripcion' => $it->descripcion,
+                        'cantidad' => $it->cantidad,
                         'precio_unitario' => $it->mto_valor_unitario ?? 0,
-                        'unidad'          => $it->unidad_medida ?? 'ZZ',
+                        'unidad' => $it->unidad_medida ?? 'ZZ',
                     ])->toArray(),
                 ];
             }
@@ -59,16 +59,16 @@ class NotaDebitoController extends Controller
             ->get(['id', 'serie', 'tipo_documento', 'correlativo']);
 
         return Inertia::render('sunat/nota-debito/nueva', [
-            'motivos'      => self::MOTIVOS,
-            'series'       => $series,
+            'motivos' => self::MOTIVOS,
+            'series' => $series,
             'doc_original' => $docOriginal,
-            'tenant'       => ['ruc' => $tenant->ruc, 'razon_social' => $tenant->razon_social],
+            'tenant' => ['ruc' => $tenant->ruc, 'razon_social' => $tenant->razon_social],
         ]);
     }
 
     public function store(Request $request, CreateDebitNoteAction $action): \Illuminate\Http\RedirectResponse
     {
-        $tenant = auth()->user()->tenants()->firstOrFail();
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
 
         $serieNombre = $request->input('serie', 'FD01');
 
@@ -84,12 +84,13 @@ class NotaDebitoController extends Controller
         }
 
         try {
-            $doc    = $action->execute($tenant, $data);
-            $numero = $doc->serie . '-' . str_pad($doc->correlativo, 8, '0', STR_PAD_LEFT);
+            $doc = $action->execute($tenant, $data);
+            $numero = $doc->serie.'-'.str_pad($doc->correlativo, 8, '0', STR_PAD_LEFT);
+
             return redirect()->route('sunat.historial')
                 ->with('success', "Nota de Débito {$numero} emitida correctamente.");
         } catch (\Throwable $e) {
-            return back()->withInput()->with('error', 'Error al emitir: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Error al emitir: '.$e->getMessage());
         }
     }
 }

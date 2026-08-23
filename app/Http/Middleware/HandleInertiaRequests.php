@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Tenancy\EmpresaActiva;
+use App\Support\Rbac\Ability;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,25 +37,57 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $tenant = $request->user()?->tenants()->first();
+        $user = $request->user();
+        $empresaActiva = app(EmpresaActiva::class);
+        $tenant = $user ? $empresaActiva->actual() : null;
+
+        // Rol y permisos del usuario en la empresa activa (para gating de menú/botones).
+        $rol = null;
+        $abilities = [];
+        if ($user && $tenant) {
+            if ($user->isSuperAdmin()) {
+                $rol = 'super_admin';
+                $abilities = Ability::todas();
+            } else {
+                $membresia = $user->membershipFor($tenant);
+                $rol = $membresia?->role;
+                $abilities = ($membresia && $membresia->esOwner())
+                    ? Ability::todas()
+                    : ($membresia?->abilitiesArray() ?? []);
+            }
+        }
+
+        $disponibles = $user
+            ? $empresaActiva->disponibles()->take(100)->map(fn ($t) => [
+                'id' => $t->id,
+                'ruc' => $t->ruc,
+                'razon_social' => $t->razon_social,
+            ])->values()
+            : collect();
 
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
             'tenant' => $tenant ? [
-                'id'             => $tenant->id,
-                'ruc'            => $tenant->ruc,
-                'razon_social'   => $tenant->razon_social,
-                'environment'    => $tenant->environment ?? 'beta',
+                'id' => $tenant->id,
+                'ruc' => $tenant->ruc,
+                'razon_social' => $tenant->razon_social,
+                'environment' => $tenant->environment ?? 'beta',
                 'sol_configurado' => ! empty($tenant->sol_user),
             ] : null,
+            'empresa' => [
+                'rol' => $rol,
+                'esSuperAdmin' => $user?->isSuperAdmin() ?? false,
+                'disponibles' => $disponibles,
+                'can' => $abilities,
+            ],
             'flash' => [
                 'success' => $request->session()->get('success'),
-                'error'   => $request->session()->get('error'),
-                'info'    => $request->session()->get('info'),
+                'error' => $request->session()->get('error'),
+                'info' => $request->session()->get('info'),
                 'warning' => $request->session()->get('warning'),
                 'empresa_creada' => $request->session()->get('empresa_creada'),
             ],

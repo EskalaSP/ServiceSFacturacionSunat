@@ -9,7 +9,7 @@ class DashboardController extends Controller
 {
     public function index(): RedirectResponse
     {
-        $tenant = auth()->user()->tenants()->first();
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
 
         if (! $tenant || empty($tenant->sol_user)) {
             return redirect()->route('sunat.configuracion')

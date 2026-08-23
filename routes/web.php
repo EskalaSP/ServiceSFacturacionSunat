@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\Sunat\ClienteController;
 use App\Http\Controllers\Web\Sunat\ConfiguracionController;
 use App\Http\Controllers\Web\Sunat\CotizacionController;
 use App\Http\Controllers\Web\Sunat\DashboardController;
+use App\Http\Controllers\Web\Sunat\EmpresaActivaController;
 use App\Http\Controllers\Web\Sunat\FacturaController;
 use App\Http\Controllers\Web\Sunat\HistorialController;
 use App\Http\Controllers\Web\Sunat\MiApiKeyController;
@@ -37,10 +38,10 @@ Route::get('/', function (\Illuminate\Http\Request $request) {
     }
 
     return response()->json([
-        'api'     => 'SUNAT API',
+        'api' => 'SUNAT API',
         'version' => 'v1',
-        'status'  => 'ok',
-        'docs'    => url('/api/v1'),
+        'status' => 'ok',
+        'docs' => url('/api/v1'),
     ]);
 })->name('home');
 
@@ -53,7 +54,7 @@ Route::get('/auth/from-saas', [SaasAuthController::class, 'login'])->name('auth.
 // Rutas temporales de mantenimiento
 Route::get('/limpiar-cache-ahora', function () {
     \Illuminate\Support\Facades\Artisan::call('optimize:clear');
-    
+
     // De paso, le creamos el tenant al usuario principal por si acaso
     $user = \App\Models\User::where('email', 'admin@lu-tec.net')->first();
     if ($user) {
@@ -70,18 +71,21 @@ Route::get('/limpiar-cache-ahora', function () {
             ]
         );
     }
-    
-    return "Caché de Laravel y OPcache limpiados con éxito. Empresa creada. Ya puedes ir a configurar tu clave SOL.";
+
+    return 'Caché de Laravel y OPcache limpiados con éxito. Empresa creada. Ya puedes ir a configurar tu clave SOL.';
 });
 
 Route::get('/ver-errores', function () {
     $logFile = storage_path('logs/laravel.log');
-    if (!file_exists($logFile)) return "No hay archivo de log.";
-    
+    if (! file_exists($logFile)) {
+        return 'No hay archivo de log.';
+    }
+
     // Read the last 200 lines
     $lines = file($logFile);
     $lastLines = array_slice($lines, -200);
-    return '<pre>' . htmlspecialchars(implode("", $lastLines)) . '</pre>';
+
+    return '<pre>'.htmlspecialchars(implode('', $lastLines)).'</pre>';
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -90,6 +94,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // /sunat → redirect inteligente (configuracion si no tiene SOL, facturas si ya tiene)
     Route::prefix('sunat')->name('sunat.')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Cambiar la empresa activa (super admin: cualquiera; resto: sus membresías).
+        Route::put('/empresa-activa', [EmpresaActivaController::class, 'update'])->name('empresa-activa.update');
 
         Route::get('/configuracion', [ConfiguracionController::class, 'edit'])->name('configuracion');
         Route::put('/configuracion', [ConfiguracionController::class, 'update'])->name('configuracion.update');
@@ -134,32 +141,32 @@ Route::middleware(['auth', 'admin', 'panel.write'])
     ->name('admin.')
     ->group(function () {
         // Empresas (Tenants)
-        Route::get('empresas',                    [\App\Http\Controllers\Admin\TenantController::class, 'index'])->name('empresas.index');
-        Route::get('empresas/nueva',              [\App\Http\Controllers\Admin\TenantController::class, 'create'])->name('empresas.create');
-        Route::post('empresas',                   [\App\Http\Controllers\Admin\TenantController::class, 'store'])->name('empresas.store');
-        Route::get('empresas/{tenant}',           [\App\Http\Controllers\Admin\TenantController::class, 'show'])->name('empresas.show');
-        Route::get('empresas/{tenant}/editar',    [\App\Http\Controllers\Admin\TenantController::class, 'edit'])->name('empresas.edit');
-        Route::put('empresas/{tenant}',           [\App\Http\Controllers\Admin\TenantController::class, 'update'])->name('empresas.update');
-        Route::delete('empresas/{tenant}',        [\App\Http\Controllers\Admin\TenantController::class, 'destroy'])->name('empresas.destroy');
-        Route::post('empresas/{tenant}/toggle',   [\App\Http\Controllers\Admin\TenantController::class, 'toggle'])->name('empresas.toggle');
+        Route::get('empresas', [\App\Http\Controllers\Admin\TenantController::class, 'index'])->name('empresas.index');
+        Route::get('empresas/nueva', [\App\Http\Controllers\Admin\TenantController::class, 'create'])->name('empresas.create');
+        Route::post('empresas', [\App\Http\Controllers\Admin\TenantController::class, 'store'])->name('empresas.store');
+        Route::get('empresas/{tenant}', [\App\Http\Controllers\Admin\TenantController::class, 'show'])->name('empresas.show');
+        Route::get('empresas/{tenant}/editar', [\App\Http\Controllers\Admin\TenantController::class, 'edit'])->name('empresas.edit');
+        Route::put('empresas/{tenant}', [\App\Http\Controllers\Admin\TenantController::class, 'update'])->name('empresas.update');
+        Route::delete('empresas/{tenant}', [\App\Http\Controllers\Admin\TenantController::class, 'destroy'])->name('empresas.destroy');
+        Route::post('empresas/{tenant}/toggle', [\App\Http\Controllers\Admin\TenantController::class, 'toggle'])->name('empresas.toggle');
         Route::post('empresas/{tenant}/regenerar-credenciales', [\App\Http\Controllers\Admin\TenantController::class, 'regenerarCredenciales'])->name('empresas.regenerar');
 
         // Sucursales anidadas por empresa
-        Route::get('empresas/{tenant}/sucursales',                      [\App\Http\Controllers\Admin\SucursalController::class, 'index'])->name('sucursales.index');
-        Route::get('empresas/{tenant}/sucursales/nueva',                [\App\Http\Controllers\Admin\SucursalController::class, 'create'])->name('sucursales.create');
-        Route::post('empresas/{tenant}/sucursales',                     [\App\Http\Controllers\Admin\SucursalController::class, 'store'])->name('sucursales.store');
-        Route::get('empresas/{tenant}/sucursales/{sucursal}/editar',    [\App\Http\Controllers\Admin\SucursalController::class, 'edit'])->name('sucursales.edit');
-        Route::put('empresas/{tenant}/sucursales/{sucursal}',           [\App\Http\Controllers\Admin\SucursalController::class, 'update'])->name('sucursales.update');
-        Route::delete('empresas/{tenant}/sucursales/{sucursal}',        [\App\Http\Controllers\Admin\SucursalController::class, 'destroy'])->name('sucursales.destroy');
+        Route::get('empresas/{tenant}/sucursales', [\App\Http\Controllers\Admin\SucursalController::class, 'index'])->name('sucursales.index');
+        Route::get('empresas/{tenant}/sucursales/nueva', [\App\Http\Controllers\Admin\SucursalController::class, 'create'])->name('sucursales.create');
+        Route::post('empresas/{tenant}/sucursales', [\App\Http\Controllers\Admin\SucursalController::class, 'store'])->name('sucursales.store');
+        Route::get('empresas/{tenant}/sucursales/{sucursal}/editar', [\App\Http\Controllers\Admin\SucursalController::class, 'edit'])->name('sucursales.edit');
+        Route::put('empresas/{tenant}/sucursales/{sucursal}', [\App\Http\Controllers\Admin\SucursalController::class, 'update'])->name('sucursales.update');
+        Route::delete('empresas/{tenant}/sucursales/{sucursal}', [\App\Http\Controllers\Admin\SucursalController::class, 'destroy'])->name('sucursales.destroy');
 
         // Series anidadas por empresa
-        Route::get('empresas/{tenant}/series',                    [\App\Http\Controllers\Admin\SerieController::class, 'index'])->name('series.index');
-        Route::get('empresas/{tenant}/series/nueva',              [\App\Http\Controllers\Admin\SerieController::class, 'create'])->name('series.create');
-        Route::post('empresas/{tenant}/series',                   [\App\Http\Controllers\Admin\SerieController::class, 'store'])->name('series.store');
-        Route::get('empresas/{tenant}/series/{serie}/editar',     [\App\Http\Controllers\Admin\SerieController::class, 'edit'])->name('series.edit');
-        Route::put('empresas/{tenant}/series/{serie}',            [\App\Http\Controllers\Admin\SerieController::class, 'update'])->name('series.update');
-        Route::delete('empresas/{tenant}/series/{serie}',         [\App\Http\Controllers\Admin\SerieController::class, 'destroy'])->name('series.destroy');
-        Route::post('empresas/{tenant}/series/{serie}/toggle',    [\App\Http\Controllers\Admin\SerieController::class, 'toggle'])->name('series.toggle');
+        Route::get('empresas/{tenant}/series', [\App\Http\Controllers\Admin\SerieController::class, 'index'])->name('series.index');
+        Route::get('empresas/{tenant}/series/nueva', [\App\Http\Controllers\Admin\SerieController::class, 'create'])->name('series.create');
+        Route::post('empresas/{tenant}/series', [\App\Http\Controllers\Admin\SerieController::class, 'store'])->name('series.store');
+        Route::get('empresas/{tenant}/series/{serie}/editar', [\App\Http\Controllers\Admin\SerieController::class, 'edit'])->name('series.edit');
+        Route::put('empresas/{tenant}/series/{serie}', [\App\Http\Controllers\Admin\SerieController::class, 'update'])->name('series.update');
+        Route::delete('empresas/{tenant}/series/{serie}', [\App\Http\Controllers\Admin\SerieController::class, 'destroy'])->name('series.destroy');
+        Route::post('empresas/{tenant}/series/{serie}/toggle', [\App\Http\Controllers\Admin\SerieController::class, 'toggle'])->name('series.toggle');
 
         // Comprobantes de la empresa (todos los tipos, unificados)
         Route::get('logs-envios', [\App\Http\Controllers\Admin\EnvioLogController::class, 'index'])->name('logs-envios.index');
@@ -176,34 +183,34 @@ Route::middleware(['auth', 'admin', 'panel.write'])
             ->name('empresas.comprobantes.download');
 
         // Sucursales (listado global, cross-empresa)
-        Route::get('sucursales',              [\App\Http\Controllers\Admin\SucursalGlobalController::class, 'index'])->name('sucursales.todas');
+        Route::get('sucursales', [\App\Http\Controllers\Admin\SucursalGlobalController::class, 'index'])->name('sucursales.todas');
 
         // Series (listado global, cross-empresa)
-        Route::get('series',                  [\App\Http\Controllers\Admin\SerieGlobalController::class, 'index'])->name('series.todas');
+        Route::get('series', [\App\Http\Controllers\Admin\SerieGlobalController::class, 'index'])->name('series.todas');
 
         // Usuarios del panel (roles predefinidos) — solo super_admin y admin
         Route::middleware('can:manage-users')->group(function () {
-            Route::get('usuarios',                 [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('usuarios.index');
-            Route::get('usuarios/nuevo',           [\App\Http\Controllers\Admin\UserController::class, 'create'])->name('usuarios.create');
-            Route::post('usuarios',                [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('usuarios.store');
+            Route::get('usuarios', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('usuarios.index');
+            Route::get('usuarios/nuevo', [\App\Http\Controllers\Admin\UserController::class, 'create'])->name('usuarios.create');
+            Route::post('usuarios', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('usuarios.store');
             Route::get('usuarios/{usuario}/editar', [\App\Http\Controllers\Admin\UserController::class, 'edit'])->name('usuarios.edit');
-            Route::put('usuarios/{usuario}',       [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('usuarios.update');
+            Route::put('usuarios/{usuario}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('usuarios.update');
             Route::post('usuarios/{usuario}/toggle', [\App\Http\Controllers\Admin\UserController::class, 'toggle'])->name('usuarios.toggle');
-            Route::delete('usuarios/{usuario}',    [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('usuarios.destroy');
+            Route::delete('usuarios/{usuario}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('usuarios.destroy');
         });
 
         // Planes
-        Route::get('planes',                  [\App\Http\Controllers\Admin\PlanController::class, 'index'])->name('planes.index');
-        Route::get('planes/nuevo',            [\App\Http\Controllers\Admin\PlanController::class, 'create'])->name('planes.create');
-        Route::post('planes',                 [\App\Http\Controllers\Admin\PlanController::class, 'store'])->name('planes.store');
-        Route::get('planes/{plan}/editar',    [\App\Http\Controllers\Admin\PlanController::class, 'edit'])->name('planes.edit');
-        Route::put('planes/{plan}',           [\App\Http\Controllers\Admin\PlanController::class, 'update'])->name('planes.update');
-        Route::delete('planes/{plan}',        [\App\Http\Controllers\Admin\PlanController::class, 'destroy'])->name('planes.destroy');
-        Route::post('planes/{plan}/toggle',   [\App\Http\Controllers\Admin\PlanController::class, 'toggle'])->name('planes.toggle');
+        Route::get('planes', [\App\Http\Controllers\Admin\PlanController::class, 'index'])->name('planes.index');
+        Route::get('planes/nuevo', [\App\Http\Controllers\Admin\PlanController::class, 'create'])->name('planes.create');
+        Route::post('planes', [\App\Http\Controllers\Admin\PlanController::class, 'store'])->name('planes.store');
+        Route::get('planes/{plan}/editar', [\App\Http\Controllers\Admin\PlanController::class, 'edit'])->name('planes.edit');
+        Route::put('planes/{plan}', [\App\Http\Controllers\Admin\PlanController::class, 'update'])->name('planes.update');
+        Route::delete('planes/{plan}', [\App\Http\Controllers\Admin\PlanController::class, 'destroy'])->name('planes.destroy');
+        Route::post('planes/{plan}/toggle', [\App\Http\Controllers\Admin\PlanController::class, 'toggle'])->name('planes.toggle');
 
         // Configuración global de emisión (switches ilimitado global / nuevas empresas)
-        Route::get('configuracion',           [\App\Http\Controllers\Admin\ConfiguracionController::class, 'edit'])->name('configuracion');
-        Route::put('configuracion',           [\App\Http\Controllers\Admin\ConfiguracionController::class, 'update'])->name('configuracion.update');
+        Route::get('configuracion', [\App\Http\Controllers\Admin\ConfiguracionController::class, 'edit'])->name('configuracion');
+        Route::put('configuracion', [\App\Http\Controllers\Admin\ConfiguracionController::class, 'update'])->name('configuracion.update');
     });
 
 require __DIR__.'/settings.php';

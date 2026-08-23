@@ -43,6 +43,16 @@ class EmpresaActiva
         return $tenant;
     }
 
+    /** Como actual(), pero aborta 403 si el usuario no tiene ninguna empresa disponible. */
+    public function actualOFallar(): Tenant
+    {
+        $tenant = $this->actual();
+
+        abort_unless($tenant !== null, 403, 'No tienes una empresa asignada. Contacta al administrador.');
+
+        return $tenant;
+    }
+
     /** Fija la empresa activa (valida pertenencia; aborta 403 si no corresponde). */
     public function set(Tenant $tenant): void
     {

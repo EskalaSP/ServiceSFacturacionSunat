@@ -9,7 +9,7 @@ class MiApiKeyController extends Controller
 {
     public function show(): \Inertia\Response|\Illuminate\Http\RedirectResponse
     {
-        $tenant = auth()->user()->tenants()->first();
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
 
         if (! $tenant) {
             return redirect()->route('sunat.configuracion')
@@ -17,11 +17,11 @@ class MiApiKeyController extends Controller
         }
 
         return Inertia::render('sunat/mi-api-key', [
-            'api_key'    => $tenant->api_key,
+            'api_key' => $tenant->api_key,
             'api_secret' => $tenant->getRawOriginal('api_secret'),
-            'ruc'        => $tenant->ruc,
+            'ruc' => $tenant->ruc,
             'razon_social' => $tenant->razon_social ?? '',
-            'environment'  => $tenant->environment ?? 'beta',
+            'environment' => $tenant->environment ?? 'beta',
         ]);
     }
 }

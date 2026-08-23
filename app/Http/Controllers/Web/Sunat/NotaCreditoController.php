@@ -30,7 +30,7 @@ class NotaCreditoController extends Controller
 
     public function create(Request $request): Response|\Illuminate\Http\RedirectResponse
     {
-        $tenant = auth()->user()->tenants()->first();
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
 
         if (! $tenant || ! $tenant->sol_user) {
             return redirect()->route('sunat.configuracion');
@@ -44,19 +44,19 @@ class NotaCreditoController extends Controller
 
             if ($found) {
                 $docOriginal = [
-                    'id'         => $found->id,
-                    'tipo_doc'   => $tipoAfectado,
-                    'serie'      => $found->serie,
+                    'id' => $found->id,
+                    'tipo_doc' => $tipoAfectado,
+                    'serie' => $found->serie,
                     'correlativo' => $found->correlativo,
-                    'numero'     => $found->serie . '-' . str_pad((string) $found->correlativo, 8, '0', STR_PAD_LEFT),
-                    'cliente'    => $found->client_razon_social,
-                    'total'      => (float) $found->mto_imp_venta,
-                    'moneda'     => $found->tipo_moneda ?? 'PEN',
-                    'items'      => $found->items->map(fn ($i) => [
-                        'descripcion'     => $i->descripcion,
-                        'cantidad'        => $i->cantidad,
+                    'numero' => $found->serie.'-'.str_pad((string) $found->correlativo, 8, '0', STR_PAD_LEFT),
+                    'cliente' => $found->client_razon_social,
+                    'total' => (float) $found->mto_imp_venta,
+                    'moneda' => $found->tipo_moneda ?? 'PEN',
+                    'items' => $found->items->map(fn ($i) => [
+                        'descripcion' => $i->descripcion,
+                        'cantidad' => $i->cantidad,
                         'precio_unitario' => $i->precio_unitario ?? $i->valor_unitario,
-                        'unidad'          => $i->unidad_medida ?? 'NIU',
+                        'unidad' => $i->unidad_medida ?? 'NIU',
                     ])->toArray(),
                 ];
             }
@@ -68,25 +68,25 @@ class NotaCreditoController extends Controller
             ->get(['id', 'serie', 'tipo_documento', 'correlativo']);
 
         return Inertia::render('sunat/nota-credito/nueva', [
-            'motivos'     => self::MOTIVOS,
-            'series'      => $series,
+            'motivos' => self::MOTIVOS,
+            'series' => $series,
             'doc_original' => $docOriginal,
-            'tenant'      => ['ruc' => $tenant->ruc, 'razon_social' => $tenant->razon_social],
+            'tenant' => ['ruc' => $tenant->ruc, 'razon_social' => $tenant->razon_social],
         ]);
     }
 
     public function store(Request $request, CreateCreditNoteAction $action): \Illuminate\Http\RedirectResponse
     {
-        $tenant = auth()->user()->tenants()->firstOrFail();
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
 
         try {
-            $nc     = $action->execute($tenant, $request->all(), true);
-            $numero = $nc->serie . '-' . str_pad((string) $nc->correlativo, 8, '0', STR_PAD_LEFT);
+            $nc = $action->execute($tenant, $request->all(), true);
+            $numero = $nc->serie.'-'.str_pad((string) $nc->correlativo, 8, '0', STR_PAD_LEFT);
 
             return redirect()->route('sunat.historial')
                 ->with('success', "Nota de Crédito {$numero} emitida y enviada a SUNAT.");
         } catch (\Throwable $e) {
-            return back()->withInput()->with('error', 'Error: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Error: '.$e->getMessage());
         }
     }
 }

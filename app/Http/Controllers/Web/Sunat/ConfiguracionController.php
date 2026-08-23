@@ -13,9 +13,9 @@ class ConfiguracionController extends Controller
     public function edit(): Response
     {
         $user = auth()->user();
-        $tenant = $user->tenants()->first();
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
 
-        if (!$tenant) {
+        if (! $tenant) {
             $tenant = \App\Models\Tenant::create([
                 'user_id' => $user->id,
                 'ruc' => '10463838327', // RUC personal proporcionado por el usuario
@@ -26,7 +26,7 @@ class ConfiguracionController extends Controller
                 'plan' => 'free',
                 'is_active' => true,
             ]);
-            
+
             \App\Models\Serie::firstOrCreate(
                 ['tenant_id' => $tenant->id, 'tipo_documento' => '01', 'serie' => 'F001'],
                 ['correlativo' => 0, 'is_active' => true]
@@ -44,12 +44,12 @@ class ConfiguracionController extends Controller
 
         return Inertia::render('sunat/configuracion', [
             'tenant' => $tenant ? [
-                'ruc'           => $tenant->ruc,
-                'razon_social'  => $tenant->razon_social,
-                'sol_user'      => $tenant->sol_user ?? '',
-                'environment'   => $tenant->environment ?? 'beta',
+                'ruc' => $tenant->ruc,
+                'razon_social' => $tenant->razon_social,
+                'sol_user' => $tenant->sol_user ?? '',
+                'environment' => $tenant->environment ?? 'beta',
                 'serie_factura' => $series->firstWhere('tipo_documento', '01')?->serie ?? 'F001',
-                'serie_boleta'  => $series->firstWhere('tipo_documento', '03')?->serie ?? 'B001',
+                'serie_boleta' => $series->firstWhere('tipo_documento', '03')?->serie ?? 'B001',
             ] : null,
         ]);
     }
@@ -57,26 +57,26 @@ class ConfiguracionController extends Controller
     public function update(Request $request): \Illuminate\Http\RedirectResponse
     {
         $data = $request->validate([
-            'sol_user'      => 'required|string|max:20',
-            'sol_pass'      => 'required|string|max:255',
-            'environment'   => 'required|in:beta,produccion',
+            'sol_user' => 'required|string|max:20',
+            'sol_pass' => 'required|string|max:255',
+            'environment' => 'required|in:beta,produccion',
             'serie_factura' => 'required|string|max:4',
-            'serie_boleta'  => 'required|string|max:4',
-            'certificate'   => 'nullable|file|max:4096',
+            'serie_boleta' => 'required|string|max:4',
+            'certificate' => 'nullable|file|max:4096',
             'certificate_password' => 'nullable|string|max:255',
         ]);
 
         $user = auth()->user();
-        $tenant = $user->tenants()->first();
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
 
-        if (!$tenant) {
+        if (! $tenant) {
             return redirect()->route('sunat.configuracion')
                 ->with('error', 'No se ha encontrado ninguna empresa (Tenant) registrada para tu usuario. Primero debes registrar una empresa.');
         }
 
         $tenant->update([
-            'sol_user'    => $data['sol_user'],
-            'sol_pass'    => $data['sol_pass'],
+            'sol_user' => $data['sol_user'],
+            'sol_pass' => $data['sol_pass'],
             'environment' => $data['environment'],
         ]);
 
@@ -86,7 +86,7 @@ class ConfiguracionController extends Controller
             // desde acá quedaba almacenado como PEM sin clave privada y recién
             // fallaba días después, al firmar un comprobante.
             $archivo = $request->file('certificate');
-            $certService = new \App\Services\CertificateService();
+            $certService = new \App\Services\CertificateService;
 
             try {
                 $pemContent = $certService->convertToPem(
@@ -98,7 +98,7 @@ class ConfiguracionController extends Controller
                 return back()->withErrors(['certificate' => $e->getMessage()])->withInput();
             }
 
-            $certPath = (new \App\Services\Storage\DocumentStorageService())
+            $certPath = (new \App\Services\Storage\DocumentStorageService)
                 ->storeCertificate($tenant, $pemContent, 'cert.pem');
 
             $tenant->update(['certificate_path' => $certPath]);
@@ -123,17 +123,17 @@ class ConfiguracionController extends Controller
 
     public function probarConexion(): \Illuminate\Http\JsonResponse
     {
-        $tenant = auth()->user()->tenants()->first();
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
 
         if (! $tenant || ! $tenant->sol_user || ! $tenant->sol_pass) {
             return response()->json(['ok' => false, 'mensaje' => 'Credenciales SOL no configuradas o empresa no registrada.']);
         }
 
         return response()->json([
-            'ok'      => true,
+            'ok' => true,
             'mensaje' => 'Credenciales guardadas correctamente.',
             'ambiente' => $tenant->environment === 'produccion' ? 'Producción SUNAT' : 'Beta / Homologación SUNAT',
-            'ruc'     => $tenant->ruc,
+            'ruc' => $tenant->ruc,
             'usuario' => $tenant->sol_user,
         ]);
     }
