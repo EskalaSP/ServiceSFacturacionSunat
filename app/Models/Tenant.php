@@ -142,6 +142,18 @@ class Tenant extends Model
                 ]);
             }
         });
+
+        // Al reasignar el dueño (user_id) desde el panel admin, registrar la membresía owner.
+        static::updated(function (Tenant $tenant) {
+            if ($tenant->wasChanged('user_id') && $tenant->user_id) {
+                $tenant->miembros()->syncWithoutDetaching([
+                    $tenant->user_id => [
+                        'role' => TenantMembership::ROLE_OWNER,
+                        'is_active' => true,
+                    ],
+                ]);
+            }
+        });
     }
 
     public function user(): BelongsTo

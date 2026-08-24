@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Tenant;
+use App\Models\TenantMembership;
 use App\Models\User;
 use App\Rules\PasswordPolicy;
 use Illuminate\Http\RedirectResponse;
@@ -39,7 +41,7 @@ class UserController extends Controller
 
         return Inertia::render('admin/usuarios/index', [
             'usuarios' => $usuarios,
-            'roles' => User::ROLES,
+            'roles' => User::rolesAsignables(),
         ]);
     }
 
@@ -47,7 +49,8 @@ class UserController extends Controller
     {
         return Inertia::render('admin/usuarios/form', [
             'usuario' => null,
-            'roles' => User::ROLES,
+            'roles' => User::rolesAsignables(),
+            'empresas' => $this->empresasOpciones(),
             'modo' => 'crear',
         ]);
     }
@@ -56,7 +59,7 @@ class UserController extends Controller
     {
         $data = $this->validar($request, null);
 
-        User::create([
+        $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
@@ -66,7 +69,13 @@ class UserController extends Controller
             'is_admin' => in_array($data['role'], [User::ROLE_SUPER_ADMIN, User::ROLE_ADMIN], true),
         ]);
 
-        return redirect()->route('admin.usuarios.index')->with('success', 'Usuario creado.');
+        $this->asignarEmpresaSiCliente($user, $data);
+
+        $msg = $data['role'] === User::ROLE_CLIENTE
+            ? 'Cliente creado. Ya puede iniciar sesión y emitir desde el panel.'
+            : 'Usuario creado.';
+
+        return redirect()->route('admin.usuarios.index')->with('success', $msg);
     }
 
     public function edit(User $usuario): Response
@@ -78,8 +87,10 @@ class UserController extends Controller
                 'email' => $usuario->email,
                 'role' => $usuario->role,
                 'is_active' => (bool) $usuario->is_active,
+                'empresa_id' => Tenant::where('user_id', $usuario->id)->value('id'),
             ],
-            'roles' => User::ROLES,
+            'roles' => User::rolesAsignables(),
+            'empresas' => $this->empresasOpciones(),
             'modo' => 'editar',
         ]);
     }
@@ -98,7 +109,38 @@ class UserController extends Controller
         }
         $usuario->save();
 
+        $this->asignarEmpresaSiCliente($usuario, $data);
+
         return redirect()->route('admin.usuarios.index')->with('success', 'Usuario actualizado.');
+    }
+
+    /** Empresas para el selector de dueño (cuando el rol es cliente). */
+    private function empresasOpciones(): array
+    {
+        return Tenant::orderBy('razon_social')->get(['id', 'ruc', 'razon_social'])
+            ->map(fn (Tenant $t) => ['id' => $t->id, 'label' => "{$t->ruc} — {$t->razon_social}"])
+            ->all();
+    }
+
+    /** Si el usuario es cliente y se eligió empresa, lo registra como dueño (owner). */
+    private function asignarEmpresaSiCliente(User $user, array $data): void
+    {
+        if (($data['role'] ?? null) !== User::ROLE_CLIENTE || empty($data['empresa_id'])) {
+            return;
+        }
+
+        $tenant = Tenant::find($data['empresa_id']);
+        if (! $tenant) {
+            return;
+        }
+
+        $tenant->miembros()->syncWithoutDetaching([
+            $user->id => ['role' => TenantMembership::ROLE_OWNER, 'is_active' => true],
+        ]);
+
+        if (! $tenant->user_id) {
+            $tenant->update(['user_id' => $user->id]);
+        }
     }
 
     public function toggle(Request $request, User $usuario): RedirectResponse
@@ -141,7 +183,8 @@ class UserController extends Controller
             'password' => $creando
                 ? ['required', 'string', PasswordPolicy::rule()]
                 : ['nullable', 'string', PasswordPolicy::rule()],
-            'role' => ['required', Rule::in(array_keys(User::ROLES))],
+            'role' => ['required', Rule::in(array_keys(User::rolesAsignables()))],
+            'empresa_id' => ['nullable', 'integer', 'exists:tenants,id'],
             'is_active' => ['nullable', 'boolean'],
         ]);
     }

@@ -36,6 +36,9 @@ class User extends Authenticatable
 
     public const ROLE_LECTURA = 'lectura';
 
+    /** Usuario "cliente": dueño de una empresa. SIN acceso al panel admin (emite en /sunat). */
+    public const ROLE_CLIENTE = 'cliente';
+
     /** Roles que tienen acceso al panel administrativo, con su etiqueta. */
     public const ROLES = [
         self::ROLE_SUPER_ADMIN => 'Super administrador',
@@ -43,6 +46,17 @@ class User extends Authenticatable
         self::ROLE_SOPORTE => 'Soporte',
         self::ROLE_LECTURA => 'Solo lectura',
     ];
+
+    /**
+     * Roles asignables desde el panel: los internos + "cliente" (dueño de empresa).
+     * El rol cliente NO está en ROLES a propósito, para que hasPanelAccess() sea false.
+     *
+     * @return array<string,string>
+     */
+    public static function rolesAsignables(): array
+    {
+        return self::ROLES + [self::ROLE_CLIENTE => 'Cliente (dueño de empresa)'];
+    }
 
     public function tenants(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
@@ -127,7 +141,7 @@ class User extends Authenticatable
 
     public function roleLabel(): string
     {
-        return self::ROLES[$this->role] ?? '—';
+        return self::rolesAsignables()[$this->role] ?? '—';
     }
 
     /**

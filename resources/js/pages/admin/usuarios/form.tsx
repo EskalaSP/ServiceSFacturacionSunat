@@ -18,11 +18,15 @@ type Usuario = {
     email: string;
     role: string;
     is_active: boolean;
+    empresa_id?: number | null;
 };
+
+type EmpresaOpcion = { id: number; label: string };
 
 type Props = {
     usuario: Usuario | null;
     roles: Record<string, string>;
+    empresas?: EmpresaOpcion[];
     modo: 'crear' | 'editar';
 };
 
@@ -32,6 +36,7 @@ const roleHelp: Record<string, string> = {
     admin: 'Gestiona empresas, planes, series, sucursales y usuarios. No puede eliminar empresas.',
     soporte: 'Ve empresas y comprobantes, y puede reenviar comprobantes a SUNAT.',
     lectura: 'Solo puede ver la información del panel. No modifica nada.',
+    cliente: 'Dueño de una empresa. NO entra al panel admin; inicia sesión y emite sus comprobantes desde el panel, y puede crear cajeros para su empresa.',
 };
 
 const breadcrumbs = (modo: 'crear' | 'editar', name?: string): BreadcrumbItem[] => [
@@ -40,7 +45,7 @@ const breadcrumbs = (modo: 'crear' | 'editar', name?: string): BreadcrumbItem[] 
     { title: modo === 'crear' ? 'Nuevo usuario' : `Editar: ${name ?? ''}`, href: '#' },
 ];
 
-export default function UsuariosForm({ usuario, roles, modo }: Props) {
+export default function UsuariosForm({ usuario, roles, empresas = [], modo }: Props) {
     const editando = modo === 'editar';
     const [password, setPassword] = useState('');
 
@@ -49,8 +54,11 @@ export default function UsuariosForm({ usuario, roles, modo }: Props) {
         email: usuario?.email ?? '',
         password: '',
         role: usuario?.role ?? 'lectura',
+        empresa_id: usuario?.empresa_id ?? (null as number | null),
         is_active: usuario?.is_active ?? true,
     });
+
+    const esCliente = data.role === 'cliente';
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -151,6 +159,22 @@ export default function UsuariosForm({ usuario, roles, modo }: Props) {
                                 {roleHelp[data.role] ?? 'Selecciona un rol para ver sus permisos.'}
                             </p>
                         </div>
+                        {esCliente && (
+                            <div>
+                                <Label htmlFor="empresa">Empresa (de la que es dueño)</Label>
+                                <Combobox
+                                    options={empresas.map((e) => ({ value: String(e.id), label: e.label }))}
+                                    value={data.empresa_id ? String(data.empresa_id) : ''}
+                                    onChange={(v) => setData('empresa_id', v ? Number(v) : null)}
+                                    placeholder={empresas.length ? 'Selecciona una empresa' : 'Primero crea una empresa'}
+                                    searchable
+                                />
+                                {errors.empresa_id && <p className="mt-1 text-xs text-red-600">{errors.empresa_id}</p>}
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    El cliente será el dueño de esta empresa y podrá emitir sus comprobantes.
+                                </p>
+                            </div>
+                        )}
                         <div>
                             <Label>Estado</Label>
                             <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm">
