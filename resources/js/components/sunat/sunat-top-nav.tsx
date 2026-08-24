@@ -9,6 +9,8 @@ type NavItem = {
     match: string;
     /** Permiso requerido para ver el item; si falta, no se muestra. */
     can?: string;
+    /** Visible si el usuario tiene AL MENOS uno de estos permisos. */
+    canAny?: string[];
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -20,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Nota de Débito', href: '/sunat/nota-debito/nueva', match: '/sunat/nota-debito', can: 'nota_debito.emitir' },
     { label: 'Anulación', href: '/sunat/anulaciones/nueva', match: '/sunat/anulaciones', can: 'anulacion.emitir' },
     { label: 'Resumen diario', href: '/sunat/resumenes/nueva', match: '/sunat/resumenes', can: 'resumen.emitir' },
+    { label: 'Guías', href: '/sunat/guias/nueva', match: '/sunat/guias', canAny: ['guia_remitente.emitir', 'guia_transportista.emitir'] },
     { label: 'Clientes', href: '/sunat/clientes', match: '/sunat/clientes', can: 'cliente.gestionar' },
     { label: 'Mi equipo', href: '/sunat/equipo', match: '/sunat/equipo', can: 'equipo.gestionar' },
     { label: 'Mi API Key', href: '/sunat/mi-api-key', match: '/sunat/mi-api-key', can: 'apikey.ver' },
@@ -32,8 +35,9 @@ export function SunatTopNav() {
     const tenant = props.tenant;
     const empresa = props.empresa;
 
-    const can = (ability?: string) => !ability || (empresa?.can?.includes(ability) ?? false);
-    const navItems = NAV_ITEMS.filter((item) => can(item.can));
+    const has = (ability: string) => empresa?.can?.includes(ability) ?? false;
+    const can = (ability?: string) => !ability || has(ability);
+    const navItems = NAV_ITEMS.filter((item) => can(item.can) && (!item.canAny || item.canAny.some(has)));
 
     const displayName = user?.name ?? 'Usuario';
     const initial = displayName.trim().charAt(0).toUpperCase() || 'U';

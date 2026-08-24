@@ -11,6 +11,7 @@ use App\Http\Controllers\Web\Sunat\DashboardController;
 use App\Http\Controllers\Web\Sunat\EmpresaActivaController;
 use App\Http\Controllers\Web\Sunat\EquipoController;
 use App\Http\Controllers\Web\Sunat\FacturaController;
+use App\Http\Controllers\Web\Sunat\GuiaController;
 use App\Http\Controllers\Web\Sunat\HistorialController;
 use App\Http\Controllers\Web\Sunat\MiApiKeyController;
 use App\Http\Controllers\Web\Sunat\NotaCreditoController;
@@ -127,6 +128,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/resumenes/nueva', [ResumenController::class, 'create'])->name('resumenes.create');
         Route::post('/resumenes', [ResumenController::class, 'store'])->name('resumenes.store');
+
+        Route::get('/guias/nueva', [GuiaController::class, 'create'])->name('guias.create');
+        Route::post('/guias', [GuiaController::class, 'store'])->name('guias.store');
 
         Route::get('/cotizaciones', [CotizacionController::class, 'index'])->name('cotizaciones');
         Route::get('/cotizaciones/nueva', [CotizacionController::class, 'create'])->name('cotizaciones.create');
