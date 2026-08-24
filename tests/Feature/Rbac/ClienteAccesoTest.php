@@ -35,3 +35,17 @@ it('asignar dueño a una empresa crea su membresía owner', function () {
 
     expect($cliente->membershipFor($tenant)?->role)->toBe('owner');
 });
+
+it('un cliente es redirigido del dashboard al panel de emisión', function () {
+    $tenant = Tenant::factory()->create();
+    $cliente = $tenant->user; // dueño (role puede ser cualquiera; sin panel admin)
+    $cliente->update(['role' => 'cliente']);
+
+    $this->actingAs($cliente)->get('/dashboard')->assertRedirect(route('sunat.dashboard'));
+});
+
+it('un admin sí ve el dashboard', function () {
+    $admin = User::factory()->create(['role' => 'super_admin', 'is_admin' => true]);
+
+    $this->actingAs($admin)->get('/dashboard')->assertOk();
+});

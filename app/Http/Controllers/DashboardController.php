@@ -10,6 +10,7 @@ use App\Models\DebitNote;
 use App\Models\DispatchGuide;
 use App\Models\Invoice;
 use App\Models\Tenant;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -18,12 +19,19 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
 
-        // Solo admins ven las métricas globales completas
-        if (! $user?->is_admin) {
+        // Clientes/cajeros (rol no interno que pertenecen a una empresa) van al panel
+        // de emisión, no al admin. Un usuario sin rol ni empresa cae al dashboard normal.
+        $esInterno = $user && array_key_exists((string) $user->role, \App\Models\User::ROLES);
+        if ($user && ! $esInterno && ($user->role === \App\Models\User::ROLE_CLIENTE || $user->empresas()->exists())) {
+            return redirect()->route('sunat.dashboard');
+        }
+
+        // Roles internos sin métricas globales (soporte/lectura)
+        if (! $user->is_admin) {
             return Inertia::render('dashboard', [
                 'esAdmin' => false,
                 'metricas' => null,
@@ -219,8 +227,8 @@ class DashboardController extends Controller
                 ->where('fecha_emision', '>=', $inicioMes)
                 ->count()
                 + Boleta::where('sunat_status', $estado)
-                ->where('fecha_emision', '>=', $inicioMes)
-                ->count();
+                    ->where('fecha_emision', '>=', $inicioMes)
+                    ->count();
 
             $result[] = [
                 'estado' => ucfirst($estado),
