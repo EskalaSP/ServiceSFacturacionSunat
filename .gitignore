@@ -42,3 +42,6 @@ sync_to_demo.bat
 # Build de release (empaquetado de venta) y herramientas de ofuscacion
 /dist
 /tools
+
+# Documentos internos de seguridad (NO se suben al remoto)
+SEGURIDAD-REPO.md
