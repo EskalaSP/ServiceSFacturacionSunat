@@ -2,11 +2,14 @@
 
 namespace App\Services\Documents;
 
+use App\Jobs\SendReversionToSunat;
 use App\Jobs\SendVoidedToSunat;
 use App\Models\Boleta;
 use App\Models\CreditNote;
 use App\Models\DebitNote;
 use App\Models\Invoice;
+use App\Models\Perception;
+use App\Models\Retention;
 use App\Models\Tenant;
 use App\Models\VoidedDocument;
 use Illuminate\Support\Carbon;
@@ -187,5 +190,120 @@ class VoidedService
                 ->where('correlativo', $detalle['correlativo'])
                 ->update(['sunat_status' => 'anulacion_en_proceso']);
         }
+    }
+
+    /** Modelos de la Reversión (RR): retención (20) y percepción (40). */
+    private const MODELOS_REVERSION = [
+        '20' => Retention::class,
+        '40' => Perception::class,
+    ];
+
+    /**
+     * Crea una Reversión (RR) para dar de baja retenciones (20) o percepciones (40).
+     *
+     * @param  array<int,array<string,mixed>>  $detalles
+     * @return array{ok:bool, errores?:array<int,string>, voided?:VoidedDocument, meta?:array<string,mixed>}
+     */
+    public function crearReversion(Tenant $tenant, string $fechaGeneracion, ?string $fechaComunicacion, array $detalles, bool $enviarAuto = true): array
+    {
+        $fechaCom = $fechaComunicacion ?: now()->format('Y-m-d');
+
+        $errores = $this->validarReversion($tenant->id, $detalles);
+        if (! empty($errores)) {
+            return ['ok' => false, 'errores' => $errores];
+        }
+
+        $fechaId = str_replace('-', '', $fechaCom);
+        $last = VoidedDocument::where('tenant_id', $tenant->id)
+            ->where('identifier', 'like', "RR-{$fechaId}-%")
+            ->max('correlativo') ?? 0;
+
+        $correlativo = str_pad((string) ((int) $last + 1), 3, '0', STR_PAD_LEFT);
+        $identifier = "RR-{$fechaId}-{$correlativo}";
+
+        $voided = VoidedDocument::create([
+            'tenant_id' => $tenant->id,
+            'identifier' => $identifier,
+            'correlativo' => $correlativo,
+            'fecha_generacion' => $fechaGeneracion,
+            'fecha_comunicacion' => $fechaCom,
+            'total_documentos' => count($detalles),
+            'detalles' => $detalles,
+            'sunat_status' => 'pendiente',
+        ]);
+
+        foreach ($detalles as $detalle) {
+            $model = self::MODELOS_REVERSION[$detalle['tipo_documento']] ?? null;
+            if ($model) {
+                $model::where('tenant_id', $tenant->id)
+                    ->where('serie', $detalle['serie'])
+                    ->where('correlativo', $detalle['correlativo'])
+                    ->update(['sunat_status' => 'anulacion_en_proceso']);
+            }
+        }
+
+        if ($enviarAuto) {
+            SendReversionToSunat::dispatch($voided->id);
+            $voided->update(['sunat_status' => 'enviado']);
+        }
+
+        return ['ok' => true, 'voided' => $voided, 'meta' => ['identifier' => $identifier]];
+    }
+
+    /**
+     * @param  array<int,array<string,mixed>>  $detalles
+     * @return array<int,string>
+     */
+    private function validarReversion(int $tenantId, array $detalles): array
+    {
+        $errores = [];
+
+        foreach ($detalles as $detalle) {
+            $tipo = $detalle['tipo_documento'] ?? null;
+            $serie = $detalle['serie'] ?? null;
+            $correlativo = $detalle['correlativo'] ?? null;
+            $model = self::MODELOS_REVERSION[$tipo] ?? null;
+
+            if (! $model) {
+                $errores[] = "Tipo de documento {$tipo} no soportado para reversión.";
+
+                continue;
+            }
+
+            $document = $model::where('tenant_id', $tenantId)
+                ->where('serie', $serie)
+                ->where('correlativo', $correlativo)
+                ->first();
+
+            $ref = "{$serie}-{$correlativo}";
+
+            if (! $document) {
+                $errores[] = "Documento {$ref} no existe.";
+
+                continue;
+            }
+
+            if (strtolower((string) $document->sunat_status) !== 'aceptado') {
+                $errores[] = "Documento {$ref} no está aceptado por SUNAT (estado: {$document->sunat_status}).";
+
+                continue;
+            }
+
+            $duplicate = VoidedDocument::where('tenant_id', $tenantId)
+                ->where('identifier', 'like', 'RR-%')
+                ->whereIn('sunat_status', ['pendiente', 'enviado', 'aceptado'])
+                ->whereJsonContains('detalles', [
+                    'tipo_documento' => $tipo,
+                    'serie' => $serie,
+                    'correlativo' => $correlativo,
+                ])
+                ->first();
+
+            if ($duplicate) {
+                $errores[] = "Ya existe una reversión para {$ref} ({$duplicate->identifier}).";
+            }
+        }
+
+        return $errores;
     }
 }

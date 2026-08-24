@@ -16,7 +16,11 @@ use App\Http\Controllers\Web\Sunat\HistorialController;
 use App\Http\Controllers\Web\Sunat\MiApiKeyController;
 use App\Http\Controllers\Web\Sunat\NotaCreditoController;
 use App\Http\Controllers\Web\Sunat\NotaDebitoController;
+use App\Http\Controllers\Web\Sunat\NotaVentaController;
+use App\Http\Controllers\Web\Sunat\PercepcionController;
 use App\Http\Controllers\Web\Sunat\ResumenController;
+use App\Http\Controllers\Web\Sunat\RetencionController;
+use App\Http\Controllers\Web\Sunat\ReversionController;
 use Illuminate\Support\Facades\Route;
 
 // ── Home root ───────────────────────────────────────────────────────────────
@@ -131,6 +135,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/guias/nueva', [GuiaController::class, 'create'])->name('guias.create');
         Route::post('/guias', [GuiaController::class, 'store'])->name('guias.store');
+
+        Route::get('/retenciones/nueva', [RetencionController::class, 'create'])->name('retenciones.create');
+        Route::post('/retenciones', [RetencionController::class, 'store'])->name('retenciones.store');
+
+        Route::get('/percepciones/nueva', [PercepcionController::class, 'create'])->name('percepciones.create');
+        Route::post('/percepciones', [PercepcionController::class, 'store'])->name('percepciones.store');
+
+        Route::get('/reversiones/nueva', [ReversionController::class, 'create'])->name('reversiones.create');
+        Route::post('/reversiones', [ReversionController::class, 'store'])->name('reversiones.store');
+
+        Route::get('/nota-venta/nueva', [NotaVentaController::class, 'create'])->name('nota-venta.create');
+        Route::post('/nota-venta', [NotaVentaController::class, 'store'])->name('nota-venta.store');
 
         Route::get('/cotizaciones', [CotizacionController::class, 'index'])->name('cotizaciones');
         Route::get('/cotizaciones/nueva', [CotizacionController::class, 'create'])->name('cotizaciones.create');
