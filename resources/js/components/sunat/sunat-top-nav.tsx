@@ -32,6 +32,10 @@ const NAV_ITEMS: NavItem[] = [
     { label: 'Retención', href: '/sunat/retenciones/nueva', match: '/sunat/retenciones', can: 'retencion.emitir', group: 'more' },
     { label: 'Percepción', href: '/sunat/percepciones/nueva', match: '/sunat/percepciones', can: 'percepcion.emitir', group: 'more' },
     { label: 'Reversión', href: '/sunat/reversiones/nueva', match: '/sunat/reversiones', can: 'reversion.emitir', group: 'more' },
+    { label: 'Reportes', href: '/sunat/reportes', match: '/sunat/reportes', can: 'reporte.ver', group: 'more' },
+    { label: 'Consultar SUNAT', href: '/sunat/consulta-cpe', match: '/sunat/consulta-cpe', can: 'consulta.cpe', group: 'more' },
+    { label: 'Exportar (ZIP)', href: '/sunat/exportar', match: '/sunat/exportar', can: 'exportar', group: 'more' },
+    { label: 'Series', href: '/sunat/series', match: '/sunat/series', can: 'serie.gestionar', group: 'more' },
     { label: 'Mi API Key', href: '/sunat/mi-api-key', match: '/sunat/mi-api-key', can: 'apikey.ver', group: 'more' },
 ];
 

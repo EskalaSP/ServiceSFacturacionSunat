@@ -6,10 +6,12 @@ use App\Http\Controllers\Web\Sunat\BoletaController;
 use App\Http\Controllers\Web\Sunat\BuscarClienteController;
 use App\Http\Controllers\Web\Sunat\ClienteController;
 use App\Http\Controllers\Web\Sunat\ConfiguracionController;
+use App\Http\Controllers\Web\Sunat\ConsultaCpeController;
 use App\Http\Controllers\Web\Sunat\CotizacionController;
 use App\Http\Controllers\Web\Sunat\DashboardController;
 use App\Http\Controllers\Web\Sunat\EmpresaActivaController;
 use App\Http\Controllers\Web\Sunat\EquipoController;
+use App\Http\Controllers\Web\Sunat\ExportarController;
 use App\Http\Controllers\Web\Sunat\FacturaController;
 use App\Http\Controllers\Web\Sunat\GuiaController;
 use App\Http\Controllers\Web\Sunat\HistorialController;
@@ -18,9 +20,11 @@ use App\Http\Controllers\Web\Sunat\NotaCreditoController;
 use App\Http\Controllers\Web\Sunat\NotaDebitoController;
 use App\Http\Controllers\Web\Sunat\NotaVentaController;
 use App\Http\Controllers\Web\Sunat\PercepcionController;
+use App\Http\Controllers\Web\Sunat\ReporteController;
 use App\Http\Controllers\Web\Sunat\ResumenController;
 use App\Http\Controllers\Web\Sunat\RetencionController;
 use App\Http\Controllers\Web\Sunat\ReversionController;
+use App\Http\Controllers\Web\Sunat\SerieController;
 use Illuminate\Support\Facades\Route;
 
 // ── Home root ───────────────────────────────────────────────────────────────
@@ -165,6 +169,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/buscar-documento', [BuscarClienteController::class, 'buscarDocumento'])->name('buscar-documento');
 
         Route::get('/mi-api-key', [MiApiKeyController::class, 'show'])->name('mi-api-key');
+
+        // Fase 4 — series, consultas, exportar y reportes (empresa activa)
+        Route::get('/series', [SerieController::class, 'index'])->name('series');
+        Route::post('/series', [SerieController::class, 'store'])->name('series.store');
+        Route::post('/series/{serie}/toggle', [SerieController::class, 'toggle'])->name('series.toggle');
+        Route::delete('/series/{serie}', [SerieController::class, 'destroy'])->name('series.destroy');
+
+        Route::get('/consulta-cpe', [ConsultaCpeController::class, 'create'])->name('consulta-cpe');
+        Route::get('/consulta-cpe/buscar', [ConsultaCpeController::class, 'consultar'])->name('consulta-cpe.consultar');
+
+        Route::get('/exportar', [ExportarController::class, 'index'])->name('exportar');
+        Route::get('/exportar/descargar', [ExportarController::class, 'download'])->name('exportar.descargar');
+
+        Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes');
+        Route::get('/reportes/registro-ventas', [ReporteController::class, 'registroVentas'])->name('reportes.registro-ventas');
 
         // Mi equipo — el dueño gestiona los cajeros de su empresa (super admin también).
         Route::get('/equipo', [EquipoController::class, 'index'])->name('equipo');
