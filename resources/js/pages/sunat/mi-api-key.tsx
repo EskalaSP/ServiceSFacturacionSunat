@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
-import { Copy, Check, Eye, EyeOff, Key } from 'lucide-react';
+import { AlertCircle, Copy, Check, Eye, EyeOff, Key } from 'lucide-react';
 import SunatLayout from '@/layouts/sunat-layout';
 
 type Props = {
@@ -61,7 +61,7 @@ export default function MiApiKey({ api_key, api_secret, ruc, razon_social, envir
                 <div className="mb-5 flex items-center gap-3">
                     <h1 className="text-xl font-semibold tracking-tight">Mis credenciales API</h1>
                     {environment !== 'produccion' && (
-                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                        <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
                             Beta
                         </span>
                     )}
@@ -81,8 +81,9 @@ export default function MiApiKey({ api_key, api_secret, ruc, razon_social, envir
 
                     <div className="flex flex-col gap-4 p-5">
 
-                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-                            Guarda estas credenciales en un lugar seguro. El <strong>API Secret</strong> no se puede recuperar si lo pierdes — solo regenerar.
+                        <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+                            <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+                            <p>Guarda estas credenciales en un lugar seguro. El <strong className="font-semibold text-foreground">API Secret</strong> no se puede recuperar si lo pierdes — solo regenerar.</p>
                         </div>
 
                         <CopyField label="API Key" value={api_key} />

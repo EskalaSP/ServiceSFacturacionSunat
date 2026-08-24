@@ -44,9 +44,13 @@ class PercepcionController extends Controller
 
         try {
             $per = $action->execute($tenant, $request->all(), $enviar);
+            $numero = $per->numero_completo ?? '';
 
-            return redirect()->route('sunat.historial')
-                ->with('success', 'Percepción '.($per->numero_completo ?? '').' emitida.');
+            return redirect()->route('sunat.percepciones.create')
+                ->with('success', $enviar
+                    ? "Percepción {$numero} emitida y enviada a SUNAT."
+                    : "Percepción {$numero} guardada como borrador.")
+                ->with('emitido', ['tipo' => '40', 'id' => $per->id, 'numero' => $numero, 'formato' => $request->input('pdf_format', 'a4')]);
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', 'Error al emitir percepción: '.$e->getMessage());
         }

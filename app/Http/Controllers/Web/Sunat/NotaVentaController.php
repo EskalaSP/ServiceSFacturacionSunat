@@ -15,6 +15,34 @@ use Inertia\Response;
 /** Nota de venta (documento interno, sin SUNAT). Reutiliza CreateSaleNoteAction. */
 class NotaVentaController extends Controller
 {
+    public function index(): Response|RedirectResponse
+    {
+        $tenant = app(EmpresaActiva::class)->actual();
+        if (! $tenant) {
+            return redirect()->route('sunat.configuracion');
+        }
+
+        $notas = \App\Models\SaleNote::forTenant($tenant->id)
+            ->orderByDesc('id')
+            ->limit(300)
+            ->get()
+            ->map(fn ($n) => [
+                'id' => $n->id,
+                'numero' => $n->numero,
+                'cliente' => $n->client_razon_social,
+                'fecha' => optional($n->fecha_emision)->format('Y-m-d') ?? (string) $n->fecha_emision,
+                'total' => (float) $n->mto_imp_venta,
+                'moneda' => $n->tipo_moneda ?? 'PEN',
+                'estado' => $n->status ?? 'emitida',
+                'tiene_pdf' => ! empty($n->pdf_path),
+            ])
+            ->all();
+
+        return Inertia::render('sunat/nota-venta/index', [
+            'notas' => $notas,
+        ]);
+    }
+
     public function create(): Response|RedirectResponse
     {
         $tenant = app(EmpresaActiva::class)->actual();

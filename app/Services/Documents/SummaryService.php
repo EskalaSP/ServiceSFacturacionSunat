@@ -22,7 +22,7 @@ class SummaryService
      * @param  array<int,array{id:int,motivo?:string}>|null  $anular
      * @return array{ok:bool, error?:string, errores?:array<int,string>, summary?:Summary, boletas?:Collection, meta?:array<string,mixed>}
      */
-    public function crear(Tenant $tenant, string $fechaResumenStr, ?array $anular, bool $enviarAuto = true): array
+    public function crear(Tenant $tenant, string $fechaResumenStr, ?array $anular, bool $enviarAuto = true, ?string $motivo = null, ?int $userId = null): array
     {
         $fechaResumen = Carbon::parse($fechaResumenStr);
         $hoy = Carbon::today('America/Lima');
@@ -75,6 +75,8 @@ class SummaryService
             'total_documentos' => $boletas->count(),
             'tipo' => $isAnulacion ? 'anulacion' : 'envio',
             'document_ids' => $boletas->pluck('id')->toArray(),
+            'motivo' => $isAnulacion ? $motivo : null,
+            'anulado_por' => $isAnulacion ? $userId : null,
             'sunat_status' => 'pendiente',
         ]);
 

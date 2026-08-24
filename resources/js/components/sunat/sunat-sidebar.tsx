@@ -16,11 +16,13 @@ import {
     Hash,
     History,
     KeyRound,
+    LayoutDashboard,
     Percent,
     Receipt,
     ReceiptText,
     Search,
     Settings2,
+    Store,
     Truck,
     Undo2,
     Users,
@@ -52,13 +54,13 @@ const GRUPOS: Grupo[] = [
         label: 'Emitir',
         icon: FileText,
         items: [
-            { title: 'Factura', href: '/sunat/facturas/nueva', icon: FileText, can: 'factura.emitir' },
-            { title: 'Boleta', href: '/sunat/boletas/nueva', icon: Receipt, can: 'boleta.emitir' },
-            { title: 'Nota de venta', href: '/sunat/nota-venta/nueva', icon: ReceiptText, can: 'nota_venta.emitir' },
+            { title: 'Factura', href: '/sunat/facturas', icon: FileText, can: 'factura.emitir' },
+            { title: 'Boleta', href: '/sunat/boletas', icon: Receipt, can: 'boleta.emitir' },
+            { title: 'Nota de venta', href: '/sunat/nota-venta', icon: ReceiptText, can: 'nota_venta.emitir' },
             { title: 'Cotizaciones', href: '/sunat/cotizaciones', icon: FileSpreadsheet, can: 'cotizacion.emitir' },
-            { title: 'Nota de crédito', href: '/sunat/nota-credito/nueva', icon: FileMinus, can: 'nota_credito.emitir' },
-            { title: 'Nota de débito', href: '/sunat/nota-debito/nueva', icon: FilePlus, can: 'nota_debito.emitir' },
-            { title: 'Guías de remisión', href: '/sunat/guias/nueva', icon: Truck, canAny: ['guia_remitente.emitir', 'guia_transportista.emitir'] },
+            { title: 'Nota de crédito', href: '/sunat/nota-credito', icon: FileMinus, can: 'nota_credito.emitir' },
+            { title: 'Nota de débito', href: '/sunat/nota-debito', icon: FilePlus, can: 'nota_debito.emitir' },
+            { title: 'Guías de remisión', href: '/sunat/guias', icon: Truck, canAny: ['guia_remitente.emitir', 'guia_transportista.emitir'] },
         ],
     },
     {
@@ -66,7 +68,7 @@ const GRUPOS: Grupo[] = [
         icon: ClipboardList,
         items: [
             { title: 'Anulación', href: '/sunat/anulaciones/nueva', icon: Ban, can: 'anulacion.emitir' },
-            { title: 'Resumen diario', href: '/sunat/resumenes/nueva', icon: CalendarDays, can: 'resumen.emitir' },
+            { title: 'Resúmenes diarios', href: '/sunat/resumenes', icon: CalendarDays, can: 'resumen.emitir' },
             { title: 'Retención', href: '/sunat/retenciones/nueva', icon: Percent, can: 'retencion.emitir' },
             { title: 'Percepción', href: '/sunat/percepciones/nueva', icon: Percent, can: 'percepcion.emitir' },
             { title: 'Reversión', href: '/sunat/reversiones/nueva', icon: Undo2, can: 'reversion.emitir' },
@@ -88,6 +90,7 @@ const GRUPOS: Grupo[] = [
         items: [
             { title: 'Clientes', href: '/sunat/clientes', icon: Users, can: 'cliente.gestionar' },
             { title: 'Series', href: '/sunat/series', icon: Hash, can: 'serie.gestionar' },
+            { title: 'Sucursales', href: '/sunat/sucursales', icon: Store, can: 'sucursal.gestionar' },
             { title: 'Mi equipo', href: '/sunat/equipo', icon: UsersRound, can: 'equipo.gestionar' },
             { title: 'SIRE (RCE)', href: '/sunat/sire', icon: Database, can: 'sire.gestionar' },
             { title: 'Mi API Key', href: '/sunat/mi-api-key', icon: KeyRound, can: 'apikey.ver' },
@@ -97,7 +100,7 @@ const GRUPOS: Grupo[] = [
 ];
 
 export function SunatSidebar() {
-    const { isCurrentOrParentUrl } = useCurrentUrl();
+    const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
     const { props } = usePage<SharedData>();
     const empresa = props.empresa;
     const tenant = props.tenant;
@@ -114,7 +117,7 @@ export function SunatSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="h-auto py-2">
-                            <Link href="/sunat/facturas/nueva" prefetch>
+                            <Link href="/sunat" prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -145,6 +148,15 @@ export function SunatSidebar() {
             <SidebarContent>
                 <SidebarGroup className="px-2 py-0">
                     <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild isActive={isCurrentUrl('/sunat')} tooltip={{ children: 'Panel' }}>
+                                <Link href="/sunat" prefetch>
+                                    <LayoutDashboard />
+                                    <span>Panel</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+
                         {GRUPOS.map((grupo) => {
                             const items = grupo.items.filter(visible);
                             if (items.length === 0) return null;

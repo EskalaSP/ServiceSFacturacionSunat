@@ -1,9 +1,11 @@
 import { Head, router } from '@inertiajs/react';
-import { Activity, Clock3, RefreshCw, Search, X } from 'lucide-react';
+import { type ColumnDef } from '@tanstack/react-table';
+import { Activity, RefreshCw, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DataTable } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
 import { Pagination, type PaginationLink } from '@/components/ui/pagination';
 import type { BreadcrumbItem } from '@/types';
@@ -60,6 +62,62 @@ export default function LogsEnvios({ logs, filtros }: Props) {
         router.get(base, { estado, buscar: buscar || undefined }, { preserveScroll: true, replace: true });
     };
 
+    const columns: ColumnDef<Log>[] = [
+        {
+            accessorKey: 'sent_at',
+            header: 'Hora',
+            meta: { label: 'Hora' },
+            cell: ({ row }) => <span className="whitespace-nowrap text-xs text-muted-foreground">{fecha(row.original.sent_at ?? row.original.fecha_emision)}</span>,
+        },
+        {
+            accessorKey: 'razon_social',
+            header: 'Empresa',
+            meta: { label: 'Empresa', primary: true },
+            cell: ({ row }) => (
+                <div className="max-w-[270px]">
+                    <div className="truncate font-medium">{row.original.razon_social}</div>
+                    <div className="font-mono text-xs text-muted-foreground">{row.original.ruc}</div>
+                </div>
+            ),
+        },
+        {
+            id: 'comprobante',
+            header: 'Comprobante',
+            enableSorting: false,
+            meta: { label: 'Comprobante' },
+            cell: ({ row }) => (
+                <div>
+                    <div className="font-semibold">{row.original.tipo}</div>
+                    <div className="font-mono text-xs">{row.original.serie}-{String(row.original.correlativo).padStart(8, '0')}</div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'estado',
+            header: 'Estado SUNAT',
+            meta: { label: 'Estado' },
+            cell: ({ row }) => <Estado value={row.original.estado} />,
+        },
+        {
+            id: 'respuesta',
+            header: 'Código / respuesta',
+            enableSorting: false,
+            meta: { label: 'Código / respuesta' },
+            cell: ({ row }) => (
+                <div className="max-w-[420px]">
+                    <div className="font-mono text-xs text-muted-foreground">{row.original.codigo ?? '—'}</div>
+                    <div className="break-words text-xs">{row.original.descripcion ?? 'Sin respuesta todavía'}</div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'total',
+            header: 'Total',
+            meta: { label: 'Total', alignRight: true },
+            cell: ({ row }) => <span className="font-mono">{dinero(row.original.total)}</span>,
+        },
+    ];
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Logs de envíos" />
@@ -78,17 +136,14 @@ export default function LogsEnvios({ logs, filtros }: Props) {
                     <Button variant="ghost" onClick={() => { setBuscar(''); router.get(base); }}><X className="size-4" /></Button>
                 </div>
 
-                <div className="overflow-hidden rounded-xl bg-card shadow-soft">
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[980px] text-sm">
-                            <thead className="border-b bg-muted/30 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-3">Hora</th><th className="p-3">Empresa</th><th className="p-3">Comprobante</th><th className="p-3">Estado SUNAT</th><th className="p-3">Código / respuesta</th><th className="p-3 text-right">Total</th></tr></thead>
-                            <tbody className="divide-y">
-                                {logs.data.map((log) => <tr key={`${log.tipo}-${log.id}-${log.tenant_id}`} className="align-top hover:bg-muted/20"><td className="whitespace-nowrap p-3 text-xs text-muted-foreground">{fecha(log.sent_at ?? log.fecha_emision)}</td><td className="max-w-[270px] p-3"><div className="truncate font-medium">{log.razon_social}</div><div className="font-mono text-xs text-muted-foreground">{log.ruc}</div></td><td className="p-3"><div className="font-semibold">{log.tipo}</div><div className="font-mono text-xs">{log.serie}-{String(log.correlativo).padStart(8, '0')}</div></td><td className="p-3"><Estado value={log.estado} /></td><td className="max-w-[420px] p-3"><div className="font-mono text-xs text-muted-foreground">{log.codigo ?? '—'}</div><div className="break-words text-xs">{log.descripcion ?? 'Sin respuesta todavía'}</div></td><td className="p-3 text-right font-mono">{dinero(log.total)}</td></tr>)}
-                                {logs.data.length === 0 && <tr><td colSpan={6} className="p-10 text-center text-muted-foreground"><Clock3 className="mx-auto mb-2 size-5" />No hay comprobantes para estos filtros.</td></tr>}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <DataTable
+                    columns={columns}
+                    data={logs.data}
+                    searchable={false}
+                    manualPagination
+                    emptyMessage="No hay comprobantes para estos filtros."
+                />
+
                 <Pagination links={logs.links} from={logs.from} to={logs.to} total={logs.total} />
             </div>
         </AppLayout>

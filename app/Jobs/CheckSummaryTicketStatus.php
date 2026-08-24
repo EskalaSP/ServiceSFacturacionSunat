@@ -43,6 +43,7 @@ class CheckSummaryTicketStatus implements ShouldQueue
             $result = $service->getStatus($summary->ticket);
         } catch (\SoapFault $e) {
             $this->release($this->nextBackoff());
+
             return;
         }
 
@@ -63,7 +64,7 @@ class CheckSummaryTicketStatus implements ShouldQueue
                 $cdrPath = $cdrPath ? preg_replace('/\.xml$/', '.zip', $cdrPath) : null;
 
                 if ($cdrPath) {
-                    $cdrPath = str_replace($summary->identifier, 'R-' . $summary->identifier, $cdrPath);
+                    $cdrPath = str_replace($summary->identifier, 'R-'.$summary->identifier, $cdrPath);
                     Storage::disk('public')->put($cdrPath, $result['cdr_zip']);
                     $updateData['cdr_path'] = $cdrPath;
                 }
@@ -71,18 +72,27 @@ class CheckSummaryTicketStatus implements ShouldQueue
 
             $summary->update($updateData);
 
-            // Actualizar todas las boletas asociadas
-            $boletaStatus = $accepted
-                ? ($summary->tipo === 'anulacion' ? 'anulado' : 'aceptado')
-                : 'rechazado';
+            // Estado final de las boletas según el tipo de resumen y el resultado:
+            //  - envío aceptado     → aceptado
+            //  - envío rechazado    → rechazado
+            //  - anulación aceptada → anulado
+            //  - anulación rechazada→ vuelven a 'aceptado' (la boleta sigue siendo válida)
+            if ($accepted) {
+                $boletaStatus = $summary->tipo === 'anulacion' ? 'anulado' : 'aceptado';
+            } else {
+                $boletaStatus = $summary->tipo === 'anulacion' ? 'aceptado' : 'rechazado';
+            }
 
-            Boleta::whereIn('id', $summary->document_ids ?? [])
-                ->update([
-                    'sunat_status' => $boletaStatus,
-                    'sunat_code' => $result['code'] ?? null,
-                    'sunat_description' => $result['description'] ?? null,
-                    'sunat_notes' => $result['notes'] ?? null,
-                ]);
+            $boletaUpdate = ['sunat_status' => $boletaStatus];
+            // No pisamos el CDR/respuesta original de la boleta cuando revertimos
+            // una anulación rechazada: esa respuesta es de la anulación, no de la boleta.
+            if (! ($summary->tipo === 'anulacion' && ! $accepted)) {
+                $boletaUpdate['sunat_code'] = $result['code'] ?? null;
+                $boletaUpdate['sunat_description'] = $result['description'] ?? null;
+                $boletaUpdate['sunat_notes'] = $result['notes'] ?? null;
+            }
+
+            Boleta::whereIn('id', $summary->document_ids ?? [])->update($boletaUpdate);
 
             // Generar PDFs de las boletas aceptadas
             if ($accepted && $summary->tipo !== 'anulacion' && config('pdf.auto_generate', true)) {
@@ -104,6 +114,7 @@ class CheckSummaryTicketStatus implements ShouldQueue
             // Codigo 0/187 = SUNAT aún procesando; no numérico (ej. "HTTP") = fallo de red → reintentar
             if (in_array($errorCode, ['0', '187', 0, 187], true) || ! is_numeric((string) $errorCode)) {
                 $this->release($this->nextBackoff());
+
                 return;
             }
 
@@ -114,12 +125,20 @@ class CheckSummaryTicketStatus implements ShouldQueue
                 'sunat_description' => $result['error_message'] ?? null,
             ]);
 
-            Boleta::whereIn('id', $summary->document_ids ?? [])
-                ->update([
-                    'sunat_status' => 'rechazado',
-                    'sunat_code' => $errorCode,
-                    'sunat_description' => $result['error_message'] ?? null,
-                ]);
+            // En una anulación con error definitivo, la boleta sigue siendo válida → 'aceptado'.
+            // En un envío con error, la boleta queda 'rechazado'.
+            if ($summary->tipo === 'anulacion') {
+                Boleta::whereIn('id', $summary->document_ids ?? [])
+                    ->where('sunat_status', 'anulacion_en_proceso')
+                    ->update(['sunat_status' => 'aceptado']);
+            } else {
+                Boleta::whereIn('id', $summary->document_ids ?? [])
+                    ->update([
+                        'sunat_status' => 'rechazado',
+                        'sunat_code' => $errorCode,
+                        'sunat_description' => $result['error_message'] ?? null,
+                    ]);
+            }
 
             if ($tenant->webhook_url) {
                 NotifyWebhookJob::dispatch(Summary::class, $summary->id, 'summary.status_updated');
@@ -130,6 +149,7 @@ class CheckSummaryTicketStatus implements ShouldQueue
     private function nextBackoff(): int
     {
         $attempt = $this->attempts();
+
         return $this->backoff[$attempt - 1] ?? 600;
     }
 }

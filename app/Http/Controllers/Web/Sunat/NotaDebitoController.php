@@ -12,6 +12,21 @@ use Inertia\Inertia;
 
 class NotaDebitoController extends Controller
 {
+    public function index(\App\Services\Documents\DocumentoListingService $listing): \Inertia\Response|\Illuminate\Http\RedirectResponse
+    {
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
+        if (! $tenant) {
+            return redirect()->route('sunat.configuracion');
+        }
+
+        return Inertia::render('sunat/documentos/index', [
+            'titulo' => 'Notas de débito',
+            'subtitulo' => 'Notas de débito emitidas',
+            'nuevo' => ['href' => '/sunat/nota-debito/nueva', 'label' => 'Nueva nota de débito'],
+            'documentos' => $listing->listar($tenant, 'notas-debito'),
+        ]);
+    }
+
     private const MOTIVOS = [
         ['codigo' => '01', 'descripcion' => 'Intereses por mora'],
         ['codigo' => '02', 'descripcion' => 'Aumento en el valor'],
@@ -41,6 +56,9 @@ class NotaDebitoController extends Controller
                     'correlativo' => $doc->correlativo,
                     'numero' => $doc->serie.'-'.str_pad($doc->correlativo, 8, '0', STR_PAD_LEFT),
                     'cliente' => $doc->client_razon_social,
+                    'cliente_tipo_doc' => $doc->client_tipo_doc,
+                    'cliente_num_doc' => $doc->client_num_doc,
+                    'cliente_direccion' => $doc->client_direccion,
                     'total' => $doc->mto_imp_venta,
                     'moneda' => $doc->tipo_moneda,
                     'items' => $doc->items->map(fn ($it) => [
@@ -84,12 +102,19 @@ class NotaDebitoController extends Controller
             $data['doc_afectado_correlativo'] = $data['doc_afectado_corr'];
         }
 
-        try {
-            $doc = $action->execute($tenant, $data);
-            $numero = $doc->serie.'-'.str_pad($doc->correlativo, 8, '0', STR_PAD_LEFT);
+        $enviar = $request->boolean('enviar_automatico', true);
 
-            return redirect()->route('sunat.historial')
-                ->with('success', "Nota de Débito {$numero} emitida correctamente.");
+        try {
+            $doc = $action->execute($tenant, $data, $enviar);
+            $numero = $doc->serie.'-'.str_pad((string) $doc->correlativo, 8, '0', STR_PAD_LEFT);
+
+            $msg = $enviar
+                ? "Nota de Débito {$numero} emitida y enviada a SUNAT."
+                : "Nota de Débito {$numero} guardada como borrador.";
+
+            return redirect()->route('sunat.nota-debito.create')
+                ->with('success', $msg)
+                ->with('emitido', ['tipo' => '08', 'id' => $doc->id, 'numero' => $numero, 'formato' => $request->input('pdf_format', 'a4')]);
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', 'Error al emitir: '.$e->getMessage());
         }

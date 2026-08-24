@@ -7,7 +7,7 @@ export default function NuevaRetencion() {
     return (
         <SunatLayout>
             <Head title="Nueva retención" />
-            <div className="mx-auto max-w-3xl">
+            <div className="mx-auto max-w-4xl">
                 <header className="mb-5 flex items-center gap-3">
                     <span className="flex size-10 items-center justify-center rounded-xl bg-accent text-primary">
                         <Percent className="size-5" />
@@ -21,6 +21,7 @@ export default function NuevaRetencion() {
             <RetPercForm
                 config={{
                     titulo: 'Retención',
+                    docTipo: '20',
                     entidadKey: 'proveedor',
                     entidadLabel: 'Proveedor (a quien se retiene)',
                     pagosKey: 'pagos',

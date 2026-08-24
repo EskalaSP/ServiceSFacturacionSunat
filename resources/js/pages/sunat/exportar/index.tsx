@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Download } from 'lucide-react';
+import { Check, Download } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,7 +46,7 @@ export default function Exportar() {
                         <div className="grid gap-1.5"><Label>Hasta</Label><Input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></div>
                         <div className="grid gap-1.5">
                             <Label>Formato</Label>
-                            <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="h-10 rounded-xl border border-border bg-background px-3 text-sm">
+                            <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="h-10 rounded-xl border border-input bg-card px-3 text-sm dark:border-border dark:bg-background">
                                 <option value="xml">XML</option>
                                 <option value="pdf">PDF</option>
                                 <option value="ambos">Ambos</option>
@@ -59,7 +59,10 @@ export default function Exportar() {
                         <div className="grid gap-2 sm:grid-cols-2">
                             {DOCS.map((d) => (
                                 <label key={d.key} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
-                                    <input type="checkbox" checked={docs.includes(d.key)} onChange={() => toggleDoc(d.key)} className="accent-primary" />
+                                    <span className="relative flex size-4 items-center justify-center">
+                                        <input type="checkbox" checked={docs.includes(d.key)} onChange={() => toggleDoc(d.key)} className="peer size-4 shrink-0 cursor-pointer appearance-none rounded border-2 border-muted-foreground/40 bg-transparent transition-colors checked:border-primary checked:bg-primary" />
+                                        <Check className="pointer-events-none absolute size-3 text-white opacity-0 peer-checked:opacity-100" strokeWidth={3} />
+                                    </span>
                                     {d.label}
                                 </label>
                             ))}

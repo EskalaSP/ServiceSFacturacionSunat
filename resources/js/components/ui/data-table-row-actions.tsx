@@ -40,11 +40,11 @@ export function DataTableRowActions({ actions }: { actions: RowAction[] }) {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="py-1 text-[11px] uppercase tracking-wide text-muted-foreground">Acciones</DropdownMenuLabel>
+                <DropdownMenuSeparator className="my-0.5" />
                 {actions.map((action, i) => (
                     <React.Fragment key={i}>
-                        {action.separatorBefore && <DropdownMenuSeparator />}
+                        {action.separatorBefore && <DropdownMenuSeparator className="my-0.5" />}
                         <DropdownMenuItem
                             disabled={action.disabled}
                             onSelect={(e) => {
@@ -52,6 +52,7 @@ export function DataTableRowActions({ actions }: { actions: RowAction[] }) {
                                 action.onSelect();
                             }}
                             className={cn(
+                                'py-1',
                                 action.danger &&
                                     'text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400',
                             )}

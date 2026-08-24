@@ -66,7 +66,7 @@ export function Combobox({
         >
             <SelectTrigger
                 className={cn(
-                    'form-select-trigger w-full border-transparent bg-input font-medium shadow-none data-[state=open]:border-ring',
+                    'form-select-trigger w-full border-input bg-card font-medium shadow-none data-[state=open]:border-ring dark:border-transparent dark:bg-input',
                     className,
                 )}
             >

@@ -44,9 +44,13 @@ class RetencionController extends Controller
 
         try {
             $ret = $action->execute($tenant, $request->all(), $enviar);
+            $numero = $ret->numero_completo ?? '';
 
-            return redirect()->route('sunat.historial')
-                ->with('success', 'Retención '.($ret->numero_completo ?? '').' emitida.');
+            return redirect()->route('sunat.retenciones.create')
+                ->with('success', $enviar
+                    ? "Retención {$numero} emitida y enviada a SUNAT."
+                    : "Retención {$numero} guardada como borrador.")
+                ->with('emitido', ['tipo' => '20', 'id' => $ret->id, 'numero' => $numero, 'formato' => $request->input('pdf_format', 'a4')]);
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', 'Error al emitir retención: '.$e->getMessage());
         }

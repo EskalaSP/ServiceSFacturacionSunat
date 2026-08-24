@@ -3,17 +3,29 @@
 namespace App\Http\Controllers\Web\Sunat;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendDocumentToSunat;
 use App\Models\Boleta;
 use App\Models\CreditNote;
+use App\Models\DebitNote;
+use App\Models\DispatchGuide;
 use App\Models\Invoice;
+use App\Models\Perception;
+use App\Models\Retention;
+use App\Models\Summary;
+use App\Models\VoidedDocument;
+use App\Services\Documents\DocumentoListingService;
+use App\Services\Documents\SummaryService;
+use App\Services\Documents\VoidedService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class HistorialController extends Controller
 {
-    public function index(Request $request): Response|\Illuminate\Http\RedirectResponse
+    public function index(Request $request, DocumentoListingService $listing): Response|\Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
 
@@ -22,55 +34,18 @@ class HistorialController extends Controller
         }
 
         $tipo = $request->input('tipo', 'todos');
-        $estado = $request->input('estado');
-        $desde = $request->input('desde');
-        $hasta = $request->input('hasta');
-        $cliente = $request->input('cliente');
+        $filtros = [
+            'estado' => $request->input('estado'),
+            'desde' => $request->input('desde'),
+            'hasta' => $request->input('hasta'),
+            'cliente' => $request->input('cliente'),
+        ];
 
-        $applyFilters = function ($query) use ($estado, $desde, $hasta, $cliente) {
-            if ($estado) {
-                $query->where('sunat_status', $estado);
-            }
-            if ($desde) {
-                $query->whereDate('fecha_emision', '>=', $desde);
-            }
-            if ($hasta) {
-                $query->whereDate('fecha_emision', '<=', $hasta);
-            }
-            if ($cliente) {
-                $query->where('client_razon_social', 'like', "%{$cliente}%");
-            }
-
-            return $query->orderByDesc('fecha_emision');
-        };
-
-        if ($tipo === 'facturas') {
-            $rows = $applyFilters(Invoice::forTenant($tenant->id))
-                ->paginate(20)
-                ->through(fn ($d) => $this->mapDoc($d, '01'));
-        } elseif ($tipo === 'boletas') {
-            $rows = $applyFilters(Boleta::forTenant($tenant->id))
-                ->paginate(20)
-                ->through(fn ($d) => $this->mapDoc($d, '03'));
-        } else {
-            $facturas = $applyFilters(Invoice::forTenant($tenant->id))
-                ->limit(150)->get()->map(fn ($d) => $this->mapDoc($d, '01'));
-
-            $boletas = $applyFilters(Boleta::forTenant($tenant->id))
-                ->limit(150)->get()->map(fn ($d) => $this->mapDoc($d, '03'));
-
-            $nc = $applyFilters(CreditNote::forTenant($tenant->id))
-                ->limit(50)->get()->map(fn ($d) => $this->mapDoc($d, '07'));
-
-            $merged = $facturas->concat($boletas)->concat($nc)
-                ->sortByDesc('fecha')->take(100)->values();
-
-            $rows = ['data' => $merged, 'total' => $merged->count()];
-        }
+        $data = $listing->listar($tenant, $tipo, $filtros);
 
         return Inertia::render('sunat/historial', [
-            'documentos' => $rows,
-            'filtros' => compact('tipo', 'estado', 'desde', 'hasta', 'cliente'),
+            'documentos' => ['data' => $data, 'total' => count($data)],
+            'filtros' => array_merge(['tipo' => $tipo], $filtros),
             'tenant' => ['environment' => $tenant->environment ?? 'beta'],
         ]);
     }
@@ -78,15 +53,10 @@ class HistorialController extends Controller
     public function pdf(string $tipo, int $id): mixed
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
-        $model = match ($tipo) {
-            '03' => Boleta::class,
-            '07' => CreditNote::class,
-            default => Invoice::class,
-        };
-        $doc = $model::forTenant($tenant->id)->findOrFail($id);
+        $doc = $this->modelPara($tipo)::forTenant($tenant->id)->findOrFail($id);
 
-        if (! empty($doc->pdf_path) && Storage::exists($doc->pdf_path)) {
-            return Storage::response($doc->pdf_path, "{$doc->serie}-{$doc->correlativo}.pdf");
+        if (! empty($doc->pdf_path) && Storage::disk('public')->exists($doc->pdf_path)) {
+            return Storage::disk('public')->download($doc->pdf_path, "{$doc->serie}-{$doc->correlativo}.pdf");
         }
 
         abort(404, 'PDF no disponible aún.');
@@ -95,35 +65,166 @@ class HistorialController extends Controller
     public function xml(string $tipo, int $id): mixed
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
-        $model = match ($tipo) {
-            '03' => Boleta::class,
-            '07' => CreditNote::class,
-            default => Invoice::class,
-        };
-        $doc = $model::forTenant($tenant->id)->findOrFail($id);
+        $doc = $this->modelPara($tipo)::forTenant($tenant->id)->findOrFail($id);
 
-        if (! empty($doc->xml_path) && Storage::exists($doc->xml_path)) {
-            return Storage::response($doc->xml_path, "{$doc->serie}-{$doc->correlativo}.xml");
+        if (! empty($doc->xml_path) && Storage::disk('public')->exists($doc->xml_path)) {
+            return Storage::disk('public')->download($doc->xml_path, "{$doc->serie}-{$doc->correlativo}.xml");
         }
 
         abort(404, 'XML no disponible aún.');
     }
 
-    private function mapDoc(object $doc, string $tipoDoc): array
+    public function cdr(string $tipo, int $id): mixed
     {
-        return [
-            'id' => $doc->id,
-            'tipo_doc' => $tipoDoc,
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        $doc = $this->modelPara($tipo)::forTenant($tenant->id)->findOrFail($id);
+
+        if (! empty($doc->cdr_path) && Storage::disk('public')->exists($doc->cdr_path)) {
+            return Storage::disk('public')->download($doc->cdr_path, "R-{$doc->serie}-{$doc->correlativo}.zip");
+        }
+
+        abort(404, 'CDR no disponible aún.');
+    }
+
+    /**
+     * Reenvía un comprobante a SUNAT (útil para pendientes/rechazados).
+     * Reutiliza el mismo job de emisión que la API.
+     */
+    public function reenviar(string $tipo, int $id): RedirectResponse
+    {
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        $model = $this->modelPara($tipo);
+        $doc = $model::forTenant($tenant->id)->findOrFail($id);
+
+        if (($doc->sunat_status ?? null) === 'aceptado') {
+            return back()->with('error', 'Este comprobante ya fue aceptado por SUNAT; no se puede reenviar.');
+        }
+
+        $doc->update(['sunat_status' => 'pendiente', 'sunat_code' => null, 'sunat_description' => null]);
+        SendDocumentToSunat::dispatch($model, $doc->id);
+        $doc->update(['sunat_status' => 'enviado']);
+
+        return back()->with('success', "Comprobante {$doc->serie}-{$doc->correlativo} reenviado a SUNAT.");
+    }
+
+    /**
+     * Descarga la constancia de la anulación (XML enviado o CDR de SUNAT) del
+     * comprobante: el Resumen Diario (RC) si es boleta, o la Comunicación de Baja (RA)
+     * si es factura/nota. Así el emisor conserva el respaldo de la anulación.
+     */
+    public function descargarAnulacion(string $tipo, int $id, string $archivo): mixed
+    {
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        abort_unless(in_array($archivo, ['xml', 'cdr'], true), 404);
+
+        $doc = $this->modelPara($tipo)::forTenant($tenant->id)->findOrFail($id);
+
+        if ($tipo === '03') {
+            $anulacion = Summary::where('tenant_id', $tenant->id)
+                ->where('tipo', 'anulacion')
+                ->whereJsonContains('document_ids', $doc->id)
+                ->orderByDesc('id')
+                ->first();
+        } else {
+            $anulacion = VoidedDocument::where('tenant_id', $tenant->id)
+                ->where('identifier', 'like', 'RA-%')
+                ->whereJsonContains('detalles', [
+                    'tipo_documento' => $tipo,
+                    'serie' => $doc->serie,
+                    'correlativo' => (string) $doc->correlativo,
+                ])
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (! $anulacion) {
+            abort(404, 'No se encontró el registro de anulación de este comprobante.');
+        }
+
+        $path = $archivo === 'cdr' ? $anulacion->cdr_path : $anulacion->xml_path;
+
+        if (empty($path) || ! Storage::disk('public')->exists($path)) {
+            abort(404, strtoupper($archivo).' de la anulación no disponible aún.');
+        }
+
+        $ext = $archivo === 'cdr' ? 'zip' : 'xml';
+        $prefijo = $archivo === 'cdr' ? 'R-' : '';
+
+        return Storage::disk('public')->download($path, "{$prefijo}{$anulacion->identifier}.{$ext}");
+    }
+
+    /**
+     * Anula un comprobante por el mecanismo que SUNAT exige según su tipo:
+     *   - Boleta (03)            → Resumen Diario de anulación (RC).
+     *   - Factura / notas (01/07/08) → Comunicación de Baja (RA).
+     *
+     * No cambia el estado a 'anulado' directamente: marca 'anulacion_en_proceso'
+     * y encola el envío. El estado final lo fija el job al procesar el ticket.
+     */
+    public function anular(Request $request, string $tipo, int $id, VoidedService $voidedService, SummaryService $summaryService): RedirectResponse
+    {
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        Gate::authorize('emitir', [$tenant, 'anulacion']);
+
+        $data = $request->validate([
+            'motivo' => 'required|string|min:3|max:255',
+        ]);
+
+        $doc = $this->modelPara($tipo)::forTenant($tenant->id)->findOrFail($id);
+
+        if (($doc->sunat_status ?? null) !== 'aceptado') {
+            return back()->with('error', 'Solo se pueden anular comprobantes aceptados por SUNAT (estado actual: '.($doc->sunat_status ?? 'desconocido').').');
+        }
+
+        $fechaEmision = optional($doc->fecha_emision)->format('Y-m-d') ?? (string) $doc->fecha_emision;
+        $userId = $request->user()?->id;
+
+        // ── Boletas: Resumen Diario de anulación ──
+        if ($tipo === '03') {
+            $resultado = $summaryService->crear(
+                $tenant,
+                $fechaEmision,
+                [['id' => $doc->id, 'motivo' => $data['motivo']]],
+                true,
+                $data['motivo'],
+                $userId,
+            );
+
+            if (! ($resultado['ok'] ?? false)) {
+                return back()->with('error', $resultado['error'] ?? implode(' ', $resultado['errores'] ?? ['No se pudo anular la boleta.']));
+            }
+
+            return back()->with('success', 'Anulación enviada por Resumen Diario ('.$resultado['meta']['identifier'].'). El comprobante quedará anulado cuando SUNAT procese el ticket.');
+        }
+
+        // ── Facturas y notas: Comunicación de Baja ──
+        $detalle = [
+            'tipo_documento' => $tipo,
             'serie' => $doc->serie,
-            'correlativo' => $doc->correlativo,
-            'numero' => $doc->serie.'-'.str_pad((string) $doc->correlativo, 8, '0', STR_PAD_LEFT),
-            'cliente' => $doc->client_razon_social,
-            'fecha' => $doc->fecha_emision,
-            'total' => (float) $doc->mto_imp_venta,
-            'moneda' => $doc->tipo_moneda ?? 'PEN',
-            'estado' => $doc->sunat_status ?? 'pendiente',
-            'tiene_pdf' => ! empty($doc->pdf_path),
-            'tiene_xml' => ! empty($doc->xml_path),
+            'correlativo' => (string) $doc->correlativo,
+            'motivo' => $data['motivo'],
         ];
+
+        $resultado = $voidedService->crear($tenant, $fechaEmision, null, [$detalle], true, $data['motivo'], $userId);
+
+        if (! ($resultado['ok'] ?? false)) {
+            return back()->with('error', 'No se puede anular: '.implode(' ', $resultado['errores'] ?? ['error desconocido']));
+        }
+
+        return back()->with('success', 'Comunicación de baja enviada a SUNAT ('.$resultado['voided']->identifier.'). El comprobante quedará anulado cuando SUNAT procese el ticket.');
+    }
+
+    /** @return class-string */
+    private function modelPara(string $tipo): string
+    {
+        return match ($tipo) {
+            '03' => Boleta::class,
+            '07' => CreditNote::class,
+            '08' => DebitNote::class,
+            '09', '31' => DispatchGuide::class,
+            '20' => Retention::class,
+            '40' => Perception::class,
+            default => Invoice::class,
+        };
     }
 }

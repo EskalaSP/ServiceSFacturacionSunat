@@ -1,18 +1,47 @@
+export type CuentaBancaria = {
+    banco: string;
+    tipo?: string;
+    numero: string;
+    cci?: string;
+    moneda?: string;
+    titular?: string;
+};
+
+export type BilleteraDigital = {
+    tipo: string;
+    numero: string;
+    titular?: string;
+};
+
 export type TenantSunat = {
     ruc: string;
     razon_social: string;
+    nombre_comercial?: string;
+    direccion?: string;
+    ubigeo?: string;
+    departamento?: string;
+    provincia?: string;
+    distrito?: string;
+    telefonos?: string[];
+    emails?: string[];
+    cuentas_bancarias?: CuentaBancaria[];
+    billeteras_digitales?: BilleteraDigital[];
+    mensaje_agradecimiento?: string;
+    mensaje_promocional?: string;
+    logo_url?: string | null;
     environment: 'beta' | 'produccion';
     sol_user?: string;
     sol_configurado?: boolean;
     serie_factura?: string;
     serie_boleta?: string;
+    consulta_token_set?: boolean;
 };
 
-export type SunatStatus = 'borrador' | 'pendiente' | 'enviado' | 'aceptado' | 'rechazado';
+export type SunatStatus = 'borrador' | 'pendiente' | 'enviado' | 'aceptado' | 'rechazado' | 'anulacion_en_proceso' | 'anulado';
 
 export type DocumentoSunat = {
     id: number;
-    tipo_doc: '01' | '03' | '07' | '08';
+    tipo_doc: '01' | '03' | '07' | '08' | '09' | '31' | '20' | '40';
     serie: string;
     correlativo: number;
     numero: string;
@@ -23,6 +52,7 @@ export type DocumentoSunat = {
     estado: SunatStatus;
     tiene_pdf: boolean;
     tiene_xml: boolean;
+    tiene_cdr?: boolean;
 };
 
 export type SerieSunat = {

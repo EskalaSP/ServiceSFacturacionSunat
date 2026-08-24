@@ -1,6 +1,9 @@
-import { Head, router } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Building2, Calendar, CreditCard, Loader2, Plus, Search, Trash2, RefreshCw } from 'lucide-react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, Calendar, Check, CreditCard, Loader2, X } from 'lucide-react';
+import { ClienteSelector, type ClienteData } from '@/components/sunat/cliente-selector';
+import { ItemsEditor, calcItem, type ItemRow } from '@/components/sunat/items-editor';
+import { PdfPreviewModal } from '@/components/sunat/pdf-preview-modal';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
@@ -8,40 +11,9 @@ import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
 import type { ClienteSunat, SerieSunat, TenantSunat } from '@/types';
 
+type Emitido = { tipo: string; id: number; numero: string; formato?: string };
+
 // ─── Catálogos SUNAT ─────────────────────────────────────────────────────────
-
-// Tabla 6 – Unidades de medida (agrupadas por tipo)
-const UNIDADES_BIEN = [
-    { code: 'NIU', label: 'NIU — Unidad' },
-    { code: 'KGM', label: 'KGM — Kilogramo' },
-    { code: 'GRM', label: 'GRM — Gramo' },
-    { code: 'LTR', label: 'LTR — Litro' },
-    { code: 'MTR', label: 'MTR — Metro' },
-    { code: 'MTK', label: 'MTK — Metro Cuadrado' },
-    { code: 'MTQ', label: 'MTQ — Metro Cúbico' },
-    { code: 'TNE', label: 'TNE — Tonelada' },
-    { code: 'GLI', label: 'GLI — Galón' },
-    { code: 'PK',  label: 'PK  — Paquete' },
-    { code: 'BX',  label: 'BX  — Caja' },
-    { code: 'SET', label: 'SET — Juego/Conjunto' },
-    { code: 'KT',  label: 'KT  — Kit' },
-];
-
-const UNIDADES_SERVICIO = [
-    { code: 'ZZ',  label: 'ZZ  — Servicio' },
-    { code: 'HUR', label: 'HUR — Hora' },
-    { code: 'DAY', label: 'DAY — Día' },
-    { code: 'MON', label: 'MON — Mes' },
-    { code: 'C62', label: 'C62 — Sin unidad específica' },
-];
-
-// Tabla 7 – Tipo afectación IGV
-const TIPOS_IGV = [
-    { code: '10', label: 'Gravado — IGV 18%' },
-    { code: '20', label: 'Exonerado' },
-    { code: '30', label: 'Inafecto' },
-    { code: '40', label: 'Exportación' },
-];
 
 // Tabla 17 – Tipo de operación
 const TIPOS_OPERACION = [
@@ -91,22 +63,10 @@ const MEDIOS_PAGO_DET = [
     { code: '004', label: 'Orden de pago' },
     { code: '005', label: 'Tarjeta de débito' },
     { code: '006', label: 'Tarjeta de crédito emitida en el país' },
-    { code: '009', label: 'Efectivo — otros casos' },
+    { code: '009', label: 'Efectivo - otros casos' },
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type TipoItem = 'bien' | 'servicio';
-
-type ItemRow = {
-    tipo_item: TipoItem;
-    descripcion: string;
-    unidad: string;
-    cantidad: number;
-    precio_unitario: number;
-    descuento_pct: number;
-    tip_afe_igv: string;
-};
 
 type CotizacionPrefill = {
     numero: string;
@@ -131,12 +91,6 @@ type Props = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function calcItem(item: ItemRow) {
-    const base = item.cantidad * item.precio_unitario * (1 - item.descuento_pct / 100);
-    const igv  = item.tip_afe_igv === '10' ? base * 0.18 : 0;
-    return { base, igv, total: base + igv };
-}
-
 function fmt(n: number, dec = 2) {
     return new Intl.NumberFormat('es-PE', { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(n);
 }
@@ -145,10 +99,6 @@ function fmtDate(iso: string) {
     if (!iso) return '—';
     const [y, m, d] = iso.split('-');
     return `${d}/${m}/${y}`;
-}
-
-function defaultItem(): ItemRow {
-    return { tipo_item: 'bien', descripcion: '', unidad: 'NIU', cantidad: 1, precio_unitario: 0, descuento_pct: 0, tip_afe_igv: '10' };
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -168,31 +118,32 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
     const [fechaVencimiento, setFechaVenc]    = useState('');
 
     // ── Cliente (pre-fill desde cotización si aplica) ──
-    const [clienteTipoDoc, setClienteTipoDoc] = useState(cotizacion?.cliente.tipo_documento ?? '6');
-    const [clienteNumDoc, setClienteNumDoc]   = useState(cotizacion?.cliente.numero_documento ?? '');
-    const [clienteNombre, setClienteNombre]   = useState(cotizacion?.cliente.razon_social ?? '');
-    const [clienteDireccion, setClienteDireccion] = useState(cotizacion?.cliente.direccion ?? '');
-    const [clienteEmail, setClienteEmail]     = useState('');
-    const [clienteSearch, setClienteSearch]   = useState('');
-    const [clienteResults, setClienteResults] = useState<ClienteSunat[]>([]);
-    const [searchingCliente, setSearchingCliente] = useState(false);
-    const [lookingUpRuc, setLookingUpRuc]     = useState(false);
-    const [rucError, setRucError]             = useState('');
-    const searchRef = useRef<ReturnType<typeof setTimeout>>();
+    const [cliente, setCliente] = useState<ClienteData | null>(
+        cotizacion?.cliente
+            ? {
+                tipo_doc: cotizacion.cliente.tipo_documento ?? '6',
+                num_doc: cotizacion.cliente.numero_documento ?? '',
+                razon_social: cotizacion.cliente.razon_social ?? '',
+                direccion: cotizacion.cliente.direccion ?? '',
+              }
+            : null,
+    );
 
     // ── Ítems (pre-fill desde cotización si aplica) ──
     const [items, setItems] = useState<ItemRow[]>(
         cotizacion?.items.length
             ? cotizacion.items.map((it) => ({
-                tipo_item:       'servicio' as const,
-                descripcion:     it.descripcion,
-                unidad:          it.unidad,
-                cantidad:        it.cantidad,
-                precio_unitario: it.precio_unitario,
-                descuento_pct:   0,
-                tip_afe_igv:     it.tip_afe_igv,
+                tipo_item:          'servicio' as const,
+                codigo:             '',
+                cod_producto_sunat: '',
+                descripcion:        it.descripcion,
+                unidad:             it.unidad,
+                cantidad:           it.cantidad,
+                precio_unitario:    it.precio_unitario,
+                descuento_pct:      0,
+                tip_afe_igv:        it.tip_afe_igv,
               }))
-            : [defaultItem()]
+            : []
     );
 
     // ── Detracción ──
@@ -222,71 +173,21 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
         else if (tipoOp === '1001') setTipoOp('0101');
     }, [detEnabled]);
 
-    // ── Búsqueda de cliente ──
-    const searchCliente = useCallback((q: string) => {
-        clearTimeout(searchRef.current);
-        setClienteSearch(q);
-        if (q.length < 2) { setClienteResults([]); return; }
-        searchRef.current = setTimeout(async () => {
-            setSearchingCliente(true);
-            try {
-                const res = await fetch(`/sunat/buscar-cliente?q=${encodeURIComponent(q)}`, {
-                    headers: { Accept: 'application/json' },
-                });
-                setClienteResults(await res.json());
-            } finally { setSearchingCliente(false); }
-        }, 300);
-    }, []);
+    // ── Vista previa (modal representación impresa) ──
+    const [previewOpen, setPreviewOpen]     = useState(false);
 
-    function selectCliente(c: ClienteSunat) {
-        setClienteTipoDoc(c.tipo_documento);
-        setClienteNumDoc(c.numero_documento);
-        setClienteNombre(c.razon_social);
-        setClienteDireccion(c.direccion ?? '');
-        setClienteEmail(c.email ?? '');
-        setClienteSearch('');
-        setClienteResults([]);
-        setRucError('');
-    }
-
-    async function lookupRuc(numero: string) {
-        const trimmed = numero.trim();
-        if (trimmed.length !== 11 && trimmed.length !== 8) return;
-        setLookingUpRuc(true);
-        setRucError('');
-        try {
-            const res = await fetch(`/sunat/buscar-ruc?numero=${encodeURIComponent(trimmed)}`, {
-                headers: { Accept: 'application/json' },
-            });
-            if (!res.ok) {
-                setRucError(res.status === 404 ? 'No encontrado en SUNAT.' : 'Error al consultar SUNAT.');
-                return;
-            }
-            const data = await res.json();
-            if (data.razon_social) setClienteNombre(data.razon_social);
-            if (data.direccion)    setClienteDireccion(data.direccion);
-            if (data.tipo_documento || trimmed.length === 11) setClienteTipoDoc(trimmed.length === 11 ? '6' : '1');
-        } catch {
-            setRucError('No se pudo conectar al servicio de consulta.');
-        } finally {
-            setLookingUpRuc(false);
-        }
-    }
-
-    // ── Ítems ──
-    function updateItem<K extends keyof ItemRow>(i: number, field: K, value: ItemRow[K]) {
-        setItems((prev) => prev.map((it, idx) => {
-            if (idx !== i) return it;
-            const updated = { ...it, [field]: value };
-            // Si cambia tipo_item, reset unidad al defecto del tipo
-            if (field === 'tipo_item') {
-                updated.unidad = value === 'servicio' ? 'ZZ' : 'NIU';
-            }
-            return updated;
-        }));
-    }
-    function addItem()          { setItems((prev) => [...prev, defaultItem()]); }
-    function removeItem(i: number) { setItems((prev) => prev.filter((_, idx) => idx !== i)); }
+    // ── PDF: formato elegido + modal tras emitir ──
+    const { props: pageProps } = usePage();
+    const [pdfFormat, setPdfFormat]         = useState('a4');
+    const [pdfModal, setPdfModal]           = useState<Emitido | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const emitidoFlash = (pageProps as any)?.flash?.emitido as Emitido | undefined;
+    // Inertia reutiliza el componente al redirigir al mismo formulario, por eso
+    // dependemos del id del flash (no de []) para abrir el modal cuando llega.
+    useEffect(() => {
+        if (emitidoFlash?.id) setPdfModal(emitidoFlash);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [emitidoFlash?.id]);
 
     // ── Detracción ──
     const detData = DETRACCIONES.find((d) => d.codigo === detCodigo);
@@ -312,9 +213,9 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
     // ── Validación ──
     function validate() {
         const e: Record<string, string> = {};
-        if (!clienteNumDoc)  e.cliente = 'Número de documento requerido.';
-        if (!clienteNombre)  e.cliente_nombre = 'Razón social requerida.';
-        if (items.some((it) => !it.descripcion)) e.items = 'Todos los ítems deben tener descripción.';
+        if (!cliente || !cliente.num_doc || !cliente.razon_social) e.cliente = 'Selecciona o ingresa el cliente.';
+        if (items.length === 0) e.items = 'Agrega al menos un ítem.';
+        else if (items.some((it) => !it.descripcion)) e.items = 'Todos los ítems deben tener descripción.';
         if (items.some((it) => it.precio_unitario <= 0)) e.items_precio = 'El precio unitario debe ser mayor a 0.';
         if (formaPago === 'Credito' && !fechaVencimiento) e.vencimiento = 'Ingresa la fecha de vencimiento.';
         if (detEnabled && !detCodigo)  e.det_codigo  = 'Selecciona el bien o servicio sujeto a detracción.';
@@ -336,18 +237,20 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
             tipo_operacion:  tipoOp,
             forma_pago:      formaPago,
             cliente: {
-                tipo_doc:     clienteTipoDoc,
-                num_doc:      clienteNumDoc,
-                razon_social: clienteNombre,
-                direccion:    clienteDireccion || undefined,
-                email:        clienteEmail     || undefined,
+                tipo_doc:     cliente?.tipo_doc ?? '6',
+                num_doc:      cliente?.num_doc ?? '',
+                razon_social: cliente?.razon_social ?? '',
+                direccion:    cliente?.direccion || undefined,
+                email:        cliente?.email     || undefined,
             },
             items: items.map((it) => ({
-                descripcion:     it.descripcion,
-                unidad:          it.unidad,
-                cantidad:        it.cantidad,
-                precio_unitario: it.precio_unitario,
-                tip_afe_igv:     it.tip_afe_igv,
+                codigo:             it.codigo || undefined,
+                cod_producto_sunat: it.cod_producto_sunat || undefined,
+                descripcion:        it.descripcion,
+                unidad:             it.unidad,
+                cantidad:           it.cantidad,
+                precio_unitario:    it.precio_unitario,
+                tip_afe_igv:        it.tip_afe_igv,
                 descuentos: it.descuento_pct > 0 ? [{
                     cod_tipo:   '00',
                     factor:     it.descuento_pct / 100,
@@ -371,6 +274,7 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
             observacion:       observacion || null,
             extras:            ordenCompra ? { orden_compra: ordenCompra } : null,
             enviar_automatico: enviarAuto,
+            pdf_format:        pdfFormat,
         };
 
         router.post(post_url, payload, {
@@ -409,11 +313,11 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                     )}
                 </div>
 
-                {/* Layout: form + preview */}
-                <div className="grid gap-6 xl:grid-cols-[1fr_400px]">
+                {/* Formulario a ancho completo */}
+                <div className="mx-auto max-w-4xl">
 
-                    {/* ══════════════ COLUMNA FORMULARIO ══════════════ */}
-                    <div className="flex flex-col gap-5">
+                    {/* ══════════════ FORMULARIO ══════════════ */}
+                    <div className="flex min-w-0 flex-col gap-5">
 
                         {/* ── 1. ENCABEZADO ── */}
                         <section className="rounded-2xl border border-border bg-card shadow-soft">
@@ -422,21 +326,23 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                             </div>
                             <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
 
-                                {/* Tipo — oculto en modo solo boleta */}
+                                {/* Tipo - oculto en modo solo boleta */}
                                 {!lock_tipo && (
                                     <div className="flex flex-col gap-1.5">
                                         <Label className="text-xs font-medium text-muted-foreground">Tipo</Label>
                                         <div className="grid grid-cols-2 gap-1.5">
                                             {[{ v: '01', l: 'Factura' }, { v: '03', l: 'Boleta' }].map(({ v, l }) => (
-                                                <button
-                                                    key={v} type="button"
-                                                    onClick={() => setTipoDoc(v as '01' | '03')}
-                                                    className={`rounded-xl border px-3 py-2 text-sm font-medium transition-all ${
-                                                        tipoDoc === v
-                                                            ? 'border-primary bg-primary/10 text-primary'
-                                                            : 'border-border hover:bg-secondary'
-                                                    }`}
-                                                >{l}</button>
+                                                <label key={v} className="flex cursor-pointer items-center gap-2 py-2 text-sm font-medium text-foreground">
+                                                    <input
+                                                        type="radio"
+                                                        name="tipo-doc"
+                                                        value={v}
+                                                        checked={tipoDoc === v}
+                                                        onChange={() => setTipoDoc(v as '01' | '03')}
+                                                        className="size-4 shrink-0 appearance-none rounded-full border-2 border-muted-foreground/40 bg-transparent transition-colors checked:border-primary checked:bg-primary checked:bg-clip-content checked:p-[3px]"
+                                                    />
+                                                    {l}
+                                                </label>
                                             ))}
                                         </div>
                                     </div>
@@ -452,7 +358,7 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                         options={[
                                             ...series.map((s) => ({
                                                 value: String(s.serie),
-                                                label: `${s.serie} — Corr. ${s.correlativo + 1}`,
+                                                label: `${s.serie} - Corr. ${s.correlativo + 1}`,
                                             })),
                                             ...(series.length === 0
                                                 ? [{
@@ -483,8 +389,8 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                         value={moneda}
                                         onChange={(v) => setMoneda(v as 'PEN' | 'USD')}
                                         options={[
-                                            { value: 'PEN', label: 'PEN — Soles' },
-                                            { value: 'USD', label: 'USD — Dólares' },
+                                            { value: 'PEN', label: 'PEN - Soles' },
+                                            { value: 'USD', label: 'USD - Dólares' },
                                         ]}
                                         className="h-10 rounded-xl"
                                     />
@@ -508,7 +414,7 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                         onChange={(v) => setTipoOp(v)}
                                         options={TIPOS_OPERACION.map((t) => ({
                                             value: String(t.code),
-                                            label: `${t.code} — ${t.label}`,
+                                            label: `${t.code} - ${t.label}`,
                                         }))}
                                         className="h-10 rounded-xl"
                                     />
@@ -519,22 +425,22 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                     <Label className="text-xs font-medium text-muted-foreground">Forma de pago</Label>
                                     <div className="grid grid-cols-2 gap-1.5">
                                         {(['Contado', 'Credito'] as const).map((fp) => (
-                                            <button
-                                                key={fp} type="button"
-                                                onClick={() => setFormaPago(fp)}
-                                                className={`rounded-xl border px-3 py-2 text-sm font-medium transition-all ${
-                                                    formaPago === fp
-                                                        ? 'border-primary bg-primary/10 text-primary'
-                                                        : 'border-border hover:bg-secondary'
-                                                }`}
-                                            >
+                                            <label key={fp} className="flex cursor-pointer items-center gap-2 py-2 text-sm font-medium text-foreground">
+                                                <input
+                                                    type="radio"
+                                                    name="forma-pago"
+                                                    value={fp}
+                                                    checked={formaPago === fp}
+                                                    onChange={() => setFormaPago(fp)}
+                                                    className="size-4 shrink-0 appearance-none rounded-full border-2 border-muted-foreground/40 bg-transparent transition-colors checked:border-primary checked:bg-primary checked:bg-clip-content checked:p-[3px]"
+                                                />
                                                 {fp === 'Contado' ? 'Contado' : 'Crédito'}
-                                            </button>
+                                            </label>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Fecha vencimiento — solo Crédito */}
+                                {/* Fecha vencimiento - solo Crédito */}
                                 {formaPago === 'Credito' && (
                                     <div className="flex flex-col gap-1.5 sm:col-span-2">
                                         <Label className="text-xs font-medium text-muted-foreground">
@@ -557,299 +463,10 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                         </section>
 
                         {/* ── 3. CLIENTE ── */}
-                        <section className="rounded-2xl border border-border bg-card shadow-soft">
-                            <div className="flex items-center gap-2 border-b border-border/60 px-5 py-3.5">
-                                <Building2 className="size-4 text-muted-foreground" />
-                                <span className="text-sm font-semibold text-foreground">Datos del adquirente / usuario</span>
-                            </div>
-                            <div className="p-5">
-                                {/* Buscador */}
-                                <div className="relative mb-4">
-                                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                    <Input
-                                        className="h-10 rounded-xl pl-9"
-                                        placeholder="Buscar por RUC, DNI o razón social..."
-                                        value={clienteSearch}
-                                        onChange={(e) => searchCliente(e.target.value)}
-                                    />
-                                    {searchingCliente && (
-                                        <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-                                    )}
-                                    {clienteResults.length > 0 && (
-                                        <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-popover shadow-soft">
-                                            {clienteResults.map((c) => (
-                                                <button
-                                                    key={c.id} type="button"
-                                                    className="flex w-full flex-col px-4 py-2.5 text-left first:rounded-t-xl last:rounded-b-xl hover:bg-secondary"
-                                                    onClick={() => selectCliente(c)}
-                                                >
-                                                    <span className="text-sm font-medium">{c.razon_social}</span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {c.tipo_documento === '6' ? 'RUC' : 'DNI'} {c.numero_documento}
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                    <div className="flex flex-col gap-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Tipo doc.</Label>
-                                        <Combobox
-                                            value={clienteTipoDoc}
-                                            onChange={(v) => setClienteTipoDoc(v)}
-                                            options={[
-                                                { value: '6', label: 'RUC' },
-                                                { value: '1', label: 'DNI' },
-                                                { value: '4', label: 'Carné de Extranjería' },
-                                                { value: '7', label: 'Pasaporte' },
-                                                { value: '0', label: 'Otros' },
-                                            ]}
-                                            className="h-10 rounded-xl"
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">
-                                            Número de documento
-                                        </Label>
-                                        <div className="flex gap-1.5">
-                                            <Input
-                                                value={clienteNumDoc}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setClienteNumDoc(val);
-                                                    setRucError('');
-                                                    if (val.length === 11 || val.length === 8) {
-                                                        lookupRuc(val);
-                                                    }
-                                                }}
-                                                placeholder={clienteTipoDoc === '6' ? '20123456789' : '12345678'}
-                                                className={`h-10 rounded-xl ${errors.cliente ? 'border-destructive' : ''}`}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => lookupRuc(clienteNumDoc)}
-                                                disabled={lookingUpRuc || clienteNumDoc.length < 8}
-                                                title="Consultar en SUNAT / RENIEC"
-                                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
-                                            >
-                                                {lookingUpRuc
-                                                    ? <Loader2 className="size-4 animate-spin" />
-                                                    : <RefreshCw className="size-4" />
-                                                }
-                                            </button>
-                                        </div>
-                                        {rucError && <p className="text-xs text-destructive">{rucError}</p>}
-                                        {errors.cliente && <p className="text-xs text-destructive">{errors.cliente}</p>}
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Razón social / Nombre</Label>
-                                        <Input
-                                            value={clienteNombre}
-                                            onChange={(e) => setClienteNombre(e.target.value)}
-                                            placeholder="EMPRESA SAC"
-                                            className={`h-10 rounded-xl ${errors.cliente_nombre ? 'border-destructive' : ''}`}
-                                        />
-                                        {errors.cliente_nombre && <p className="text-xs text-destructive">{errors.cliente_nombre}</p>}
-                                    </div>
-                                    <div className="flex flex-col gap-1.5 sm:col-span-2">
-                                        <Label className="text-xs font-medium text-muted-foreground">Dirección</Label>
-                                        <Input
-                                            value={clienteDireccion}
-                                            onChange={(e) => setClienteDireccion(e.target.value)}
-                                            placeholder="Av. Los Olivos 123, Lima"
-                                            className="h-10 rounded-xl"
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Email (PDF)</Label>
-                                        <Input
-                                            type="email"
-                                            value={clienteEmail}
-                                            onChange={(e) => setClienteEmail(e.target.value)}
-                                            placeholder="cliente@empresa.com"
-                                            className="h-10 rounded-xl"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
+                        <ClienteSelector value={cliente} onChange={setCliente} error={errors.cliente} />
 
                         {/* ── 4. ÍTEMS ── */}
-                        <section className="rounded-2xl border border-border bg-card shadow-soft">
-                            <div className="flex items-center justify-between border-b border-border/60 px-5 py-3.5">
-                                <span className="text-sm font-semibold text-foreground">Descripción de bienes vendidos / servicios prestados</span>
-                                <button
-                                    type="button" onClick={addItem}
-                                    className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-secondary px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
-                                >
-                                    <Plus className="size-3.5" /> Agregar ítem
-                                </button>
-                            </div>
-                            {(errors.items || errors.items_precio) && (
-                                <div className="border-b border-destructive/20 bg-destructive/5 px-5 py-2 text-xs text-destructive">
-                                    {errors.items || errors.items_precio}
-                                </div>
-                            )}
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="border-b border-border/60 bg-muted/30">
-                                        <tr>
-                                            <th className="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Tipo</th>
-                                            <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Descripción</th>
-                                            <th className="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">U. Med.</th>
-                                            <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Cant.</th>
-                                            <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">P. Unit.</th>
-                                            <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Desc.%</th>
-                                            <th className="px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">IGV</th>
-                                            <th className="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Total</th>
-                                            <th className="px-2 py-3"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {items.map((item, i) => {
-                                            const { total } = calcItem(item);
-                                            const unidades  = item.tipo_item === 'servicio' ? UNIDADES_SERVICIO : UNIDADES_BIEN;
-                                            return (
-                                                <tr key={i} className="border-b border-border/40 last:border-0 hover:bg-muted/20">
-                                                    {/* Tipo bien/servicio */}
-                                                    <td className="px-3 py-2.5">
-                                                        <div className="flex flex-col gap-1">
-                                                            {(['bien', 'servicio'] as const).map((t) => (
-                                                                <label key={t} className="flex cursor-pointer items-center gap-1">
-                                                                    <input
-                                                                        type="radio"
-                                                                        name={`tipo-${i}`}
-                                                                        checked={item.tipo_item === t}
-                                                                        onChange={() => updateItem(i, 'tipo_item', t)}
-                                                                        className="accent-primary"
-                                                                    />
-                                                                    <span className="text-[10px] text-muted-foreground">
-                                                                        {t === 'bien' ? 'Bien' : 'Serv.'}
-                                                                    </span>
-                                                                </label>
-                                                            ))}
-                                                        </div>
-                                                    </td>
-                                                    {/* Descripción */}
-                                                    <td className="px-3 py-2.5">
-                                                        <Input
-                                                            value={item.descripcion}
-                                                            onChange={(e) => updateItem(i, 'descripcion', e.target.value)}
-                                                            placeholder={item.tipo_item === 'servicio' ? 'Ej: Servicio de consultoría' : 'Ej: Producto XYZ'}
-                                                            className="h-8 min-w-[180px] rounded-lg text-xs"
-                                                        />
-                                                    </td>
-                                                    {/* Unidad de medida */}
-                                                    <td className="px-3 py-2.5">
-                                                        <Combobox
-                                                            value={item.unidad}
-                                                            onChange={(v) => updateItem(i, 'unidad', v)}
-                                                            searchable
-                                                            options={unidades.map((u) => ({
-                                                                value: String(u.code),
-                                                                label: u.label,
-                                                            }))}
-                                                            className="h-8 min-w-[150px] text-xs"
-                                                        />
-                                                    </td>
-                                                    {/* Cantidad */}
-                                                    <td className="px-3 py-2.5">
-                                                        <Input
-                                                            type="number" min={0.001} step="0.001"
-                                                            value={item.cantidad}
-                                                            onChange={(e) => updateItem(i, 'cantidad', parseFloat(e.target.value) || 0)}
-                                                            className="h-8 w-16 rounded-lg text-right text-xs"
-                                                        />
-                                                    </td>
-                                                    {/* Precio unitario */}
-                                                    <td className="px-3 py-2.5">
-                                                        <Input
-                                                            type="number" min={0} step="0.01"
-                                                            value={item.precio_unitario || ''}
-                                                            onChange={(e) => updateItem(i, 'precio_unitario', parseFloat(e.target.value) || 0)}
-                                                            className="h-8 w-24 rounded-lg text-right text-xs"
-                                                        />
-                                                    </td>
-                                                    {/* Descuento % */}
-                                                    <td className="px-3 py-2.5">
-                                                        <Input
-                                                            type="number" min={0} max={100} step="0.01"
-                                                            value={item.descuento_pct || ''}
-                                                            onChange={(e) => updateItem(i, 'descuento_pct', parseFloat(e.target.value) || 0)}
-                                                            className="h-8 w-14 rounded-lg text-right text-xs"
-                                                        />
-                                                    </td>
-                                                    {/* IGV */}
-                                                    <td className="px-3 py-2.5">
-                                                        <Combobox
-                                                            value={item.tip_afe_igv}
-                                                            onChange={(v) => updateItem(i, 'tip_afe_igv', v)}
-                                                            searchable
-                                                            options={TIPOS_IGV.map((t) => ({
-                                                                value: String(t.code),
-                                                                label: t.label,
-                                                            }))}
-                                                            className="h-8 min-w-[150px] text-xs"
-                                                        />
-                                                    </td>
-                                                    {/* Total */}
-                                                    <td className="px-3 py-2.5 text-right text-xs font-semibold tabular-nums">
-                                                        {fmt(total)}
-                                                    </td>
-                                                    {/* Eliminar */}
-                                                    <td className="px-2 py-2.5">
-                                                        {items.length > 1 && (
-                                                            <button
-                                                                type="button" onClick={() => removeItem(i)}
-                                                                className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
-                                                            >
-                                                                <Trash2 className="size-3.5" />
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Subtotales en el pie de la tabla */}
-                            <div className="border-t border-border/60 px-5 py-4">
-                                <div className="ml-auto max-w-xs space-y-1.5">
-                                    {totals.gravadas > 0 && (
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-muted-foreground">Op. Gravadas</span>
-                                            <span className="tabular-nums">{simbolo} {fmt(totals.gravadas)}</span>
-                                        </div>
-                                    )}
-                                    {totals.exoneradas > 0 && (
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-muted-foreground">Op. Exoneradas</span>
-                                            <span className="tabular-nums">{simbolo} {fmt(totals.exoneradas)}</span>
-                                        </div>
-                                    )}
-                                    {totals.inafectas > 0 && (
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-muted-foreground">Op. Inafectas</span>
-                                            <span className="tabular-nums">{simbolo} {fmt(totals.inafectas)}</span>
-                                        </div>
-                                    )}
-                                    {totals.igvTotal > 0 && (
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-muted-foreground">I.G.V. (18%)</span>
-                                            <span className="tabular-nums">{simbolo} {fmt(totals.igvTotal)}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between border-t border-border/60 pt-2 text-sm font-semibold">
-                                        <span>Precio de venta</span>
-                                        <span className="tabular-nums">{simbolo} {fmt(totals.totalComprobante)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
+                        <ItemsEditor value={items} onChange={setItems} moneda={moneda} error={errors.items || errors.items_precio} />
 
                         {/* ── 5. DETRACCIÓN (solo Factura) ── */}
                         {tipoDoc === '01' && (
@@ -857,12 +474,15 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                 <div className="flex items-center justify-between border-b border-border/60 px-5 py-3.5">
                                     <span className="text-sm font-semibold text-foreground">Detracción (SPOT)</span>
                                     <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                        <input
-                                            type="checkbox"
-                                            checked={detEnabled}
-                                            onChange={(e) => setDetEnabled(e.target.checked)}
-                                            className="size-4 accent-primary rounded"
-                                        />
+                                        <span className="relative flex size-4 items-center justify-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={detEnabled}
+                                                onChange={(e) => setDetEnabled(e.target.checked)}
+                                                className="peer size-4 shrink-0 cursor-pointer appearance-none rounded border-2 border-muted-foreground/40 bg-transparent transition-colors checked:border-primary checked:bg-primary"
+                                            />
+                                            <Check className="pointer-events-none absolute size-3 text-white opacity-0 peer-checked:opacity-100" strokeWidth={3} />
+                                        </span>
                                         <span className="text-xs text-muted-foreground">Aplicar detracción</span>
                                     </label>
                                 </div>
@@ -883,7 +503,7 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                                         { value: '', label: '— Selecciona el bien o servicio —' },
                                                         ...DETRACCIONES.map((d) => ({
                                                             value: String(d.codigo),
-                                                            label: `${d.codigo} — ${d.descripcion} (${d.porcentaje}%)`,
+                                                            label: `${d.codigo} - ${d.descripcion} (${d.porcentaje}%)`,
                                                         })),
                                                     ]}
                                                     placeholder="— Selecciona el bien o servicio —"
@@ -917,7 +537,7 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                                     searchable
                                                     options={MEDIOS_PAGO_DET.map((m) => ({
                                                         value: String(m.code),
-                                                        label: `${m.code} — ${m.label}`,
+                                                        label: `${m.code} - ${m.label}`,
                                                     }))}
                                                     className="h-10 rounded-xl"
                                                 />
@@ -926,14 +546,14 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
 
                                         {/* Info box detracción */}
                                         {detCodigo && (
-                                            <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
-                                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-primary">
+                                            <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4">
+                                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                                                     Datos de detracción calculados
                                                 </p>
                                                 <div className="grid gap-2 sm:grid-cols-3">
                                                     <div>
                                                         <p className="text-[10px] text-muted-foreground">Bien/Servicio</p>
-                                                        <p className="text-xs font-medium">{detData?.codigo} — {detData?.descripcion}</p>
+                                                        <p className="text-xs font-medium">{detData?.codigo} - {detData?.descripcion}</p>
                                                     </div>
                                                     <div>
                                                         <p className="text-[10px] text-muted-foreground">Porcentaje</p>
@@ -941,7 +561,7 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                                                     </div>
                                                     <div>
                                                         <p className="text-[10px] text-muted-foreground">Monto a detraer</p>
-                                                        <p className="text-sm font-bold text-primary">
+                                                        <p className="text-sm font-bold text-foreground">
                                                             {simbolo} {fmt(totals.detMonto)}
                                                         </p>
                                                     </div>
@@ -982,6 +602,25 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
 
                         {/* ── ACCIONES ── */}
                         <div className="flex flex-wrap items-center gap-3 pb-4">
+                            {/* Formato del PDF */}
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-muted-foreground">Formato PDF</span>
+                                <div className="flex rounded-xl border border-border p-0.5">
+                                    {[{ v: 'a4', l: 'A4' }, { v: 'a5', l: 'A5' }, { v: 'ticket-80', l: '80mm' }, { v: 'ticket-58', l: '58mm' }].map(({ v, l }) => (
+                                        <button
+                                            key={v}
+                                            type="button"
+                                            onClick={() => setPdfFormat(v)}
+                                            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${pdfFormat === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}`}
+                                        >
+                                            {l}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex-1" />
+
                             <Button
                                 type="button" onClick={() => submit(true)} disabled={submitting}
                                 className="gap-2 rounded-xl px-5"
@@ -991,9 +630,11 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                             </Button>
                             <Button
                                 type="button" variant="outline" onClick={() => submit(false)} disabled={submitting}
-                                className="rounded-xl"
+                                className="gap-2 rounded-xl"
                             >
-                                Guardar borrador
+                                {tipoDoc === '03'
+                                    ? <><Calendar className="size-4" /> Registrar para Resumen Diario</>
+                                    : 'Guardar borrador'}
                             </Button>
                             <Button
                                 type="button" variant="ghost" onClick={() => router.visit('/sunat')} disabled={submitting}
@@ -1001,203 +642,151 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
                             >
                                 Cancelar
                             </Button>
-                        </div>
-                    </div>
 
-                    {/* ══════════════ COLUMNA VISTA PREVIA ══════════════ */}
-                    <div className="xl:sticky xl:top-20 xl:h-fit">
-                        <div className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
-
-                            {/* Cabecera vista previa */}
-                            <div className="bg-primary px-5 py-3">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/80">
-                                    Vista previa
+                            {tipoDoc === '03' && (
+                                <p className="w-full text-xs leading-relaxed text-muted-foreground">
+                                    <span className="font-medium text-foreground">Emitir y enviar a SUNAT</span>: envía la boleta individualmente ahora mismo.{' '}
+                                    <span className="font-medium text-foreground">Registrar para Resumen Diario</span>: la boleta queda <span className="font-medium">pendiente</span> y se enviará a SUNAT agrupada en el Resumen Diario (Trámites → Resumen diario).
                                 </p>
-                                <p className="text-sm font-semibold text-primary-foreground">
-                                    {tipoDoc === '01' ? 'FACTURA ELECTRÓNICA' : 'BOLETA DE VENTA ELECTRÓNICA'}
-                                </p>
-                            </div>
-
-                            <div className="p-4 font-mono text-xs">
-
-                                {/* Emisor */}
-                                <div className="mb-3 text-center">
-                                    <p className="text-[11px] font-bold uppercase tracking-tight">
-                                        {tenant.razon_social}
-                                    </p>
-                                    <p className="text-muted-foreground">RUC {tenant.ruc}</p>
-                                    <p className="mt-1 text-[11px] font-bold text-primary">
-                                        {tipoDoc === '01' ? 'FACTURA ELECTRÓNICA' : 'BOLETA DE VENTA ELECTRÓNICA'}
-                                    </p>
-                                    <p className="font-semibold">{serie}-00000001</p>
-                                </div>
-
-                                <div className="mb-3 border-t border-dashed border-border/60 pt-3 space-y-1">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Fecha emisión</span>
-                                        <span>{fmtDate(fecha)}</span>
-                                    </div>
-                                    {formaPago === 'Credito' && fechaVencimiento && (
-                                        <div className="flex justify-between text-orange-600 dark:text-orange-400">
-                                            <span>Fecha vencimiento</span>
-                                            <span className="font-semibold">{fmtDate(fechaVencimiento)}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Moneda</span>
-                                        <span>{moneda}</span>
-                                    </div>
-                                </div>
-
-                                {/* Adquirente */}
-                                {(clienteNombre || clienteNumDoc) && (
-                                    <div className="mb-3 rounded-lg bg-muted/40 p-2.5 space-y-0.5">
-                                        <p className="text-[10px] font-bold uppercase text-muted-foreground">Adquirente / usuario</p>
-                                        {clienteNombre && <p className="font-semibold uppercase">{clienteNombre}</p>}
-                                        {clienteNumDoc && (
-                                            <p className="text-muted-foreground">
-                                                {clienteTipoDoc === '6' ? 'RUC' : 'DNI'}: {clienteNumDoc}
-                                            </p>
-                                        )}
-                                        {clienteDireccion && <p className="text-muted-foreground">{clienteDireccion}</p>}
-                                    </div>
-                                )}
-
-                                {/* Items */}
-                                {items.some((it) => it.descripcion) && (
-                                    <div className="mb-3">
-                                        <p className="mb-1.5 text-[10px] font-bold uppercase text-muted-foreground">Detalle</p>
-                                        <div className="space-y-1.5">
-                                            {items.filter((it) => it.descripcion).map((it, i) => {
-                                                const { total } = calcItem(it);
-                                                return (
-                                                    <div key={i} className="border-b border-border/40 pb-1.5 last:border-0">
-                                                        <p className="font-medium uppercase leading-tight">{it.descripcion}</p>
-                                                        <div className="flex justify-between text-[10px] text-muted-foreground">
-                                                            <span>{it.cantidad} {it.unidad} × {simbolo} {fmt(it.precio_unitario)}</span>
-                                                            <span className="font-semibold text-foreground">{simbolo} {fmt(total)}</span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Totales */}
-                                <div className="mb-3 border-t border-dashed border-border/60 pt-3 space-y-1">
-                                    {totals.gravadas > 0 && (
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Op. Gravadas</span>
-                                            <span>{simbolo} {fmt(totals.gravadas)}</span>
-                                        </div>
-                                    )}
-                                    {totals.exoneradas > 0 && (
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Exoneradas</span>
-                                            <span>{simbolo} {fmt(totals.exoneradas)}</span>
-                                        </div>
-                                    )}
-                                    {totals.igvTotal > 0 && (
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">I.G.V. 18%</span>
-                                            <span>{simbolo} {fmt(totals.igvTotal)}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between border-t border-border/60 pt-1 font-bold">
-                                        <span>PRECIO DE VENTA</span>
-                                        <span>{simbolo} {fmt(totals.totalComprobante)}</span>
-                                    </div>
-                                </div>
-
-                                {/* Cuadro detracción */}
-                                {detEnabled && detCodigo && totals.detMonto > 0 && (
-                                    <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-2.5 dark:border-amber-700/50 dark:bg-amber-900/20">
-                                        <p className="mb-1.5 text-[10px] font-bold uppercase text-amber-800 dark:text-amber-300">
-                                            Datos de detracción
-                                        </p>
-                                        <div className="space-y-0.5 text-[11px]">
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Bien/Serv.</span>
-                                                <span className="text-right">{detData?.codigo} — {detData?.descripcion?.slice(0, 28)}{(detData?.descripcion?.length ?? 0) > 28 ? '...' : ''}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Porcentaje</span>
-                                                <span>{detPct}%</span>
-                                            </div>
-                                            <div className="flex justify-between font-semibold text-amber-800 dark:text-amber-300">
-                                                <span>Monto detracción</span>
-                                                <span>{simbolo} {fmt(totals.detMonto)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Medio de pago</span>
-                                                <span>{MEDIOS_PAGO_DET.find(m => m.code === detMedioPago)?.label ?? detMedioPago}</span>
-                                            </div>
-                                            {detCuenta && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-muted-foreground">Cta. Banco Nación</span>
-                                                    <span>{detCuenta}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Cuadro crédito */}
-                                {formaPago === 'Credito' && (
-                                    <div className="mb-3 rounded-lg border border-blue-300 bg-blue-50 p-2.5 dark:border-blue-700/50 dark:bg-blue-900/20">
-                                        <p className="mb-1.5 text-[10px] font-bold uppercase text-blue-800 dark:text-blue-300">
-                                            Condición de pago: Crédito
-                                        </p>
-                                        <div className="space-y-0.5 text-[11px]">
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Fecha vencimiento</span>
-                                                <span className="font-semibold">
-                                                    {fechaVencimiento ? fmtDate(fechaVencimiento) : '—'}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between font-semibold text-blue-800 dark:text-blue-300">
-                                                <span>Monto a cobrar</span>
-                                                <span>{simbolo} {fmt(totals.netoPagar)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Importe neto a pagar */}
-                                <div className="rounded-xl bg-primary px-4 py-3 text-center">
-                                    <p className="text-[10px] font-bold uppercase tracking-wide text-primary-foreground/80">
-                                        {detEnabled && totals.detMonto > 0
-                                            ? 'Importe neto a pagar'
-                                            : 'Importe total a pagar'}
-                                    </p>
-                                    <p className="text-xl font-bold text-primary-foreground tabular-nums">
-                                        {simbolo} {fmt(totals.netoPagar)}
-                                    </p>
-                                    {detEnabled && totals.detMonto > 0 && (
-                                        <p className="mt-0.5 text-[10px] text-primary-foreground/70">
-                                            (Precio de venta {simbolo} {fmt(totals.totalComprobante)} — Detracción {simbolo} {fmt(totals.detMonto)})
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* QR placeholder */}
-                                <div className="mt-3 flex items-center justify-center gap-3 border-t border-dashed border-border/60 pt-3">
-                                    <div className="flex size-14 items-center justify-center rounded border-2 border-border bg-muted/40">
-                                        <span className="text-[8px] text-muted-foreground text-center leading-tight">QR<br/>SUNAT</span>
-                                    </div>
-                                    <div className="flex-1 text-[9px] text-muted-foreground leading-relaxed">
-                                        <p>Representación impresa de comprobante electrónico</p>
-                                        <p className="mt-1">Consulte su comprobante en:</p>
-                                        <p className="font-medium text-foreground">www.sunat.gob.pe</p>
-                                    </div>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
                 </div>
+
+                {/* Modal: Vista previa — representación impresa estilo SUNAT */}
+                {previewOpen && (
+                    <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/50" onClick={() => setPreviewOpen(false)}>
+                      <div className="flex min-h-full items-start justify-center p-4">
+                        <div className="w-full max-w-2xl rounded-lg bg-white text-neutral-900 shadow-soft" onClick={(e) => e.stopPropagation()}>
+                            {/* Barra del modal */}
+                            <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
+                                <span className="text-sm font-semibold text-neutral-800">Vista previa</span>
+                                <button type="button" onClick={() => setPreviewOpen(false)} className="rounded p-1 text-neutral-500 transition-colors hover:bg-neutral-100">
+                                    <X className="size-4" />
+                                </button>
+                            </div>
+
+                            {/* Hoja del comprobante */}
+                            <div className="p-6 text-[11px] leading-relaxed">
+                                {/* Encabezado: emisor + recuadro RUC/documento */}
+                                <div className="flex items-start justify-between gap-4 border-b border-neutral-300 pb-4">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold uppercase leading-tight">{tenant.razon_social}</p>
+                                        {tenant.direccion && <p className="mt-0.5 text-neutral-600">{tenant.direccion}</p>}
+                                    </div>
+                                    <div className="shrink-0 rounded border-2 border-neutral-800 px-5 py-2 text-center">
+                                        <p className="text-xs font-bold">R.U.C. {tenant.ruc}</p>
+                                        <p className="my-1 text-[11px] font-bold uppercase">
+                                            {tipoDoc === '01' ? 'FACTURA ELECTRÓNICA' : 'BOLETA DE VENTA ELECTRÓNICA'}
+                                        </p>
+                                        <p className="text-sm font-bold">{serie}-00000001</p>
+                                    </div>
+                                </div>
+
+                                {/* Datos de emisión y adquirente */}
+                                <div className="grid grid-cols-1 gap-x-6 gap-y-1 border-b border-neutral-300 py-3 sm:grid-cols-2">
+                                    <p><span className="font-semibold">Fecha de emisión:</span> {fmtDate(fecha)}</p>
+                                    <p><span className="font-semibold">Moneda:</span> {moneda === 'PEN' ? 'SOLES' : 'DÓLARES AMERICANOS'}</p>
+                                    <p className="sm:col-span-2"><span className="font-semibold">Señor(es):</span> {cliente?.razon_social || '—'}</p>
+                                    <p><span className="font-semibold">{cliente?.tipo_doc === '6' ? 'RUC:' : 'Doc.:'}</span> {cliente?.num_doc || '—'}</p>
+                                    {formaPago === 'Credito' && fechaVencimiento && (
+                                        <p><span className="font-semibold">Vencimiento:</span> {fmtDate(fechaVencimiento)}</p>
+                                    )}
+                                    {cliente?.direccion && <p className="sm:col-span-2"><span className="font-semibold">Dirección:</span> {cliente.direccion}</p>}
+                                    <p><span className="font-semibold">Forma de pago:</span> {formaPago === 'Credito' ? 'Crédito' : 'Contado'}</p>
+                                </div>
+
+                                {/* Tabla de ítems */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full border-collapse text-[10px]">
+                                        <thead>
+                                            <tr className="border-b-2 border-neutral-400 text-left">
+                                                <th className="py-1.5 pr-2 font-semibold">Cant.</th>
+                                                <th className="py-1.5 pr-2 font-semibold">U.M.</th>
+                                                <th className="py-1.5 pr-2 font-semibold">Descripción</th>
+                                                <th className="py-1.5 pr-2 text-right font-semibold">P. Unit.</th>
+                                                <th className="py-1.5 text-right font-semibold">Importe</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {items.filter((it) => it.descripcion).length === 0 ? (
+                                                <tr><td colSpan={5} className="py-4 text-center text-neutral-400">Aún no has agregado ítems</td></tr>
+                                            ) : items.filter((it) => it.descripcion).map((it, i) => {
+                                                const { total } = calcItem(it);
+                                                return (
+                                                    <tr key={i} className="border-b border-neutral-200 align-top">
+                                                        <td className="py-1.5 pr-2 tabular-nums">{fmt(it.cantidad, 0)}</td>
+                                                        <td className="py-1.5 pr-2">{it.unidad}</td>
+                                                        <td className="py-1.5 pr-2 uppercase">{it.descripcion}</td>
+                                                        <td className="py-1.5 pr-2 text-right tabular-nums">{fmt(it.precio_unitario)}</td>
+                                                        <td className="py-1.5 text-right tabular-nums">{fmt(total)}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Totales */}
+                                <div className="mt-3 flex justify-end">
+                                    <div className="w-full max-w-[16rem] space-y-1">
+                                        {totals.gravadas > 0 && <div className="flex justify-between"><span>Op. Gravada</span><span className="tabular-nums">{simbolo} {fmt(totals.gravadas)}</span></div>}
+                                        {totals.exoneradas > 0 && <div className="flex justify-between"><span>Op. Exonerada</span><span className="tabular-nums">{simbolo} {fmt(totals.exoneradas)}</span></div>}
+                                        {totals.inafectas > 0 && <div className="flex justify-between"><span>Op. Inafecta</span><span className="tabular-nums">{simbolo} {fmt(totals.inafectas)}</span></div>}
+                                        {totals.exportacion > 0 && <div className="flex justify-between"><span>Op. Exportación</span><span className="tabular-nums">{simbolo} {fmt(totals.exportacion)}</span></div>}
+                                        {totals.igvTotal > 0 && <div className="flex justify-between"><span>I.G.V. (18%)</span><span className="tabular-nums">{simbolo} {fmt(totals.igvTotal)}</span></div>}
+                                        <div className="flex justify-between border-t-2 border-neutral-400 pt-1 text-sm font-bold">
+                                            <span>IMPORTE TOTAL</span>
+                                            <span className="tabular-nums">{simbolo} {fmt(totals.totalComprobante)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Detracción (si aplica) */}
+                                {detEnabled && detCodigo && totals.detMonto > 0 && (
+                                    <div className="mt-4 border-t border-neutral-300 pt-3 text-[10px]">
+                                        <p className="font-semibold uppercase">Operación sujeta al SPOT (detracción)</p>
+                                        <p>Bien/Servicio: {detData?.codigo} - {detData?.descripcion}</p>
+                                        <p>Porcentaje: {detPct}% &nbsp;·&nbsp; Monto a detraer: {simbolo} {fmt(totals.detMonto)}</p>
+                                        {detCuenta && <p>Cuenta Banco de la Nación: {detCuenta}</p>}
+                                        <p className="font-semibold">Monto neto pendiente de pago: {simbolo} {fmt(totals.netoPagar)}</p>
+                                    </div>
+                                )}
+
+                                {/* Pie: QR + leyenda */}
+                                <div className="mt-5 flex items-center gap-4 border-t border-neutral-300 pt-4">
+                                    <div className="flex size-16 shrink-0 items-center justify-center border border-neutral-400 text-[8px] text-neutral-500">QR</div>
+                                    <div className="text-[9px] leading-relaxed text-neutral-600">
+                                        <p>Representación impresa de la {tipoDoc === '01' ? 'FACTURA' : 'BOLETA DE VENTA'} ELECTRÓNICA.</p>
+                                        <p>Consulte su comprobante en www.sunat.gob.pe</p>
+                                        <p>Emitido mediante Sistema de Emisión Electrónica.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Acciones del modal */}
+                            <div className="flex justify-end border-t border-neutral-200 px-4 py-3">
+                                <button type="button" onClick={() => setPreviewOpen(false)} className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100">
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                      </div>
+                    </div>
+                )}
             </div>
+
+            {/* Modal de PDF tras emitir */}
+            {pdfModal && (
+                <PdfPreviewModal
+                    tipo={pdfModal.tipo}
+                    id={pdfModal.id}
+                    numero={pdfModal.numero}
+                    initialFormat={pdfModal.formato ?? 'a4'}
+                    onClose={() => setPdfModal(null)}
+                />
+            )}
         </SunatLayout>
     );
 }

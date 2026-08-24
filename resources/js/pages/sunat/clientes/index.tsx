@@ -1,8 +1,12 @@
 import { Head, router } from '@inertiajs/react';
+import { type ColumnDef } from '@tanstack/react-table';
 import { useState } from 'react';
 import { Edit2, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { DataTable } from '@/components/ui/data-table';
+import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
@@ -18,17 +22,8 @@ type Cliente = {
     telefono: string | null;
 };
 
-type PaginatedClientes = {
-    data: Cliente[];
-    current_page: number;
-    last_page: number;
-    total: number;
-    links: { url: string | null; label: string; active: boolean }[];
-};
-
 type Props = {
-    clientes: PaginatedClientes;
-    filtros: { q: string };
+    clientes: Cliente[];
     tenant: { environment: string };
 };
 
@@ -51,20 +46,15 @@ const EMPTY_FORM: FormData = {
     nombre_comercial: '', direccion: '', email: '', telefono: '',
 };
 
-export default function ClientesIndex({ clientes, filtros }: Props) {
-    const [q, setQ]                 = useState(filtros.q);
+export default function ClientesIndex({ clientes }: Props) {
+    const confirm = useConfirm();
     const [modalOpen, setModalOpen] = useState(false);
     const [editId, setEditId]       = useState<number | null>(null);
     const [form, setForm]           = useState<FormData>(EMPTY_FORM);
     const [submitting, setSubmitting] = useState(false);
     const [lookingUp, setLookingUp] = useState(false);
     const [lookupError, setLookupError] = useState('');
-    const [confirmarId, setConfirmarId] = useState<number | null>(null);
     const [formErrors, setFormErrors] = useState<Partial<FormData>>({});
-
-    function buscar() {
-        router.get('/sunat/clientes', { q }, { preserveState: true });
-    }
 
     function abrirNuevo() {
         setEditId(null);
@@ -133,143 +123,111 @@ export default function ClientesIndex({ clientes, filtros }: Props) {
         if (!validate()) return;
         setSubmitting(true);
 
-        if (editId) {
-            router.put(`/sunat/clientes/${editId}`, form, {
-                onSuccess: () => { setModalOpen(false); setSubmitting(false); },
-                onError:   () => setSubmitting(false),
-            });
-        } else {
-            router.post('/sunat/clientes', form, {
-                onSuccess: () => { setModalOpen(false); setSubmitting(false); },
-                onError:   () => setSubmitting(false),
-            });
+        const opts = {
+            preserveScroll: true,
+            onSuccess: () => { setModalOpen(false); setSubmitting(false); },
+            onError:   () => setSubmitting(false),
+        };
+
+        if (editId) router.put(`/sunat/clientes/${editId}`, form, opts);
+        else        router.post('/sunat/clientes', form, opts);
+    }
+
+    async function eliminar(c: Cliente) {
+        if (await confirm({
+            title: `¿Eliminar a ${c.razon_social}?`,
+            description: 'Esta acción no se puede deshacer.',
+            variant: 'danger',
+            confirmText: 'Eliminar',
+        })) {
+            router.delete(`/sunat/clientes/${c.id}`, { preserveScroll: true });
         }
     }
 
-    function eliminar(id: number) {
-        router.delete(`/sunat/clientes/${id}`, { onFinish: () => setConfirmarId(null) });
-    }
+    const columns: ColumnDef<Cliente>[] = [
+        {
+            accessorKey: 'numero_documento',
+            header: 'Documento',
+            meta: { label: 'Documento' },
+            cell: ({ row }) => (
+                <div className="whitespace-nowrap">
+                    <span className="mr-1.5 inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        {TIPO_DOC_LABEL[row.original.tipo_documento] ?? row.original.tipo_documento}
+                    </span>
+                    <span className="font-mono text-xs">{row.original.numero_documento}</span>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'razon_social',
+            header: 'Razón social',
+            meta: { label: 'Razón social', primary: true },
+            cell: ({ row }) => (
+                <div>
+                    <p className="font-medium">{row.original.razon_social}</p>
+                    {row.original.nombre_comercial && (
+                        <p className="text-[11px] text-muted-foreground">{row.original.nombre_comercial}</p>
+                    )}
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'direccion',
+            header: 'Dirección',
+            meta: { label: 'Dirección' },
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.direccion || '—'}</span>,
+        },
+        {
+            accessorKey: 'email',
+            header: 'Email',
+            meta: { label: 'Email' },
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.email || '—'}</span>,
+        },
+        {
+            accessorKey: 'telefono',
+            header: 'Teléfono',
+            meta: { label: 'Teléfono' },
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.telefono || '—'}</span>,
+        },
+        {
+            id: 'actions',
+            header: 'Acciones',
+            enableSorting: false,
+            meta: { hideLabel: true, alignRight: true },
+            cell: ({ row }) => (
+                <DataTableRowActions
+                    actions={[
+                        { label: 'Editar', icon: Edit2, onSelect: () => abrirEditar(row.original) },
+                        { label: 'Eliminar', icon: Trash2, danger: true, separatorBefore: true, onSelect: () => eliminar(row.original) },
+                    ]}
+                />
+            ),
+        },
+    ];
 
     return (
         <SunatLayout>
             <Head title="Clientes" />
 
             <div className="mx-auto max-w-6xl">
-
-                {/* Header */}
-                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl font-semibold tracking-tight">Clientes</h1>
-                        <p className="text-sm text-muted-foreground">{clientes.total} cliente{clientes.total !== 1 ? 's' : ''} registrado{clientes.total !== 1 ? 's' : ''}</p>
-                    </div>
-                    <Button onClick={abrirNuevo} className="gap-2 rounded-xl">
-                        <Plus className="size-4" /> Nuevo Cliente
-                    </Button>
+                <div className="mb-6">
+                    <h1 className="text-xl font-semibold tracking-tight">Clientes</h1>
+                    <p className="text-sm text-muted-foreground">
+                        {clientes.length} cliente{clientes.length !== 1 ? 's' : ''} registrado{clientes.length !== 1 ? 's' : ''}
+                    </p>
                 </div>
 
-                {/* Búsqueda */}
-                <div className="mb-5 flex gap-3">
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            placeholder="Buscar por RUC, DNI o razón social..."
-                            value={q}
-                            onChange={(e) => setQ(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && buscar()}
-                            className="h-9 rounded-xl pl-9"
-                        />
-                    </div>
-                    <Button variant="outline" size="sm" onClick={buscar} className="h-9 rounded-xl">Buscar</Button>
-                </div>
-
-                {/* Tabla */}
-                <div className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
-                    {clientes.data.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                            <p className="text-sm font-medium text-muted-foreground">No hay clientes registrados</p>
-                            <p className="mt-1 text-xs text-muted-foreground">Los clientes se crean al emitir una factura o puedes agregarlos manualmente.</p>
-                            <Button onClick={abrirNuevo} className="mt-4 gap-2 rounded-xl" size="sm">
-                                <Plus className="size-3.5" /> Nuevo Cliente
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="border-b border-border/60 bg-muted/30">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Doc.</th>
-                                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Razón social</th>
-                                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Dirección</th>
-                                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Email</th>
-                                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Teléfono</th>
-                                        <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {clientes.data.map((c) => (
-                                        <tr key={c.id} className="border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors">
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground mr-1.5">
-                                                    {TIPO_DOC_LABEL[c.tipo_documento] ?? c.tipo_documento}
-                                                </span>
-                                                <span className="font-mono text-xs">{c.numero_documento}</span>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <p className="font-medium">{c.razon_social}</p>
-                                                {c.nombre_comercial && <p className="text-[11px] text-muted-foreground">{c.nombre_comercial}</p>}
-                                            </td>
-                                            <td className="px-4 py-3 text-xs text-muted-foreground max-w-[180px] truncate">{c.direccion ?? '—'}</td>
-                                            <td className="px-4 py-3 text-xs text-muted-foreground">{c.email ?? '—'}</td>
-                                            <td className="px-4 py-3 text-xs text-muted-foreground">{c.telefono ?? '—'}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center justify-center gap-1.5">
-                                                    <button type="button" onClick={() => abrirEditar(c)}
-                                                        className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-primary">
-                                                        <Edit2 className="size-3.5" />
-                                                    </button>
-                                                    {confirmarId === c.id ? (
-                                                        <div className="flex items-center gap-1">
-                                                            <button type="button" onClick={() => eliminar(c.id)}
-                                                                className="rounded-lg bg-destructive px-2 py-1 text-[11px] font-medium text-destructive-foreground">
-                                                                Confirmar
-                                                            </button>
-                                                            <button type="button" onClick={() => setConfirmarId(null)}
-                                                                className="rounded-lg border px-2 py-1 text-[11px] text-muted-foreground">
-                                                                No
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <button type="button" onClick={() => setConfirmarId(c.id)}
-                                                            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-destructive">
-                                                            <Trash2 className="size-3.5" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-
-                {/* Paginación */}
-                {clientes.last_page > 1 && (
-                    <div className="mt-4 flex justify-center gap-1">
-                        {clientes.links.map((link, i) => (
-                            <button key={i} type="button" disabled={!link.url || link.active}
-                                onClick={() => link.url && router.get(link.url)}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                                className={`rounded-lg px-3 py-1.5 text-xs transition-colors ${
-                                    link.active ? 'bg-primary text-primary-foreground font-medium'
-                                        : link.url ? 'border border-border hover:bg-secondary'
-                                        : 'text-muted-foreground cursor-not-allowed'
-                                }`}
-                            />
-                        ))}
-                    </div>
-                )}
+                <DataTable
+                    columns={columns}
+                    data={clientes}
+                    searchPlaceholder="Buscar por RUC, DNI o razón social..."
+                    emptyMessage="No hay clientes registrados. Se crean al emitir una factura, o agrégalos manualmente."
+                    toolbar={
+                        <Button onClick={abrirNuevo} className="gap-2 rounded-xl">
+                            <Plus className="size-4" /> Nuevo Cliente
+                        </Button>
+                    }
+                />
             </div>
 
             {/* ══ MODAL CREAR / EDITAR ══ */}
@@ -309,7 +267,7 @@ export default function ClientesIndex({ clientes, filtros }: Props) {
                                     />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
-                                    <Label className="text-xs font-medium text-muted-foreground">Número</Label>
+                                    <Label className="text-xs font-medium text-muted-foreground">Número <span className="text-destructive">*</span></Label>
                                     <Input value={form.numero_documento} onChange={(e) => setField('numero_documento', e.target.value)}
                                         disabled={!!editId}
                                         placeholder={form.tipo_documento === '6' ? '20123456789' : '12345678'}
@@ -334,7 +292,7 @@ export default function ClientesIndex({ clientes, filtros }: Props) {
 
                             {/* Razón social */}
                             <div className="flex flex-col gap-1.5">
-                                <Label className="text-xs font-medium text-muted-foreground">Razón social / Nombre completo</Label>
+                                <Label className="text-xs font-medium text-muted-foreground">Razón social / Nombre completo <span className="text-destructive">*</span></Label>
                                 <Input value={form.razon_social} onChange={(e) => setField('razon_social', e.target.value)}
                                     className={`h-10 rounded-xl ${formErrors.razon_social ? 'border-destructive' : ''}`} />
                                 {formErrors.razon_social && <p className="text-xs text-destructive">{formErrors.razon_social}</p>}
@@ -348,18 +306,18 @@ export default function ClientesIndex({ clientes, filtros }: Props) {
 
                             {/* Dirección */}
                             <div className="flex flex-col gap-1.5">
-                                <Label className="text-xs font-medium text-muted-foreground">Dirección</Label>
+                                <Label className="text-xs font-medium text-muted-foreground">Dirección (opcional)</Label>
                                 <Input value={form.direccion} onChange={(e) => setField('direccion', e.target.value)} className="h-10 rounded-xl" />
                             </div>
 
                             {/* Email + Teléfono */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="flex flex-col gap-1.5">
-                                    <Label className="text-xs font-medium text-muted-foreground">Email</Label>
+                                    <Label className="text-xs font-medium text-muted-foreground">Email (opcional)</Label>
                                     <Input type="email" value={form.email} onChange={(e) => setField('email', e.target.value)} className="h-10 rounded-xl" />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
-                                    <Label className="text-xs font-medium text-muted-foreground">Teléfono</Label>
+                                    <Label className="text-xs font-medium text-muted-foreground">Teléfono (opcional)</Label>
                                     <Input value={form.telefono} onChange={(e) => setField('telefono', e.target.value)} className="h-10 rounded-xl" />
                                 </div>
                             </div>

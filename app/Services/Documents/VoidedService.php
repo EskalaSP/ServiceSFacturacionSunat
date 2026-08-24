@@ -40,6 +40,8 @@ class VoidedService
         ?string $fechaComunicacion,
         array $detalles,
         bool $enviarAuto = true,
+        ?string $motivo = null,
+        ?int $userId = null,
     ): array {
         $fechaCom = $fechaComunicacion ?: now()->format('Y-m-d');
 
@@ -70,6 +72,8 @@ class VoidedService
             'fecha_comunicacion' => $fechaCom,
             'total_documentos' => count($detalles),
             'detalles' => $detalles,
+            'motivo' => $motivo ?? ($detalles[0]['motivo'] ?? null),
+            'anulado_por' => $userId,
             'sunat_status' => 'pendiente',
         ]);
 

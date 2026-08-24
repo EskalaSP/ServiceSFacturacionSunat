@@ -49,12 +49,15 @@ class BuscarClienteController extends Controller
             ->whereIn('sunat_status', ['aceptado', 'pendiente', 'enviado'])
             ->orderByDesc('fecha_emision')
             ->limit(8)
-            ->get(['id', 'serie', 'correlativo', 'client_razon_social', 'mto_imp_venta', 'tipo_moneda', 'fecha_emision'])
+            ->get(['id', 'serie', 'correlativo', 'client_tipo_doc', 'client_num_doc', 'client_razon_social', 'client_direccion', 'mto_imp_venta', 'tipo_moneda', 'fecha_emision'])
             ->map(fn ($d) => [
                 'id' => $d->id,
                 'tipo_doc' => '01',
                 'numero' => $d->serie.'-'.str_pad((string) $d->correlativo, 8, '0', STR_PAD_LEFT),
                 'cliente' => $d->client_razon_social,
+                'cliente_tipo_doc' => $d->client_tipo_doc,
+                'cliente_num_doc' => $d->client_num_doc,
+                'cliente_direccion' => $d->client_direccion,
                 'total' => (float) $d->mto_imp_venta,
                 'moneda' => $d->tipo_moneda,
                 'fecha' => $d->fecha_emision,
@@ -69,12 +72,15 @@ class BuscarClienteController extends Controller
             ->whereIn('sunat_status', ['aceptado', 'pendiente', 'enviado'])
             ->orderByDesc('fecha_emision')
             ->limit(8)
-            ->get(['id', 'serie', 'correlativo', 'client_razon_social', 'mto_imp_venta', 'tipo_moneda', 'fecha_emision'])
+            ->get(['id', 'serie', 'correlativo', 'client_tipo_doc', 'client_num_doc', 'client_razon_social', 'client_direccion', 'mto_imp_venta', 'tipo_moneda', 'fecha_emision'])
             ->map(fn ($d) => [
                 'id' => $d->id,
                 'tipo_doc' => '03',
                 'numero' => $d->serie.'-'.str_pad((string) $d->correlativo, 8, '0', STR_PAD_LEFT),
                 'cliente' => $d->client_razon_social,
+                'cliente_tipo_doc' => $d->client_tipo_doc,
+                'cliente_num_doc' => $d->client_num_doc,
+                'cliente_direccion' => $d->client_direccion,
                 'total' => (float) $d->mto_imp_venta,
                 'moneda' => $d->tipo_moneda,
                 'fecha' => $d->fecha_emision,

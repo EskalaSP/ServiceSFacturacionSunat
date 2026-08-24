@@ -1,42 +1,33 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { Download, FileText, Filter, Search, X } from 'lucide-react';
-import { StatusBadge } from '@/components/sunat/status-badge';
+import { Filter, Search, X } from 'lucide-react';
+import { DocumentosTable } from '@/components/sunat/documentos-table';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import SunatLayout from '@/layouts/sunat-layout';
 import type { DocumentoSunat } from '@/types';
 
-type Filtros = {
-    tipo: string;
-    estado: string;
-    desde: string;
-    hasta: string;
-    cliente: string;
+type Filtros = { tipo: string; estado: string; desde: string; hasta: string; cliente: string };
+
+const TIPO_FILTRO_LABEL: Record<string, string> = {
+    facturas: 'Facturas', boletas: 'Boletas', 'notas-credito': 'Notas de crédito',
+    'notas-debito': 'Notas de débito', guias: 'Guías de remisión', retenciones: 'Retenciones', percepciones: 'Percepciones',
+};
+const ESTADO_FILTRO_LABEL: Record<string, string> = {
+    aceptado: 'Aceptado', pendiente: 'Pendiente', enviado: 'Enviado',
+    rechazado: 'Rechazado', anulado: 'Anulado', borrador: 'Borrador',
 };
 
 type Props = {
-    documentos: { data: DocumentoSunat[]; total: number } | { data: DocumentoSunat[]; total: number; current_page: number; last_page: number };
+    documentos: { data: DocumentoSunat[]; total: number };
     filtros: Filtros;
     tenant: { environment: string };
 };
 
-const TIPO_LABEL: Record<string, string> = {
-    '01': 'Factura',
-    '03': 'Boleta',
-    '07': 'N. Crédito',
-    '08': 'N. Débito',
-};
-
-function formatPen(amount: number, moneda: string) {
-    return (moneda === 'USD' ? '$ ' : 'S/ ') +
-        new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2 }).format(amount);
-}
-
-export default function Historial({ documentos, filtros, tenant }: Props) {
+export default function Historial({ documentos, filtros }: Props) {
     const [tipo, setTipo]       = useState(filtros.tipo ?? 'todos');
     const [estado, setEstado]   = useState(filtros.estado ?? '');
     const [desde, setDesde]     = useState(filtros.desde ?? '');
@@ -51,15 +42,26 @@ export default function Historial({ documentos, filtros, tenant }: Props) {
     }
 
     function limpiarFiltros() {
-        setTipo('todos');
-        setEstado('');
-        setDesde('');
-        setHasta('');
-        setCliente('');
+        setTipo('todos'); setEstado(''); setDesde(''); setHasta(''); setCliente('');
         router.get('/sunat/historial', {}, { preserveState: false });
     }
 
     const hayFiltros = estado || desde || hasta || cliente || tipo !== 'todos';
+
+    function quitarFiltro(key: keyof Filtros) {
+        const params: Filtros = { tipo, estado, desde, hasta, cliente };
+        params[key] = key === 'tipo' ? 'todos' : '';
+        setTipo(params.tipo); setEstado(params.estado); setDesde(params.desde); setHasta(params.hasta); setCliente(params.cliente);
+        router.get('/sunat/historial', params, { preserveState: true });
+    }
+
+    const chips = [
+        tipo !== 'todos' ? { key: 'tipo' as const, texto: `Tipo: ${TIPO_FILTRO_LABEL[tipo] ?? tipo}` } : null,
+        estado ? { key: 'estado' as const, texto: `Estado: ${ESTADO_FILTRO_LABEL[estado] ?? estado}` } : null,
+        desde ? { key: 'desde' as const, texto: `Desde: ${desde}` } : null,
+        hasta ? { key: 'hasta' as const, texto: `Hasta: ${hasta}` } : null,
+        cliente ? { key: 'cliente' as const, texto: `Cliente: ${cliente}` } : null,
+    ].filter((c): c is { key: keyof Filtros; texto: string } => c !== null);
 
     return (
         <SunatLayout>
@@ -75,17 +77,11 @@ export default function Historial({ documentos, filtros, tenant }: Props) {
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowFiltros((v) => !v)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => setShowFiltros((v) => !v)}>
                             <Filter className="mr-2 size-3.5" />
                             Filtros
                             {hayFiltros && (
-                                <span className="ml-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                                    !
-                                </span>
+                                <span className="ml-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">!</span>
                             )}
                         </Button>
                         <Button asChild size="sm">
@@ -94,7 +90,7 @@ export default function Historial({ documentos, filtros, tenant }: Props) {
                     </div>
                 </div>
 
-                {/* Filtros panel */}
+                {/* Filtros panel (servidor) */}
                 {showFiltros && (
                     <Card>
                         <CardContent className="pt-6">
@@ -104,10 +100,16 @@ export default function Historial({ documentos, filtros, tenant }: Props) {
                                     <Combobox
                                         value={tipo}
                                         onChange={(v) => setTipo(v)}
+                                        searchable
                                         options={[
                                             { value: 'todos', label: 'Todos' },
                                             { value: 'facturas', label: 'Facturas' },
                                             { value: 'boletas', label: 'Boletas' },
+                                            { value: 'notas-credito', label: 'Notas de crédito' },
+                                            { value: 'notas-debito', label: 'Notas de débito' },
+                                            { value: 'guias', label: 'Guías de remisión' },
+                                            { value: 'retenciones', label: 'Retenciones' },
+                                            { value: 'percepciones', label: 'Percepciones' },
                                         ]}
                                         className="h-9 rounded-md"
                                     />
@@ -124,6 +126,7 @@ export default function Historial({ documentos, filtros, tenant }: Props) {
                                             { value: 'pendiente', label: 'Pendiente' },
                                             { value: 'enviado', label: 'Enviado' },
                                             { value: 'rechazado', label: 'Rechazado' },
+                                            { value: 'anulado', label: 'Anulado' },
                                             { value: 'borrador', label: 'Borrador' },
                                         ]}
                                         className="h-9 rounded-md"
@@ -139,22 +142,16 @@ export default function Historial({ documentos, filtros, tenant }: Props) {
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <Label>Cliente</Label>
-                                    <Input
-                                        placeholder="Buscar..."
-                                        value={cliente}
-                                        onChange={(e) => setCliente(e.target.value)}
-                                    />
+                                    <Input placeholder="Buscar..." value={cliente} onChange={(e) => setCliente(e.target.value)} />
                                 </div>
                             </div>
                             <div className="mt-4 flex gap-2">
                                 <Button size="sm" onClick={aplicarFiltros}>
-                                    <Search className="mr-2 size-3.5" />
-                                    Buscar
+                                    <Search className="mr-2 size-3.5" /> Buscar
                                 </Button>
                                 {hayFiltros && (
                                     <Button size="sm" variant="ghost" onClick={limpiarFiltros}>
-                                        <X className="mr-2 size-3.5" />
-                                        Limpiar
+                                        <X className="mr-2 size-3.5" /> Limpiar
                                     </Button>
                                 )}
                             </div>
@@ -162,114 +159,24 @@ export default function Historial({ documentos, filtros, tenant }: Props) {
                     </Card>
                 )}
 
-                {/* Table */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base">Comprobantes emitidos</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        {docs.length === 0 ? (
-                            <div className="flex flex-col items-center gap-3 py-12 text-center">
-                                <FileText className="size-10 text-muted-foreground/30" />
-                                <p className="text-sm text-muted-foreground">No se encontraron comprobantes.</p>
-                                {hayFiltros && (
-                                    <Button variant="outline" size="sm" onClick={limpiarFiltros}>
-                                        Limpiar filtros
-                                    </Button>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="border-b bg-muted/30">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-                                                Tipo
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-                                                Número
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-                                                Cliente
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-                                                Fecha
-                                            </th>
-                                            <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">
-                                                Total
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-                                                Estado
-                                            </th>
-                                            <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">
-                                                Acciones
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {docs.map((doc) => (
-                                            <tr
-                                                key={`${doc.tipo_doc}-${doc.id}`}
-                                                className="border-b last:border-0 hover:bg-muted/20"
-                                            >
-                                                <td className="px-4 py-3">
-                                                    <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
-                                                        {TIPO_LABEL[doc.tipo_doc] ?? doc.tipo_doc}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 font-mono text-xs">{doc.numero}</td>
-                                                <td className="max-w-[160px] truncate px-4 py-3 text-sm">
-                                                    {doc.cliente}
-                                                </td>
-                                                <td className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground">
-                                                    {new Date(doc.fecha).toLocaleDateString('es-PE')}
-                                                </td>
-                                                <td className="whitespace-nowrap px-4 py-3 text-right font-medium">
-                                                    {formatPen(doc.total, doc.moneda)}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <StatusBadge status={doc.estado} />
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center justify-center gap-1">
-                                                        {doc.tiene_pdf && (
-                                                            <a
-                                                                href={`/sunat/historial/${doc.tipo_doc}/${doc.id}/pdf`}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-                                                            >
-                                                                <FileText className="size-3" />
-                                                                PDF
-                                                            </a>
-                                                        )}
-                                                        {doc.tiene_xml && (
-                                                            <a
-                                                                href={`/sunat/historial/${doc.tipo_doc}/${doc.id}/xml`}
-                                                                className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-                                                            >
-                                                                <Download className="size-3" />
-                                                                XML
-                                                            </a>
-                                                        )}
-                                                        {doc.estado === 'aceptado' && (
-                                                            <Link
-                                                                href={`/sunat/nota-credito/nueva?doc_id=${doc.id}&tipo_doc=${doc.tipo_doc}`}
-                                                                className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-                                                            >
-                                                                N/C
-                                                            </Link>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                {/* Chips de filtros activos */}
+                {chips.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2">
+                        {chips.map((c) => (
+                            <span key={c.key} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs text-foreground">
+                                {c.texto}
+                                <button type="button" onClick={() => quitarFiltro(c.key)} className="text-muted-foreground transition-colors hover:text-destructive" title="Quitar filtro">
+                                    <X className="size-3" />
+                                </button>
+                            </span>
+                        ))}
+                        <button type="button" onClick={limpiarFiltros} className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline">
+                            Limpiar todo
+                        </button>
+                    </div>
+                )}
+
+                <DocumentosTable documentos={docs} searchPlaceholder="Buscar en resultados..." emptyMessage="No se encontraron comprobantes." />
             </div>
         </SunatLayout>
     );

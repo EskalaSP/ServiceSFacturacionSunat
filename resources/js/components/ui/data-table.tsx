@@ -44,6 +44,8 @@ type DataTableProps<TData, TValue> = {
     searchable?: boolean;
     /** Filas por página. Default: 10 */
     pageSize?: number;
+    /** Muestra una columna "#" con numeración correlativa. Default: true */
+    showIndex?: boolean;
     emptyMessage?: string;
     /** Contenido extra a la derecha de la barra de búsqueda (ej. botón "Nuevo") */
     toolbar?: React.ReactNode;
@@ -60,6 +62,7 @@ export function DataTable<TData, TValue>({
     searchPlaceholder = 'Buscar...',
     searchable = true,
     pageSize = 10,
+    showIndex = true,
     emptyMessage = 'No hay resultados.',
     toolbar,
     manualPagination = false,
@@ -67,9 +70,31 @@ export function DataTable<TData, TValue>({
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [globalFilter, setGlobalFilter] = React.useState('');
 
+    const columnsConIndice = React.useMemo<ColumnDef<TData, TValue>[]>(() => {
+        if (!showIndex) return columns;
+        const indexCol: ColumnDef<TData, TValue> = {
+            id: '__index',
+            header: '#',
+            enableSorting: false,
+            enableGlobalFilter: false,
+            meta: { label: '#' } as ColumnMeta,
+            cell: ({ row, table }) => {
+                const pageRows = table.getRowModel().rows;
+                const pos = pageRows.findIndex((r) => r.id === row.id);
+                const { pageIndex, pageSize: ps } = table.getState().pagination;
+                return (
+                    <span className="text-muted-foreground tabular-nums">
+                        {pageIndex * ps + pos + 1}
+                    </span>
+                );
+            },
+        };
+        return [indexCol, ...columns];
+    }, [columns, showIndex]);
+
     const table = useReactTable({
         data,
-        columns,
+        columns: columnsConIndice,
         state: { sorting, globalFilter },
         onSortingChange: setSorting,
         onGlobalFilterChange: setGlobalFilter,
@@ -166,7 +191,7 @@ export function DataTable<TData, TValue>({
                             ))
                         ) : (
                             <TableRow className="hover:bg-transparent">
-                                <TableCell colSpan={columns.length} className="text-muted-foreground h-28 text-center">
+                                <TableCell colSpan={columnsConIndice.length} className="text-muted-foreground h-28 text-center">
                                     {emptyMessage}
                                 </TableCell>
                             </TableRow>

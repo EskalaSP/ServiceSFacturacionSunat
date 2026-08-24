@@ -12,7 +12,8 @@ class VoidedDocument extends Model
     protected $fillable = [
         'tenant_id', 'identifier', 'correlativo', 'fecha_generacion',
         'fecha_comunicacion', 'total_documentos', 'detalles',
-        'xml_path', 'ticket', 'sunat_status', 'sunat_code',
+        'motivo', 'anulado_por',
+        'xml_path', 'cdr_path', 'ticket', 'sunat_status', 'sunat_code',
         'sunat_description', 'sunat_notes',
     ];
 

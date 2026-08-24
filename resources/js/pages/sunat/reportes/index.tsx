@@ -1,7 +1,9 @@
 import { Head } from '@inertiajs/react';
+import { type ColumnDef } from '@tanstack/react-table';
 import { BarChart3 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { DataTable } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
@@ -20,6 +22,29 @@ function Valor({ v }: { v: unknown }) {
     return <span>{String(v)}</span>;
 }
 
+function ReporteTabla({ titulo, filas }: { titulo: string; filas: Record<string, unknown>[] }) {
+    const cols = Object.keys(filas[0]);
+    const columns: ColumnDef<Record<string, unknown>>[] = cols.map((c) => ({
+        id: c,
+        header: c,
+        accessorFn: (row) => row[c],
+        meta: { label: c },
+        cell: ({ getValue }) => <Valor v={getValue()} />,
+    }));
+    return (
+        <section className="space-y-2">
+            <div className="text-xs font-semibold uppercase text-muted-foreground">{titulo}</div>
+            <DataTable
+                columns={columns}
+                data={filas}
+                pageSize={20}
+                searchPlaceholder="Buscar en el reporte..."
+                emptyMessage="Sin datos en este reporte."
+            />
+        </section>
+    );
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Reporte({ data }: { data: any }) {
     if (!data || typeof data !== 'object') return null;
@@ -29,24 +54,7 @@ function Reporte({ data }: { data: any }) {
         <div className="space-y-5">
             {entradas.map(([clave, valor]) => {
                 if (esFilaTabla(valor)) {
-                    const cols = Object.keys(valor[0]);
-                    return (
-                        <section key={clave} className="overflow-x-auto rounded-xl border border-border">
-                            <div className="border-b border-border bg-muted/40 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">{clave}</div>
-                            <table className="w-full text-sm">
-                                <thead className="border-b border-border text-left text-xs text-muted-foreground">
-                                    <tr>{cols.map((c) => (<th key={c} className="px-3 py-2 font-medium">{c}</th>))}</tr>
-                                </thead>
-                                <tbody>
-                                    {valor.slice(0, 200).map((fila, i) => (
-                                        <tr key={i} className="border-b border-border/60 last:border-0">
-                                            {cols.map((c) => (<td key={c} className="px-3 py-2"><Valor v={fila[c]} /></td>))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </section>
-                    );
+                    return <ReporteTabla key={clave} titulo={clave} filas={valor} />;
                 }
                 if (typeof valor === 'object' && valor !== null) {
                     return (

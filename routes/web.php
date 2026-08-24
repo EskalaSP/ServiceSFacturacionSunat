@@ -25,6 +25,7 @@ use App\Http\Controllers\Web\Sunat\ResumenController;
 use App\Http\Controllers\Web\Sunat\RetencionController;
 use App\Http\Controllers\Web\Sunat\ReversionController;
 use App\Http\Controllers\Web\Sunat\SerieController;
+use App\Http\Controllers\Web\Sunat\SucursalController;
 use App\Http\Controllers\Web\Sunat\SireController;
 use Illuminate\Support\Facades\Route;
 
@@ -115,29 +116,45 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/configuracion', [ConfiguracionController::class, 'edit'])->name('configuracion');
         Route::put('/configuracion', [ConfiguracionController::class, 'update'])->name('configuracion.update');
         Route::post('/configuracion/probar', [ConfiguracionController::class, 'probarConexion'])->name('configuracion.probar');
+        Route::put('/configuracion/consulta-token', [ConfiguracionController::class, 'updateConsultaToken'])->name('configuracion.consulta-token');
 
+        Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
         Route::get('/facturas/nueva', [FacturaController::class, 'create'])->name('facturas.create');
         Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
 
+        Route::get('/boletas', [BoletaController::class, 'index'])->name('boletas.index');
         Route::get('/boletas/nueva', [BoletaController::class, 'create'])->name('boletas.create');
         Route::post('/boletas', [BoletaController::class, 'store'])->name('boletas.store');
+
+        // PDF por formato (a4/a5/ticket-80/ticket-58) para la vista previa en modal.
+        Route::get('/documentos/{tipo}/{id}/pdf', [\App\Http\Controllers\Web\Sunat\DocumentoPdfController::class, 'show'])->name('documentos.pdf');
 
         Route::get('/historial', [HistorialController::class, 'index'])->name('historial');
         Route::get('/historial/{tipo}/{id}/pdf', [HistorialController::class, 'pdf'])->name('historial.pdf');
         Route::get('/historial/{tipo}/{id}/xml', [HistorialController::class, 'xml'])->name('historial.xml');
+        Route::get('/historial/{tipo}/{id}/cdr', [HistorialController::class, 'cdr'])->name('historial.cdr');
+        Route::post('/historial/{tipo}/{id}/reenviar', [HistorialController::class, 'reenviar'])->name('historial.reenviar');
+        Route::post('/historial/{tipo}/{id}/anular', [HistorialController::class, 'anular'])->name('historial.anular');
+        Route::get('/historial/{tipo}/{id}/anulacion/{archivo}', [HistorialController::class, 'descargarAnulacion'])->whereIn('archivo', ['xml', 'cdr'])->name('historial.anulacion');
 
+        Route::get('/nota-credito', [NotaCreditoController::class, 'index'])->name('nota-credito.index');
         Route::get('/nota-credito/nueva', [NotaCreditoController::class, 'create'])->name('nota-credito.create');
         Route::post('/nota-credito', [NotaCreditoController::class, 'store'])->name('nota-credito.store');
 
+        Route::get('/nota-debito', [NotaDebitoController::class, 'index'])->name('nota-debito.index');
         Route::get('/nota-debito/nueva', [NotaDebitoController::class, 'create'])->name('nota-debito.create');
         Route::post('/nota-debito', [NotaDebitoController::class, 'store'])->name('nota-debito.store');
 
         Route::get('/anulaciones/nueva', [AnulacionController::class, 'create'])->name('anulaciones.create');
         Route::post('/anulaciones', [AnulacionController::class, 'store'])->name('anulaciones.store');
 
+        Route::get('/resumenes', [ResumenController::class, 'index'])->name('resumenes.index');
         Route::get('/resumenes/nueva', [ResumenController::class, 'create'])->name('resumenes.create');
         Route::post('/resumenes', [ResumenController::class, 'store'])->name('resumenes.store');
+        Route::post('/resumenes/{id}/refrescar', [ResumenController::class, 'refrescar'])->name('resumenes.refrescar');
+        Route::get('/resumenes/{id}/{archivo}', [ResumenController::class, 'descargar'])->whereIn('archivo', ['xml', 'cdr'])->name('resumenes.descargar');
 
+        Route::get('/guias', [GuiaController::class, 'index'])->name('guias.index');
         Route::get('/guias/nueva', [GuiaController::class, 'create'])->name('guias.create');
         Route::post('/guias', [GuiaController::class, 'store'])->name('guias.store');
 
@@ -150,6 +167,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reversiones/nueva', [ReversionController::class, 'create'])->name('reversiones.create');
         Route::post('/reversiones', [ReversionController::class, 'store'])->name('reversiones.store');
 
+        Route::get('/nota-venta', [NotaVentaController::class, 'index'])->name('nota-venta.index');
         Route::get('/nota-venta/nueva', [NotaVentaController::class, 'create'])->name('nota-venta.create');
         Route::post('/nota-venta', [NotaVentaController::class, 'store'])->name('nota-venta.store');
 
@@ -174,8 +192,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Fase 4 — series, consultas, exportar y reportes (empresa activa)
         Route::get('/series', [SerieController::class, 'index'])->name('series');
         Route::post('/series', [SerieController::class, 'store'])->name('series.store');
+        Route::put('/series/{serie}', [SerieController::class, 'update'])->name('series.update');
         Route::post('/series/{serie}/toggle', [SerieController::class, 'toggle'])->name('series.toggle');
         Route::delete('/series/{serie}', [SerieController::class, 'destroy'])->name('series.destroy');
+
+        // Sucursales / establecimientos anexos (empresa activa)
+        Route::get('/sucursales', [SucursalController::class, 'index'])->name('sucursales');
+        Route::post('/sucursales', [SucursalController::class, 'store'])->name('sucursales.store');
+        Route::put('/sucursales/{sucursal}', [SucursalController::class, 'update'])->name('sucursales.update');
+        Route::post('/sucursales/{sucursal}/toggle', [SucursalController::class, 'toggle'])->name('sucursales.toggle');
+        Route::delete('/sucursales/{sucursal}', [SucursalController::class, 'destroy'])->name('sucursales.destroy');
 
         Route::get('/consulta-cpe', [ConsultaCpeController::class, 'create'])->name('consulta-cpe');
         Route::get('/consulta-cpe/buscar', [ConsultaCpeController::class, 'consultar'])->name('consulta-cpe.consultar');

@@ -15,15 +15,38 @@ use Inertia\Response;
 /** Consulta el estado de un comprobante en SUNAT (Consulta Integrada CPE). */
 class ConsultaCpeController extends Controller
 {
-    public function create(): Response|RedirectResponse
+    public function create(Request $request): Response|RedirectResponse
     {
         $tenant = app(EmpresaActiva::class)->actual();
         if (! $tenant) {
             return redirect()->route('sunat.configuracion');
         }
 
+        // Prefill al llegar desde "Consultar" en el historial (query params).
+        $prefill = null;
+        if ($request->filled('serie') && $request->filled('correlativo')) {
+            $fecha = $request->query('fecha');
+            $fechaFmt = null;
+            if ($fecha) {
+                try {
+                    $fechaFmt = \Illuminate\Support\Carbon::parse($fecha)->format('d/m/Y');
+                } catch (\Throwable) {
+                    $fechaFmt = (string) $fecha;
+                }
+            }
+
+            $prefill = [
+                'tipo_doc' => (string) $request->query('tipo', '01'),
+                'serie' => strtoupper((string) $request->query('serie')),
+                'correlativo' => (string) $request->query('correlativo'),
+                'fecha_emision' => $fechaFmt,
+                'monto' => $request->query('monto') !== null ? (string) $request->query('monto') : null,
+            ];
+        }
+
         return Inertia::render('sunat/consulta-cpe/index', [
             'ruc_emisor' => $tenant->ruc,
+            'prefill' => $prefill,
         ]);
     }
 

@@ -47,6 +47,7 @@ class Tenant extends Model
         'logo_path',
         'api_key',
         'api_secret',
+        'consulta_token',
         'plan',
         'emission_mode',
         'tax_regime',
@@ -71,6 +72,7 @@ class Tenant extends Model
         'client_secret',
         'certificate_password',
         'api_secret',
+        'consulta_token',
         'sire_client_secret',
     ];
 
@@ -79,6 +81,7 @@ class Tenant extends Model
         return [
             'sol_user' => 'encrypted',
             'sol_pass' => 'encrypted',
+            'consulta_token' => 'encrypted',
             'client_secret' => 'encrypted',
             'certificate_password' => 'encrypted',
             'telefonos' => 'array',

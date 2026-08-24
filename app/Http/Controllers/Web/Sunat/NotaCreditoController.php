@@ -13,6 +13,21 @@ use Inertia\Response;
 
 class NotaCreditoController extends Controller
 {
+    public function index(\App\Services\Documents\DocumentoListingService $listing): Response|\Illuminate\Http\RedirectResponse
+    {
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
+        if (! $tenant) {
+            return redirect()->route('sunat.configuracion');
+        }
+
+        return Inertia::render('sunat/documentos/index', [
+            'titulo' => 'Notas de crédito',
+            'subtitulo' => 'Notas de crédito emitidas',
+            'nuevo' => ['href' => '/sunat/nota-credito/nueva', 'label' => 'Nueva nota de crédito'],
+            'documentos' => $listing->listar($tenant, 'notas-credito'),
+        ]);
+    }
+
     private const MOTIVOS = [
         ['codigo' => '01', 'descripcion' => 'Anulación de la operación'],
         ['codigo' => '02', 'descripcion' => 'Anulación por error en el RUC'],
@@ -50,6 +65,9 @@ class NotaCreditoController extends Controller
                     'correlativo' => $found->correlativo,
                     'numero' => $found->serie.'-'.str_pad((string) $found->correlativo, 8, '0', STR_PAD_LEFT),
                     'cliente' => $found->client_razon_social,
+                    'cliente_tipo_doc' => $found->client_tipo_doc,
+                    'cliente_num_doc' => $found->client_num_doc,
+                    'cliente_direccion' => $found->client_direccion,
                     'total' => (float) $found->mto_imp_venta,
                     'moneda' => $found->tipo_moneda ?? 'PEN',
                     'items' => $found->items->map(fn ($i) => [
@@ -80,12 +98,19 @@ class NotaCreditoController extends Controller
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
         \Illuminate\Support\Facades\Gate::authorize('emitir', [$tenant, 'nota_credito']);
 
+        $enviar = $request->boolean('enviar_automatico', true);
+
         try {
-            $nc = $action->execute($tenant, $request->all(), true);
+            $nc = $action->execute($tenant, $request->all(), $enviar);
             $numero = $nc->serie.'-'.str_pad((string) $nc->correlativo, 8, '0', STR_PAD_LEFT);
 
-            return redirect()->route('sunat.historial')
-                ->with('success', "Nota de Crédito {$numero} emitida y enviada a SUNAT.");
+            $msg = $enviar
+                ? "Nota de Crédito {$numero} emitida y enviada a SUNAT."
+                : "Nota de Crédito {$numero} guardada como borrador.";
+
+            return redirect()->route('sunat.nota-credito.create')
+                ->with('success', $msg)
+                ->with('emitido', ['tipo' => '07', 'id' => $nc->id, 'numero' => $numero, 'formato' => $request->input('pdf_format', 'a4')]);
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', 'Error: '.$e->getMessage());
         }

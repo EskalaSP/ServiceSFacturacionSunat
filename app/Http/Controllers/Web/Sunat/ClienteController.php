@@ -19,13 +19,9 @@ class ClienteController extends Controller
         }
 
         $clientes = Client::where('tenant_id', $tenant->id)
-            ->when(request('q'), fn ($query, $q) => $query->where('razon_social', 'ilike', "%{$q}%")
-                ->orWhere('numero_documento', 'like', "%{$q}%")
-            )
             ->orderBy('razon_social')
-            ->paginate(20)
-            ->withQueryString()
-            ->through(fn ($c) => [
+            ->get()
+            ->map(fn ($c) => [
                 'id' => $c->id,
                 'tipo_documento' => $c->tipo_documento,
                 'numero_documento' => $c->numero_documento,
@@ -34,11 +30,11 @@ class ClienteController extends Controller
                 'direccion' => $c->direccion,
                 'email' => $c->email,
                 'telefono' => $c->telefono,
-            ]);
+            ])
+            ->all();
 
         return Inertia::render('sunat/clientes/index', [
             'clientes' => $clientes,
-            'filtros' => ['q' => request('q', '')],
             'tenant' => ['environment' => $tenant->environment ?? 'beta'],
         ]);
     }
@@ -101,47 +97,82 @@ class ClienteController extends Controller
     public function lookupRuc(Request $request): \Illuminate\Http\JsonResponse
     {
         $numero = trim($request->input('numero', ''));
-        $tipo = $request->input('tipo', '6');
 
-        if (strlen($numero) < 8) {
-            return response()->json(['error' => 'Número muy corto'], 422);
+        if (strlen($numero) !== 8 && strlen($numero) !== 11) {
+            return response()->json(['error' => 'Número inválido (8 dígitos para DNI, 11 para RUC).'], 422);
         }
 
-        $token = config('services.apis_net_pe.token');
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
+        if (! $tenant) {
+            return response()->json(['error' => 'No hay empresa activa.'], 403);
+        }
+
+        // 1) Buscar primero en la base de datos local (clientes ya registrados de esta empresa).
+        $local = Client::where('tenant_id', $tenant->id)
+            ->where('numero_documento', $numero)
+            ->first();
+
+        if ($local) {
+            return response()->json([
+                'razon_social' => $local->razon_social,
+                'direccion' => $local->direccion ?? '',
+                'email' => $local->email ?? '',
+                'tipo_documento' => $local->tipo_documento,
+                'origen' => 'local',
+            ]);
+        }
+
+        // 2) No está en la BD → consultar api.json.pe con el token propio de la empresa.
+        $token = $tenant->consulta_token;
         if (! $token) {
-            return response()->json(['error' => 'API de consulta no configurada. Agrega APIS_NET_PE_TOKEN en .env'], 503);
+            return response()->json([
+                'error' => 'No has configurado tu token de consulta. Agrégalo en Configuración → Consulta RUC/DNI.',
+            ], 503);
         }
+
+        $esRuc = strlen($numero) === 11;
 
         try {
-            $esRuc = strlen($numero) === 11;
-            $endpoint = $esRuc
-                ? "https://api.decolecta.com/v1/sunat/ruc?numero={$numero}"
-                : "https://api.decolecta.com/v1/reniec/dni?numero={$numero}";
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(8)
+                ->post(
+                    $esRuc ? 'https://api.json.pe/api/ruc' : 'https://api.json.pe/api/dni',
+                    $esRuc ? ['ruc' => $numero] : ['dni' => $numero],
+                );
 
-            $response = Http::withToken($token)->withoutVerifying()->timeout(8)->get($endpoint);
-
-            if ($response->successful()) {
-                $data = $response->json();
-
-                // RUC devuelve razon_social; DNI devuelve nombres + apellidos
-                $nombre = $data['razon_social']
-                    ?? trim(implode(' ', array_filter([
-                        $data['nombres'] ?? '',
-                        $data['apellido_paterno'] ?? '',
-                        $data['apellido_materno'] ?? '',
-                    ])));
-
-                return response()->json([
-                    'razon_social' => $nombre,
-                    'direccion' => $data['direccion'] ?? '',
-                    'estado' => $data['estado'] ?? '',
-                    'condicion' => $data['condicion'] ?? '',
-                ]);
+            if (in_array($response->status(), [401, 403], true)) {
+                return response()->json(['error' => 'Token de consulta inválido o vencido. Revísalo en Configuración.'], 502);
             }
 
-            return response()->json(['error' => 'No encontrado en SUNAT/RENIEC'], 404);
-        } catch (\Exception) {
-            return response()->json(['error' => 'Error al consultar la API'], 500);
+            $json = $response->json();
+
+            if (! $response->successful() || ! ($json['success'] ?? false) || empty($json['data'])) {
+                return response()->json(['error' => $esRuc ? 'RUC no encontrado.' : 'DNI no encontrado.'], 404);
+            }
+
+            $data = $json['data'];
+
+            if ($esRuc) {
+                $nombre = $data['nombre_o_razon_social'] ?? '';
+            } else {
+                $nombre = $data['nombre_completo'] ?? trim(implode(' ', array_filter([
+                    $data['nombres'] ?? '',
+                    $data['apellido_paterno'] ?? '',
+                    $data['apellido_materno'] ?? '',
+                ])));
+            }
+
+            return response()->json([
+                'razon_social' => $nombre,
+                'direccion' => $data['direccion_completa'] ?? $data['direccion'] ?? '',
+                'tipo_documento' => $esRuc ? '6' : '1',
+                'estado' => $data['estado'] ?? '',
+                'condicion' => $data['condicion'] ?? '',
+                'origen' => 'api',
+            ]);
+        } catch (\Throwable) {
+            return response()->json(['error' => 'No se pudo conectar con el servicio de consulta.'], 500);
         }
     }
 }

@@ -6,17 +6,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
 
-type Props = { ruc_emisor: string };
+type Prefill = {
+    tipo_doc: string;
+    serie: string;
+    correlativo: string;
+    fecha_emision: string | null;
+    monto: string | null;
+} | null;
+
+type Props = { ruc_emisor: string; prefill?: Prefill };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Resultado = { ok: boolean; data?: any; error?: string };
 
-export default function ConsultaCpe({ ruc_emisor }: Props) {
-    const [tipoDoc, setTipoDoc] = useState('01');
-    const [serie, setSerie] = useState('');
-    const [correlativo, setCorrelativo] = useState('');
-    const [fecha, setFecha] = useState('');
-    const [monto, setMonto] = useState('');
+export default function ConsultaCpe({ ruc_emisor, prefill }: Props) {
+    const [tipoDoc, setTipoDoc] = useState(prefill?.tipo_doc ?? '01');
+    const [serie, setSerie] = useState(prefill?.serie ?? '');
+    const [correlativo, setCorrelativo] = useState(prefill?.correlativo ?? '');
+    const [fecha, setFecha] = useState(prefill?.fecha_emision ?? '');
+    const [monto, setMonto] = useState(prefill?.monto ?? '');
     const [loading, setLoading] = useState(false);
     const [res, setRes] = useState<Resultado | null>(null);
 
@@ -58,7 +66,7 @@ export default function ConsultaCpe({ ruc_emisor }: Props) {
                 <section className="grid gap-3 rounded-xl border border-border bg-card p-5 sm:grid-cols-2">
                     <div className="grid gap-1.5">
                         <Label>Tipo</Label>
-                        <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)} className="h-10 rounded-xl border border-border bg-background px-3 text-sm">
+                        <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)} className="h-10 rounded-xl border border-input bg-card px-3 text-sm dark:border-border dark:bg-background">
                             <option value="01">Factura</option>
                             <option value="03">Boleta</option>
                             <option value="07">Nota de crédito</option>

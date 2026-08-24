@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Check, Copy, KeyRound, Pencil, Power, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, Pencil, Power, RefreshCw, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -121,13 +121,53 @@ function PermissionEditor({
     );
 }
 
+/** Genera una contraseña segura de 12 caracteres (sin caracteres ambiguos). */
+function generarPassword(): string {
+    const mayus = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const minus = 'abcdefghijkmnpqrstuvwxyz';
+    const nums = '23456789';
+    const simb = '!@#$%*?';
+    const todos = mayus + minus + nums + simb;
+    const rnd = (set: string) => set[Math.floor(Math.random() * set.length)];
+    // Garantiza al menos uno de cada grupo y completa hasta 12.
+    const base = [rnd(mayus), rnd(minus), rnd(nums), rnd(simb)];
+    while (base.length < 12) base.push(rnd(todos));
+    // Mezcla (Fisher–Yates).
+    for (let i = base.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [base[i], base[j]] = [base[j], base[i]];
+    }
+    return base.join('');
+}
+
+/** Sugiere un correo a partir del nombre y el dominio del dueño (la empresa). */
+function sugerirCorreo(nombre: string, correoDueno: string): string {
+    const slug = nombre
+        .normalize('NFD')          // separa los acentos como marcas combinantes
+        .toLowerCase()
+        .replace(/[^a-z\s]/g, '')  // elimina esas marcas y cualquier símbolo
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .join('.');
+    if (!slug) return '';
+    const dominio = correoDueno.split('@')[1] || 'empresa.com';
+    return `${slug}@${dominio}`;
+}
+
 export default function EquipoIndex() {
     const { props } = usePage<PageProps>();
     const { cajeros, catalogo } = props;
     const nuevoCajero = props.flash?.nuevoCajero ?? null;
+    const correoDueno = props.auth?.user?.email ?? '';
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPass, setShowPass] = useState(false);
+    const [documento, setDocumento] = useState('');
+    const [buscando, setBuscando] = useState(false);
+    const [lookupMsg, setLookupMsg] = useState<{ ok: boolean; texto: string } | null>(null);
     const [abilities, setAbilities] = useState<string[]>([...catalogo.preset]);
     const [saving, setSaving] = useState(false);
 
@@ -136,16 +176,49 @@ export default function EquipoIndex() {
 
     const [copiado, setCopiado] = useState(false);
 
+    async function buscarDocumento() {
+        const n = documento.trim();
+        if (n.length !== 8 && n.length !== 11) {
+            setLookupMsg({ ok: false, texto: 'Ingresa 8 dígitos (DNI) u 11 (RUC).' });
+            return;
+        }
+        setBuscando(true);
+        setLookupMsg(null);
+        try {
+            const res = await fetch(`/sunat/buscar-ruc?numero=${encodeURIComponent(n)}`, { headers: { Accept: 'application/json' } });
+            const data = await res.json();
+            if (!res.ok) {
+                setLookupMsg({ ok: false, texto: data.error ?? 'No se encontró el documento.' });
+                return;
+            }
+            if (data.razon_social) {
+                setName(data.razon_social);
+                // Sugiere un correo solo si el dueño aún no escribió uno.
+                setEmail((actual) => actual.trim() || sugerirCorreo(data.razon_social, correoDueno));
+                setLookupMsg({ ok: true, texto: `Encontrado: ${data.razon_social}` });
+            } else {
+                setLookupMsg({ ok: false, texto: 'Sin resultados para ese documento.' });
+            }
+        } catch {
+            setLookupMsg({ ok: false, texto: 'No se pudo conectar con el servicio de consulta.' });
+        } finally {
+            setBuscando(false);
+        }
+    }
+
     const crear = () => {
         setSaving(true);
         router.post(
             '/sunat/equipo',
-            { name, email, abilities },
+            { name, email, password: password || undefined, abilities },
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     setName('');
                     setEmail('');
+                    setPassword('');
+                    setDocumento('');
+                    setLookupMsg(null);
                     setAbilities([...catalogo.preset]);
                 },
                 onFinish: () => setSaving(false),
@@ -204,7 +277,7 @@ export default function EquipoIndex() {
                 {nuevoCajero && (
                     <div className="rounded-xl border border-warning/40 bg-warning/5 p-4">
                         <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <KeyRound className="size-4" /> Cajero creado — guarda su contraseña
+                            <KeyRound className="size-4" /> Cajero creado - guarda su contraseña
                         </div>
                         <p className="mb-3 text-xs text-muted-foreground">
                             Esta contraseña <strong>no se vuelve a mostrar</strong>. Entrégasela al cajero;
@@ -233,6 +306,34 @@ export default function EquipoIndex() {
                     <h2 className="mb-4 flex items-center gap-2 font-semibold text-foreground">
                         <UserPlus className="size-4" /> Nuevo cajero
                     </h2>
+                    {/* Buscar por DNI / RUC con el token de consulta */}
+                    <div className="mb-4 grid gap-2">
+                        <Label htmlFor="documento">Buscar por DNI / RUC (opcional)</Label>
+                        <div className="flex gap-2">
+                            <Input
+                                id="documento"
+                                inputMode="numeric"
+                                value={documento}
+                                onChange={(e) => setDocumento(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); buscarDocumento(); } }}
+                                placeholder="DNI (8 dígitos) o RUC (11 dígitos)"
+                                className="max-w-xs"
+                            />
+                            <Button type="button" variant="secondary" onClick={buscarDocumento} disabled={buscando || documento.trim().length < 8}>
+                                {buscando ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+                                Buscar
+                            </Button>
+                        </div>
+                        {lookupMsg && (
+                            <p className={`text-xs ${lookupMsg.ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                                {lookupMsg.texto}
+                            </p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                            Autocompleta el nombre usando tu token de consulta (Configuración → Consulta RUC/DNI).
+                        </p>
+                    </div>
+
                     <div className="mb-4 grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <Label htmlFor="name">Nombre</Label>
@@ -247,6 +348,37 @@ export default function EquipoIndex() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="cajero@empresa.com"
                             />
+                        </div>
+                        <div className="grid gap-2 sm:col-span-2 sm:max-w-md">
+                            <Label htmlFor="password">Contraseña</Label>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <Input
+                                        id="password"
+                                        type={showPass ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Déjala vacía para generar una"
+                                        autoComplete="new-password"
+                                        className="pr-9"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPass((v) => !v)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    >
+                                        {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                    </button>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => { setPassword(generarPassword()); setShowPass(true); }}
+                                >
+                                    <RefreshCw className="size-4" /> Generar
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">Mínimo 8 caracteres. Si la dejas vacía, se genera una y se te muestra al crear.</p>
                         </div>
                     </div>
 

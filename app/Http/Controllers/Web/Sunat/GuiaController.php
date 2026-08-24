@@ -21,6 +21,21 @@ use Inertia\Response;
  */
 class GuiaController extends Controller
 {
+    public function index(\App\Services\Documents\DocumentoListingService $listing): Response|RedirectResponse
+    {
+        $tenant = app(EmpresaActiva::class)->actual();
+        if (! $tenant) {
+            return redirect()->route('sunat.configuracion');
+        }
+
+        return Inertia::render('sunat/documentos/index', [
+            'titulo' => 'Guías de remisión',
+            'subtitulo' => 'Guías de remisión emitidas',
+            'nuevo' => ['href' => '/sunat/guias/nueva', 'label' => 'Nueva guía'],
+            'documentos' => $listing->listar($tenant, 'guias'),
+        ]);
+    }
+
     public function create(): Response|RedirectResponse
     {
         $tenant = app(EmpresaActiva::class)->actual();
@@ -64,10 +79,15 @@ class GuiaController extends Controller
 
         try {
             $guide = $action->execute($tenant, $request->all(), $enviar);
-            $numero = $guide->numero_completo ?? ($guide->serie.'-'.str_pad((string) $guide->correlativo, 8, '0', STR_PAD_LEFT));
+            $numero = $guide->serie.'-'.str_pad((string) $guide->correlativo, 8, '0', STR_PAD_LEFT);
 
-            return redirect()->route('sunat.historial')
-                ->with('success', "Guía de remisión {$numero} emitida.");
+            $msg = $enviar
+                ? "Guía de remisión {$numero} emitida y enviada a SUNAT."
+                : "Guía de remisión {$numero} guardada como borrador.";
+
+            return redirect()->route('sunat.guias.create')
+                ->with('success', $msg)
+                ->with('emitido', ['tipo' => $tipo, 'id' => $guide->id, 'numero' => $numero, 'formato' => $request->input('pdf_format', 'a4')]);
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', 'Error al emitir guía: '.$e->getMessage());
         }

@@ -7,7 +7,7 @@ export default function NuevaPercepcion() {
     return (
         <SunatLayout>
             <Head title="Nueva percepción" />
-            <div className="mx-auto max-w-3xl">
+            <div className="mx-auto max-w-4xl">
                 <header className="mb-5 flex items-center gap-3">
                     <span className="flex size-10 items-center justify-center rounded-xl bg-accent text-primary">
                         <Percent className="size-5" />
@@ -21,6 +21,7 @@ export default function NuevaPercepcion() {
             <RetPercForm
                 config={{
                     titulo: 'Percepción',
+                    docTipo: '40',
                     entidadKey: 'cliente',
                     entidadLabel: 'Cliente (a quien se percibe)',
                     pagosKey: 'cobros',

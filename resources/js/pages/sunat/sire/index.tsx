@@ -74,7 +74,7 @@ export default function SireIndex({ sire_enabled, tickets }: Props) {
                 <header className="flex items-center gap-3">
                     <span className="flex size-10 items-center justify-center rounded-xl bg-accent text-primary"><Database className="size-5" /></span>
                     <div>
-                        <h1 className="text-xl font-semibold text-foreground">SIRE — Registro de Compras (RCE)</h1>
+                        <h1 className="text-xl font-semibold text-foreground">SIRE - Registro de Compras (RCE)</h1>
                         <p className="text-sm text-muted-foreground">Propuesta, aceptación, preliminar y reconciliación con SUNAT.</p>
                     </div>
                 </header>

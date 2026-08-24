@@ -21,15 +21,9 @@ class CotizacionController extends Controller
         }
 
         $cotizaciones = Quotation::where('tenant_id', $tenant->id)
-            ->when(request('q'), fn ($q, $search) => $q->where('client_razon_social', 'ilike', "%{$search}%")
-                ->orWhere('numero', 'ilike', "%{$search}%")
-            )
-            ->when(request('status') && request('status') !== 'todos', fn ($q) => $q->where('status', request('status'))
-            )
             ->orderByDesc('created_at')
-            ->paginate(15)
-            ->withQueryString()
-            ->through(fn ($cot) => [
+            ->get()
+            ->map(fn ($cot) => [
                 'id' => $cot->id,
                 'numero' => $cot->numero,
                 'fecha_emision' => $cot->fecha_emision?->format('Y-m-d'),
@@ -39,11 +33,11 @@ class CotizacionController extends Controller
                 'moneda' => $cot->tipo_moneda,
                 'status' => $cot->status,
                 'observacion' => $cot->observacion,
-            ]);
+            ])
+            ->all();
 
         return Inertia::render('sunat/cotizaciones/index', [
             'cotizaciones' => $cotizaciones,
-            'filtros' => ['q' => request('q', ''), 'status' => request('status', 'todos')],
             'tenant' => [
                 'ruc' => $tenant->ruc,
                 'razon_social' => $tenant->razon_social,

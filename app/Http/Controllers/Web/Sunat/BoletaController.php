@@ -19,6 +19,21 @@ use Inertia\Response;
  */
 class BoletaController extends Controller
 {
+    public function index(\App\Services\Documents\DocumentoListingService $listing): Response|RedirectResponse
+    {
+        $tenant = app(EmpresaActiva::class)->actual();
+        if (! $tenant) {
+            return redirect()->route('sunat.configuracion');
+        }
+
+        return Inertia::render('sunat/documentos/index', [
+            'titulo' => 'Boletas',
+            'subtitulo' => 'Comprobantes tipo boleta emitidos',
+            'nuevo' => ['href' => '/sunat/boletas/nueva', 'label' => 'Nueva boleta'],
+            'documentos' => $listing->listar($tenant, 'boletas'),
+        ]);
+    }
+
     public function create(): Response|RedirectResponse
     {
         $tenant = app(EmpresaActiva::class)->actual();
@@ -42,6 +57,7 @@ class BoletaController extends Controller
             'tenant' => [
                 'ruc' => $tenant->ruc,
                 'razon_social' => $tenant->razon_social,
+                'direccion' => $tenant->direccion ?? '',
                 'environment' => $tenant->environment ?? 'beta',
             ],
             'series_factura' => [],
@@ -64,11 +80,14 @@ class BoletaController extends Controller
         try {
             $doc = $createBoleta->execute($tenant, $request->all(), false, $enviar);
             $numero = $doc->serie.'-'.str_pad((string) $doc->correlativo, 8, '0', STR_PAD_LEFT);
+
             $msg = $enviar
                 ? "Boleta {$numero} emitida y enviada a SUNAT."
-                : "Boleta {$numero} guardada como borrador.";
+                : "Boleta {$numero} registrada. Quedó pendiente de envío por Resumen Diario.";
 
-            return redirect()->route('sunat.historial')->with('success', $msg);
+            return redirect()->route('sunat.boletas.create')
+                ->with('success', $msg)
+                ->with('emitido', ['tipo' => '03', 'id' => $doc->id, 'numero' => $numero, 'formato' => $request->input('pdf_format', 'a4')]);
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', 'Error al emitir: '.$e->getMessage());
         }

@@ -71,7 +71,7 @@ export default function NuevaAnulacion({ documentos }: Props) {
                 <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-foreground">
                     <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
                     <p>
-                        Las <strong>boletas</strong> no se anulan aquí — van por resumen diario. La anulación es
+                        Las <strong>boletas</strong> no se anulan aquí - van por resumen diario. La anulación es
                         <strong> irreversible</strong> una vez aceptada por SUNAT.
                     </p>
                 </div>

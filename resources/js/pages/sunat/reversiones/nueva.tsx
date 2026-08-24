@@ -41,7 +41,7 @@ export default function NuevaReversion({ documentos }: Props) {
         <SunatLayout>
             <Head title="Revertir retención / percepción" />
 
-            <div className="mx-auto max-w-3xl space-y-6">
+            <div className="mx-auto max-w-4xl space-y-6">
                 <header className="flex items-center gap-3">
                     <span className="flex size-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
                         <Undo2 className="size-5" />
@@ -58,46 +58,59 @@ export default function NuevaReversion({ documentos }: Props) {
                     </p>
                 ) : (
                     <>
-                        <div className="overflow-x-auto rounded-xl border border-border">
-                            <table className="w-full text-sm">
-                                <thead className="border-b border-border bg-muted/40 text-left text-xs text-muted-foreground">
-                                    <tr>
-                                        <th className="px-3 py-2"></th>
-                                        <th className="px-3 py-2 font-medium">Documento</th>
-                                        <th className="px-3 py-2 font-medium">Contraparte</th>
-                                        <th className="px-3 py-2 font-medium">Fecha</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {documentos.map((d) => (
-                                        <tr key={d.numero} className={`cursor-pointer border-b border-border/60 last:border-0 hover:bg-muted/20 ${sel === d.numero ? 'bg-accent/40' : ''}`} onClick={() => setSel(d.numero)}>
-                                            <td className="px-3 py-2.5">
-                                                <input type="radio" name="doc" checked={sel === d.numero} onChange={() => setSel(d.numero)} className="accent-primary" />
-                                            </td>
-                                            <td className="px-3 py-2.5">
-                                                <div className="font-medium text-foreground">{d.numero}</div>
-                                                <div className="text-xs text-muted-foreground">{d.tipo_label}</div>
-                                            </td>
-                                            <td className="px-3 py-2.5 text-muted-foreground">{d.contraparte ?? '—'}</td>
-                                            <td className="px-3 py-2.5 tabular-nums text-muted-foreground">{d.fecha_emision}</td>
+                        <section className="rounded-2xl border border-border bg-card shadow-soft">
+                            <div className="border-b border-border/60 px-5 py-3.5">
+                                <span className="text-sm font-semibold text-foreground">Selecciona la retención / percepción a revertir</span>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="border-b border-border bg-muted/40 text-left text-xs text-muted-foreground">
+                                        <tr>
+                                            <th className="px-5 py-2.5"></th>
+                                            <th className="px-3 py-2.5 font-medium">Documento</th>
+                                            <th className="px-3 py-2.5 font-medium">Contraparte</th>
+                                            <th className="px-3 py-2.5 font-medium">Fecha</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        {documentos.map((d) => (
+                                            <tr key={d.numero} className={`cursor-pointer border-b border-border/60 last:border-0 hover:bg-muted/20 ${sel === d.numero ? 'bg-accent/40' : ''}`} onClick={() => setSel(d.numero)}>
+                                                <td className="px-5 py-2.5">
+                                                    <input
+                                                        type="radio" name="doc" checked={sel === d.numero} onChange={() => setSel(d.numero)}
+                                                        className="size-4 shrink-0 appearance-none rounded-full border-2 border-muted-foreground/40 bg-transparent transition-colors checked:border-primary checked:bg-primary checked:bg-clip-content checked:p-[3px]"
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2.5">
+                                                    <div className="font-mono font-medium text-foreground">{d.numero}</div>
+                                                    <div className="text-xs text-muted-foreground">{d.tipo_label}</div>
+                                                </td>
+                                                <td className="px-3 py-2.5 text-muted-foreground">{d.contraparte ?? '—'}</td>
+                                                <td className="px-3 py-2.5 tabular-nums text-muted-foreground">{d.fecha_emision}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
 
-                        <div className="rounded-xl border border-border bg-card p-5">
-                            <div className="grid gap-2">
-                                <Label htmlFor="motivo">Motivo de la reversión</Label>
-                                <Input id="motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej: Documento emitido por error" maxLength={255} />
+                        <section className="rounded-2xl border border-border bg-card shadow-soft">
+                            <div className="border-b border-border/60 px-5 py-3.5">
+                                <span className="text-sm font-semibold text-foreground">Motivo de la reversión</span>
                             </div>
-                            <div className="mt-4">
-                                <Button type="button" variant="destructive" onClick={revertir} disabled={submitting || !doc || !motivo.trim()}>
-                                    <Ban className="size-4" />
-                                    {doc ? `Revertir ${doc.numero}` : 'Selecciona un documento'}
-                                </Button>
+                            <div className="p-5">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="motivo" className="text-xs font-medium text-muted-foreground">Motivo <span className="text-destructive">*</span></Label>
+                                    <Input id="motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej: Documento emitido por error" maxLength={255} className="h-10 rounded-xl" />
+                                </div>
+                                <div className="mt-4">
+                                    <Button type="button" variant="destructive" onClick={revertir} disabled={submitting || !doc || !motivo.trim()} className="gap-2 rounded-xl">
+                                        <Ban className="size-4" />
+                                        {doc ? `Revertir ${doc.numero}` : 'Selecciona un documento'}
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
+                        </section>
                     </>
                 )}
             </div>

@@ -63,6 +63,7 @@ class EquipoController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
+            'password' => ['nullable', 'string', 'min:8', 'max:255'],
             'abilities' => ['array'],
             'abilities.*' => ['string', Rule::in(Ability::asignablesACajero())],
         ]);
@@ -78,7 +79,8 @@ class EquipoController extends Controller
         $passwordPlano = null;
 
         if ($esNuevo) {
-            $passwordPlano = Str::password(12);
+            // El dueño puede fijar la contraseña; si la deja vacía, se genera una.
+            $passwordPlano = filled($data['password'] ?? null) ? $data['password'] : Str::password(12);
             $user->name = $data['name'];
             $user->password = Hash::make($passwordPlano);
             $user->role = null; // usuario "cliente": sin acceso al panel admin

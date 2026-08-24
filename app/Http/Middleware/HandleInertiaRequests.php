@@ -91,6 +91,7 @@ class HandleInertiaRequests extends Middleware
                 'warning' => $request->session()->get('warning'),
                 'empresa_creada' => $request->session()->get('empresa_creada'),
                 'nuevoCajero' => $request->session()->get('nuevoCajero'),
+                'emitido' => $request->session()->get('emitido'),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

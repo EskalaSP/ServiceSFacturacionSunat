@@ -14,6 +14,21 @@ use Inertia\Response;
 
 class FacturaController extends Controller
 {
+    public function index(\App\Services\Documents\DocumentoListingService $listing): Response|\Illuminate\Http\RedirectResponse
+    {
+        $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
+        if (! $tenant) {
+            return redirect()->route('sunat.configuracion');
+        }
+
+        return Inertia::render('sunat/documentos/index', [
+            'titulo' => 'Facturas',
+            'subtitulo' => 'Comprobantes tipo factura emitidos',
+            'nuevo' => ['href' => '/sunat/facturas/nueva', 'label' => 'Nueva factura'],
+            'documentos' => $listing->listar($tenant, 'facturas'),
+        ]);
+    }
+
     public function create(Request $request): Response|\Illuminate\Http\RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
@@ -68,6 +83,7 @@ class FacturaController extends Controller
             'tenant' => [
                 'ruc' => $tenant->ruc,
                 'razon_social' => $tenant->razon_social,
+                'direccion' => $tenant->direccion ?? '',
                 'environment' => $tenant->environment ?? 'beta',
             ],
             'series_factura' => $seriesFactura,
@@ -102,11 +118,17 @@ class FacturaController extends Controller
             }
 
             $numero = $doc->serie.'-'.str_pad((string) $doc->correlativo, 8, '0', STR_PAD_LEFT);
+
             $msg = $enviar
                 ? "{$label} {$numero} emitida y enviada a SUNAT."
                 : "{$label} {$numero} guardada como borrador.";
 
-            return redirect()->route('sunat.historial')->with('success', $msg);
+            // Volver al formulario y mostrar el PDF en un modal (flash 'emitido').
+            $ruta = $tipo === '03' ? 'sunat.boletas.create' : 'sunat.facturas.create';
+
+            return redirect()->route($ruta)
+                ->with('success', $msg)
+                ->with('emitido', ['tipo' => $tipo, 'id' => $doc->id, 'numero' => $numero, 'formato' => $request->input('pdf_format', 'a4')]);
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', 'Error al emitir: '.$e->getMessage());
         }

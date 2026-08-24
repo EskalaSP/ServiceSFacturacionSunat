@@ -1,9 +1,11 @@
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
-import { FileText, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { type ColumnDef } from '@tanstack/react-table';
+import { Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
-import { Input } from '@/components/ui/input';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { DataTable } from '@/components/ui/data-table';
+import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
 import SunatLayout from '@/layouts/sunat-layout';
 
 type Cotizacion = {
@@ -18,18 +20,8 @@ type Cotizacion = {
     observacion: string | null;
 };
 
-type PaginatedCotizaciones = {
-    data: Cotizacion[];
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    links: { url: string | null; label: string; active: boolean }[];
-};
-
 type Props = {
-    cotizaciones: PaginatedCotizaciones;
-    filtros: { q: string; status: string };
+    cotizaciones: Cotizacion[];
     tenant: { ruc: string; razon_social: string; environment: string };
 };
 
@@ -50,203 +42,136 @@ function fmtDate(iso: string | null) {
     return `${d}/${m}/${y}`;
 }
 
-export default function CotizacionesIndex({ cotizaciones, filtros, tenant }: Props) {
-    const [q, setQ]             = useState(filtros.q);
-    const [status, setStatus]   = useState(filtros.status);
-    const [confirmarId, setConfirmarId] = useState<number | null>(null);
-
-    function buscar() {
-        router.get('/sunat/cotizaciones', { q, status }, { preserveState: true });
-    }
+export default function CotizacionesIndex({ cotizaciones }: Props) {
+    const confirm = useConfirm();
 
     function cambiarEstado(id: number, nuevoEstado: string) {
-        router.patch(`/sunat/cotizaciones/${id}/estado`, { status: nuevoEstado }, { preserveState: true });
+        router.patch(`/sunat/cotizaciones/${id}/estado`, { status: nuevoEstado }, { preserveScroll: true });
     }
 
     function convertir(id: number) {
         router.post(`/sunat/cotizaciones/${id}/convertir`);
     }
 
-    function eliminar(id: number) {
-        router.delete(`/sunat/cotizaciones/${id}`, { onFinish: () => setConfirmarId(null) });
+    async function eliminar(cot: Cotizacion) {
+        if (await confirm({
+            title: `¿Eliminar la cotización ${cot.numero}?`,
+            description: 'Esta acción no se puede deshacer.',
+            variant: 'danger',
+            confirmText: 'Eliminar',
+        })) {
+            router.delete(`/sunat/cotizaciones/${cot.id}`, { preserveScroll: true });
+        }
     }
+
+    const columns: ColumnDef<Cotizacion>[] = [
+        {
+            accessorKey: 'numero',
+            header: 'Número',
+            meta: { label: 'Número', primary: true },
+            cell: ({ row }) => <span className="font-mono text-xs font-medium">{row.original.numero}</span>,
+        },
+        {
+            accessorKey: 'cliente',
+            header: 'Cliente',
+            meta: { label: 'Cliente' },
+            cell: ({ row }) => (
+                <div>
+                    <span className="font-medium">{row.original.cliente}</span>
+                    {row.original.observacion && (
+                        <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1">{row.original.observacion}</p>
+                    )}
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'fecha_emision',
+            header: 'Fecha',
+            meta: { label: 'Fecha' },
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{fmtDate(row.original.fecha_emision)}</span>,
+        },
+        {
+            accessorKey: 'fecha_vencimiento',
+            header: 'Vence',
+            meta: { label: 'Vence' },
+            cell: ({ row }) => row.original.fecha_vencimiento
+                ? <span className="text-xs font-medium text-amber-600">{fmtDate(row.original.fecha_vencimiento)}</span>
+                : <span className="text-xs text-muted-foreground">—</span>,
+        },
+        {
+            accessorKey: 'total',
+            header: 'Total',
+            meta: { label: 'Total', alignRight: true },
+            cell: ({ row }) => (
+                <span className="font-semibold tabular-nums">
+                    {row.original.moneda === 'USD' ? '$' : 'S/'} {fmt(row.original.total)}
+                </span>
+            ),
+        },
+        {
+            accessorKey: 'status',
+            header: 'Estado',
+            meta: { label: 'Estado' },
+            cell: ({ row }) => {
+                const st = STATUS_CONFIG[row.original.status] ?? STATUS_CONFIG.vigente;
+                return (
+                    <Combobox
+                        value={row.original.status}
+                        onChange={(v) => cambiarEstado(row.original.id, v)}
+                        options={[
+                            { value: 'vigente', label: 'Vigente' },
+                            { value: 'aceptada', label: 'Aceptada' },
+                            { value: 'rechazada', label: 'Rechazada' },
+                            { value: 'vencida', label: 'Vencida' },
+                        ]}
+                        className={`h-auto w-auto rounded-full ${st.className}`}
+                    />
+                );
+            },
+        },
+        {
+            id: 'actions',
+            header: 'Acciones',
+            enableSorting: false,
+            meta: { hideLabel: true, alignRight: true },
+            cell: ({ row }) => {
+                const cot = row.original;
+                const puedeFacturar = cot.status === 'vigente' || cot.status === 'aceptada';
+                return (
+                    <DataTableRowActions
+                        actions={[
+                            ...(puedeFacturar ? [{ label: 'Convertir en factura', icon: RefreshCw, onSelect: () => convertir(cot.id) }] : []),
+                            { label: 'Eliminar', icon: Trash2, danger: true, separatorBefore: puedeFacturar, onSelect: () => eliminar(cot) },
+                        ]}
+                    />
+                );
+            },
+        },
+    ];
 
     return (
         <SunatLayout>
             <Head title="Cotizaciones" />
 
             <div className="mx-auto max-w-6xl">
-
-                {/* Header */}
-                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl font-semibold tracking-tight">Cotizaciones</h1>
-                        <p className="text-sm text-muted-foreground">{cotizaciones.total} cotización{cotizaciones.total !== 1 ? 'es' : ''} registrada{cotizaciones.total !== 1 ? 's' : ''}</p>
-                    </div>
-                    <Button onClick={() => router.visit('/sunat/cotizaciones/nueva')} className="gap-2 rounded-xl">
-                        <Plus className="size-4" /> Nueva Cotización
-                    </Button>
+                <div className="mb-6">
+                    <h1 className="text-xl font-semibold tracking-tight">Cotizaciones</h1>
+                    <p className="text-sm text-muted-foreground">
+                        {cotizaciones.length} cotización{cotizaciones.length !== 1 ? 'es' : ''} registrada{cotizaciones.length !== 1 ? 's' : ''}
+                    </p>
                 </div>
 
-                {/* Filtros */}
-                <div className="mb-5 flex flex-wrap gap-3">
-                    <Input
-                        placeholder="Buscar por número o cliente..."
-                        value={q}
-                        onChange={(e) => setQ(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && buscar()}
-                        className="h-9 w-64 rounded-xl"
-                    />
-                    <Combobox
-                        value={status}
-                        onChange={(v) => { setStatus(v); router.get('/sunat/cotizaciones', { q, status: v }, { preserveState: true }); }}
-                        options={[
-                            { value: 'todos', label: 'Todos los estados' },
-                            { value: 'vigente', label: 'Vigente' },
-                            { value: 'aceptada', label: 'Aceptada' },
-                            { value: 'rechazada', label: 'Rechazada' },
-                            { value: 'vencida', label: 'Vencida' },
-                        ]}
-                        className="h-9 w-48 rounded-xl"
-                    />
-                    <Button variant="outline" size="sm" onClick={buscar} className="h-9 rounded-xl">
-                        Buscar
-                    </Button>
-                </div>
-
-                {/* Tabla */}
-                <div className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
-                    {cotizaciones.data.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                            <FileText className="mb-3 size-10 text-muted-foreground/40" />
-                            <p className="text-sm font-medium text-muted-foreground">No hay cotizaciones</p>
-                            <p className="mt-1 text-xs text-muted-foreground">Crea tu primera cotización para enviar a un cliente.</p>
-                            <Button onClick={() => router.visit('/sunat/cotizaciones/nueva')} className="mt-4 gap-2 rounded-xl" size="sm">
-                                <Plus className="size-3.5" /> Nueva Cotización
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="border-b border-border/60 bg-muted/30">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Número</th>
-                                        <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Cliente</th>
-                                        <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Fecha</th>
-                                        <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Vence</th>
-                                        <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</th>
-                                        <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Estado</th>
-                                        <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {cotizaciones.data.map((cot) => {
-                                        const st = STATUS_CONFIG[cot.status] ?? STATUS_CONFIG.vigente;
-                                        return (
-                                            <tr key={cot.id} className="border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors">
-                                                <td className="px-4 py-3">
-                                                    <span className="font-mono text-xs font-medium">{cot.numero}</span>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <span className="font-medium">{cot.cliente}</span>
-                                                    {cot.observacion && (
-                                                        <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1">{cot.observacion}</p>
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-3 text-center text-xs text-muted-foreground">{fmtDate(cot.fecha_emision)}</td>
-                                                <td className="px-4 py-3 text-center">
-                                                    {cot.fecha_vencimiento
-                                                        ? <span className="text-xs text-amber-600 font-medium">{fmtDate(cot.fecha_vencimiento)}</span>
-                                                        : <span className="text-xs text-muted-foreground">—</span>
-                                                    }
-                                                </td>
-                                                <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                                                    {cot.moneda === 'USD' ? '$' : 'S/'} {fmt(cot.total)}
-                                                </td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <Combobox
-                                                        value={cot.status}
-                                                        onChange={(v) => cambiarEstado(cot.id, v)}
-                                                        options={[
-                                                            { value: 'vigente', label: 'Vigente' },
-                                                            { value: 'aceptada', label: 'Aceptada' },
-                                                            { value: 'rechazada', label: 'Rechazada' },
-                                                            { value: 'vencida', label: 'Vencida' },
-                                                        ]}
-                                                        className={`h-auto w-auto rounded-full ${st.className}`}
-                                                    />
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center justify-center gap-1.5">
-                                                        {(cot.status === 'vigente' || cot.status === 'aceptada') && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => convertir(cot.id)}
-                                                                title="Convertir en Factura"
-                                                                className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10"
-                                                            >
-                                                                <RefreshCw className="size-3" /> Facturar
-                                                            </button>
-                                                        )}
-                                                        {confirmarId === cot.id ? (
-                                                            <div className="flex items-center gap-1">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => eliminar(cot.id)}
-                                                                    className="rounded-lg bg-destructive px-2 py-1 text-[11px] font-medium text-destructive-foreground"
-                                                                >
-                                                                    Confirmar
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setConfirmarId(null)}
-                                                                    className="rounded-lg border px-2 py-1 text-[11px] text-muted-foreground"
-                                                                >
-                                                                    No
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setConfirmarId(cot.id)}
-                                                                title="Eliminar"
-                                                                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-destructive"
-                                                            >
-                                                                <Trash2 className="size-3.5" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-
-                {/* Paginación */}
-                {cotizaciones.last_page > 1 && (
-                    <div className="mt-4 flex justify-center gap-1">
-                        {cotizaciones.links.map((link, i) => (
-                            <button
-                                key={i}
-                                type="button"
-                                disabled={!link.url || link.active}
-                                onClick={() => link.url && router.get(link.url)}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                                className={`rounded-lg px-3 py-1.5 text-xs transition-colors ${
-                                    link.active
-                                        ? 'bg-primary text-primary-foreground font-medium'
-                                        : link.url
-                                            ? 'border border-border hover:bg-secondary'
-                                            : 'text-muted-foreground cursor-not-allowed'
-                                }`}
-                            />
-                        ))}
-                    </div>
-                )}
+                <DataTable
+                    columns={columns}
+                    data={cotizaciones}
+                    searchPlaceholder="Buscar por número o cliente..."
+                    emptyMessage="No hay cotizaciones. Crea la primera para enviar a un cliente."
+                    toolbar={
+                        <Button onClick={() => router.visit('/sunat/cotizaciones/nueva')} className="gap-2 rounded-xl">
+                            <Plus className="size-4" /> Nueva Cotización
+                        </Button>
+                    }
+                />
             </div>
         </SunatLayout>
     );
