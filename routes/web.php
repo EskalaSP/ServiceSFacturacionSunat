@@ -25,6 +25,7 @@ use App\Http\Controllers\Web\Sunat\ResumenController;
 use App\Http\Controllers\Web\Sunat\RetencionController;
 use App\Http\Controllers\Web\Sunat\ReversionController;
 use App\Http\Controllers\Web\Sunat\SerieController;
+use App\Http\Controllers\Web\Sunat\SireController;
 use Illuminate\Support\Facades\Route;
 
 // ── Home root ───────────────────────────────────────────────────────────────
@@ -184,6 +185,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes');
         Route::get('/reportes/registro-ventas', [ReporteController::class, 'registroVentas'])->name('reportes.registro-ventas');
+
+        // Fase 5 — SIRE (RCE)
+        Route::get('/sire', [SireController::class, 'index'])->name('sire');
+        Route::post('/sire/activar', [SireController::class, 'activar'])->name('sire.activar');
+        Route::post('/sire/desactivar', [SireController::class, 'desactivar'])->name('sire.desactivar');
+        Route::get('/sire/periodos', [SireController::class, 'periodos'])->name('sire.periodos');
+        Route::post('/sire/propuesta', [SireController::class, 'propuesta'])->name('sire.propuesta');
+        Route::post('/sire/aceptar', [SireController::class, 'aceptarPropuesta'])->name('sire.aceptar');
+        Route::post('/sire/preliminar', [SireController::class, 'registrarPreliminar'])->name('sire.preliminar');
+        Route::post('/sire/reconciliar', [SireController::class, 'reconciliar'])->name('sire.reconciliar');
+        Route::get('/sire/tickets', [SireController::class, 'tickets'])->name('sire.tickets');
+        Route::post('/sire/tickets/{numTicket}/refrescar', [SireController::class, 'refrescarTicket'])->name('sire.tickets.refrescar');
+        Route::get('/sire/tickets/{numTicket}/archivo', [SireController::class, 'descargarTicket'])->name('sire.tickets.archivo');
 
         // Mi equipo — el dueño gestiona los cajeros de su empresa (super admin también).
         Route::get('/equipo', [EquipoController::class, 'index'])->name('equipo');
