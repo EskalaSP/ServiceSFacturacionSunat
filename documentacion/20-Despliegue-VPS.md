@@ -157,6 +157,33 @@ find /home/deploy/api-pro -type f -exec chmod 644 {} \;
 chmod -R 775 /home/deploy/api-pro/storage /home/deploy/api-pro/bootstrap/cache
 ```
 
+### ACL por defecto en storage (obligatorio para certificados)
+
+**¿Por qué?** El worker de colas corre como `deploy`, pero cuando un cliente sube su certificado digital via API o panel, PHP-FPM (que corre como `www-data`) crea la carpeta y el archivo. Por defecto Linux pone candado `700` — solo el creador puede leerlo. El worker (`deploy`) intenta leer el certificado para firmar la factura y no puede → error `CERT_ERROR`.
+
+**¿Qué hace este paso?** Instala ACL (Access Control Lists) y configura reglas en `storage/app/private/` para que:
+- `www-data` mantenga control total (`rwx`): puede crear, editar y eliminar certificados — necesario para el upload
+- `deploy` tenga solo lectura (`r-x`): puede leer el certificado para firmar, pero no puede modificarlo ni borrarlo — mínimo privilegio
+- El flag `-d` graba estas reglas como **herencia automática**: cualquier certificado que se cree en el futuro nace ya con estos permisos, sin intervención manual
+
+```bash
+apt install -y acl
+
+# Aplicar a archivos/carpetas ya existentes
+setfacl -R -m u:www-data:rwx /home/deploy/api-pro/storage/app/private/
+setfacl -R -m u:deploy:rx    /home/deploy/api-pro/storage/app/private/
+
+# Aplicar como regla heredada para todo lo que se cree en el futuro
+setfacl -R -d -m u:www-data:rwx /home/deploy/api-pro/storage/app/private/
+setfacl -R -d -m u:deploy:rx    /home/deploy/api-pro/storage/app/private/
+```
+
+Verificar que quedó bien:
+```bash
+getfacl /home/deploy/api-pro/storage/app/private/
+# Debe mostrar: user:www-data:rwx y user:deploy:r-x, más sus versiones default:
+```
+
 ## 10. Configurar Nginx
 
 Crear `/etc/nginx/sites-available/api-pro`:

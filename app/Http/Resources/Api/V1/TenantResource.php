@@ -45,6 +45,8 @@ class TenantResource extends JsonResource
             'mensaje_agradecimiento' => $this->mensaje_agradecimiento,
             'mensaje_promocional' => $this->mensaje_promocional,
             'tiene_webhook' => ! empty($this->webhook_url),
+            'sire_enabled' => (bool) $this->sire_enabled,
+            'tiene_sire_credenciales' => ! empty($this->sire_client_id ?? $this->client_id) && ! empty($this->sire_client_secret ?? $this->client_secret),
             'creado_en' => $this->created_at->toIso8601String(),
         ];
     }
