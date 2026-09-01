@@ -13,7 +13,7 @@ const DOCS = [
     { key: 'notas-debito', label: 'Notas de débito' },
 ];
 
-const hoy = () => new Date().toISOString().split('T')[0];
+const hoy = () => new Date().toLocaleDateString('en-CA');
 
 export default function Exportar() {
     const [desde, setDesde] = useState(hoy());

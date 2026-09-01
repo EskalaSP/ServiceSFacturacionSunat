@@ -190,7 +190,7 @@ export default function EmpresasForm({ tenant, planes, usuarios, modo, emisionGl
         <AppLayout breadcrumbs={breadcrumbs(modo, tenant.razon_social)}>
             <Head title={editando ? 'Editar empresa' : 'Nueva empresa'} />
 
-            <form onSubmit={submit} className="flex flex-1 flex-col gap-4 p-4">
+            <form onSubmit={submit} autoComplete="off" className="flex flex-1 flex-col gap-4 p-4">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-semibold tracking-tight">

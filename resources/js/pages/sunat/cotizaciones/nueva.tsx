@@ -21,7 +21,7 @@ type Props = {
 
 export default function NuevaCotizacion({ tenant, clientes }: Props) {
 
-    const [fecha, setFecha]               = useState(new Date().toISOString().split('T')[0]);
+    const [fecha, setFecha]               = useState(new Date().toLocaleDateString('en-CA'));
     const [fechaVenc, setFechaVenc]        = useState('');
     const [moneda, setMoneda]              = useState<'PEN' | 'USD'>('PEN');
     const [observacion, setObservacion]    = useState('');

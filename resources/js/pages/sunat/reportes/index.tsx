@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
 
-const hoy = () => new Date().toISOString().split('T')[0];
+const hoy = () => new Date().toLocaleDateString('en-CA');
 const primeroMes = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; };
 
 function esFilaTabla(v: unknown): v is Record<string, unknown>[] {

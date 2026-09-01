@@ -129,7 +129,20 @@ export function DocumentosTable({ documentos, searchPlaceholder = 'Buscar en res
             accessorKey: 'estado',
             header: 'Estado',
             meta: { label: 'Estado' },
-            cell: ({ row }) => <StatusBadge status={row.original.estado} />,
+            cell: ({ row }) => {
+                const doc = row.original;
+                const esTimeout = doc.estado === 'pendiente' && doc.sunat_code === 'SUNAT_TIMEOUT';
+                return (
+                    <div className="flex flex-col gap-0.5">
+                        <StatusBadge status={doc.estado} />
+                        {esTimeout && (
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 leading-tight">
+                                Pendiente de reintento manual
+                            </span>
+                        )}
+                    </div>
+                );
+            },
         },
         {
             id: 'actions',
@@ -141,7 +154,7 @@ export function DocumentosTable({ documentos, searchPlaceholder = 'Buscar en res
                 const aceptado = doc.estado === 'aceptado';
                 const esComprobante = ['01', '03', '07', '08'].includes(doc.tipo_doc);
                 const esVenta = doc.tipo_doc === '01' || doc.tipo_doc === '03';
-                const puedeReenviar = esComprobante && doc.estado !== 'aceptado' && doc.estado !== 'anulado' && doc.estado !== 'anulacion_en_proceso';
+                const puedeReenviar = esComprobante && doc.estado !== 'aceptado' && doc.estado !== 'enviado' && doc.estado !== 'anulado' && doc.estado !== 'anulacion_en_proceso';
                 const tieneDescarga = doc.tiene_pdf || doc.tiene_xml || doc.tiene_cdr;
 
                 const actions = [
@@ -153,7 +166,7 @@ export function DocumentosTable({ documentos, searchPlaceholder = 'Buscar en res
                         { label: 'XML de la anulación', icon: FileText, onSelect: () => { window.location.href = `/sunat/historial/${doc.tipo_doc}/${doc.id}/anulacion/xml`; } },
                     ] : []),
                     ...(esComprobante ? [{ label: 'Consultar en SUNAT', icon: Search, separatorBefore: tieneDescarga || doc.estado === 'anulado', onSelect: () => router.visit(`/sunat/consulta-cpe?tipo=${doc.tipo_doc}&serie=${encodeURIComponent(doc.serie)}&correlativo=${doc.correlativo}&fecha=${encodeURIComponent(doc.fecha)}&monto=${doc.total}`) }] : []),
-                    ...(puedeReenviar ? [{ label: 'Reenviar a SUNAT', icon: RefreshCw, onSelect: () => reenviar(doc) }] : []),
+                    ...(puedeReenviar ? [{ label: doc.sunat_code === 'SUNAT_TIMEOUT' ? 'Reintentar envío' : 'Reenviar a SUNAT', icon: RefreshCw, onSelect: () => reenviar(doc) }] : []),
                     ...(aceptado && esVenta ? [{ label: 'Emitir nota de crédito', icon: FileMinus, separatorBefore: true, onSelect: () => router.visit(`/sunat/nota-credito/nueva?doc_id=${doc.id}&tipo_doc=${doc.tipo_doc}`) }] : []),
                     ...(aceptado && esVenta ? [{ label: 'Emitir nota de débito', icon: FilePlus, onSelect: () => router.visit(`/sunat/nota-debito/nueva?doc_id=${doc.id}&tipo=${doc.tipo_doc}`) }] : []),
                     ...(aceptado && esComprobante ? [{ label: 'Anular', icon: Ban, danger: true, separatorBefore: true, onSelect: () => abrirAnular(doc) }] : []),

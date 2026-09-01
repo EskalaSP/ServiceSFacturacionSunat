@@ -70,7 +70,7 @@ export default function NuevaNotaCredito({ motivos, series, doc_original, tenant
     const [cliente, setCliente]           = useState<ClienteData | null>(doc_original ? clienteDeDoc(doc_original) : null);
 
     const [serie, setSerie]               = useState(series[0]?.serie ?? 'FC01');
-    const [fecha, setFecha]               = useState(new Date().toISOString().split('T')[0]);
+    const [fecha, setFecha]               = useState(new Date().toLocaleDateString('en-CA'));
     const [motivo, setMotivo]             = useState('');
     const [desMotivo, setDesMotivo]       = useState('');
     const [items, setItems]               = useState<ItemRow[]>(

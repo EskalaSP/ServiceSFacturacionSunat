@@ -50,6 +50,7 @@ export type DocumentoSunat = {
     total: number;
     moneda: 'PEN' | 'USD' | 'EUR';
     estado: SunatStatus;
+    sunat_code?: string | null;
     tiene_pdf: boolean;
     tiene_xml: boolean;
     tiene_cdr?: boolean;

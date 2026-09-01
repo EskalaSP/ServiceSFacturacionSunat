@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
 
-const hoy = () => new Date().toISOString().split('T')[0];
+const hoy = () => new Date().toLocaleDateString('en-CA');
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return (

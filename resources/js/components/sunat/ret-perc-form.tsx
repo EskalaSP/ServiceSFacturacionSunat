@@ -29,7 +29,7 @@ const PDF_FORMATOS = [{ v: 'a4', l: 'A4' }, { v: 'a5', l: 'A5' }, { v: 'ticket-8
 
 type Doc = { tipo_doc: string; num_doc: string; fecha_emision: string; imp_total: string; moneda: string };
 
-const hoy = () => new Date().toISOString().split('T')[0];
+const hoy = () => new Date().toLocaleDateString('en-CA');
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return (

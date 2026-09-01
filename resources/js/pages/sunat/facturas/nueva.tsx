@@ -109,7 +109,7 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
     const [tipoDoc, setTipoDoc]   = useState<'01' | '03'>(tipo_inicial === 'boleta' ? '03' : '01');
     const series                  = tipoDoc === '01' ? series_factura : series_boleta;
     const [serie, setSerie]       = useState(series[0]?.serie ?? (tipoDoc === '01' ? 'F001' : 'B001'));
-    const [fecha, setFecha]       = useState(new Date().toISOString().split('T')[0]);
+    const [fecha, setFecha]       = useState(new Date().toLocaleDateString('en-CA'));
     const [moneda, setMoneda]     = useState<'PEN' | 'USD'>('PEN');
     const [tipoOp, setTipoOp]     = useState('0101');
 
