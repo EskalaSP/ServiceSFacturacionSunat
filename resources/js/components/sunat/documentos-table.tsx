@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useState } from 'react';
 import { Ban, Download, FileMinus, FilePlus, FileText, Loader2, RefreshCw, Search, X } from 'lucide-react';
@@ -8,7 +8,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
 import { Label } from '@/components/ui/label';
-import type { DocumentoSunat } from '@/types';
+import type { DocumentoSunat, SharedData } from '@/types';
 
 const TIPO_LABEL: Record<string, string> = {
     '01': 'Factura',
@@ -20,6 +20,15 @@ const TIPO_LABEL: Record<string, string> = {
     '20': 'Retención',
     '40': 'Percepción',
 };
+
+/** tipo_doc numérico → clave base de ability (factura.anular, boleta.anular, etc.) */
+const TIPO_ABILITY: Record<string, string> = {
+    '01': 'factura',
+    '03': 'boleta',
+    '07': 'nota_credito',
+    '08': 'nota_debito',
+};
+
 
 function formatPen(amount: number, moneda: string) {
     return (moneda === 'USD' ? '$ ' : 'S/ ') +
@@ -40,6 +49,8 @@ type Props = {
  */
 export function DocumentosTable({ documentos, searchPlaceholder = 'Buscar en resultados...', emptyMessage = 'No se encontraron comprobantes.', ocultarTipo = false }: Props) {
     const confirm = useConfirm();
+    const { props } = usePage<SharedData>();
+    const puede = (a: string) => props.empresa?.can?.includes(a) ?? false;
     const [anularDoc, setAnularDoc] = useState<DocumentoSunat | null>(null);
     const [motivo, setMotivo] = useState('');
     const [motivoError, setMotivoError] = useState('');
@@ -169,7 +180,7 @@ export function DocumentosTable({ documentos, searchPlaceholder = 'Buscar en res
                     ...(puedeReenviar ? [{ label: doc.sunat_code === 'SUNAT_TIMEOUT' ? 'Reintentar envío' : 'Reenviar a SUNAT', icon: RefreshCw, onSelect: () => reenviar(doc) }] : []),
                     ...(aceptado && esVenta ? [{ label: 'Emitir nota de crédito', icon: FileMinus, separatorBefore: true, onSelect: () => router.visit(`/sunat/nota-credito/nueva?doc_id=${doc.id}&tipo_doc=${doc.tipo_doc}`) }] : []),
                     ...(aceptado && esVenta ? [{ label: 'Emitir nota de débito', icon: FilePlus, onSelect: () => router.visit(`/sunat/nota-debito/nueva?doc_id=${doc.id}&tipo=${doc.tipo_doc}`) }] : []),
-                    ...(aceptado && esComprobante ? [{ label: 'Anular', icon: Ban, danger: true, separatorBefore: true, onSelect: () => abrirAnular(doc) }] : []),
+                    ...(aceptado && esComprobante && puede(`${TIPO_ABILITY[doc.tipo_doc]}.anular`) ? [{ label: 'Anular', icon: Ban, danger: true, separatorBefore: true, onSelect: () => abrirAnular(doc) }] : []),
                 ];
                 if (actions.length === 0) return <span className="text-muted-foreground">—</span>;
                 return <DataTableRowActions actions={actions} />;

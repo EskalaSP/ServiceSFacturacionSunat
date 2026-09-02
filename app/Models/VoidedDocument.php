@@ -10,7 +10,7 @@ class VoidedDocument extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'identifier', 'correlativo', 'fecha_generacion',
+        'tenant_id', 'ambiente', 'identifier', 'correlativo', 'fecha_generacion',
         'fecha_comunicacion', 'total_documentos', 'detalles',
         'motivo', 'anulado_por',
         'xml_path', 'cdr_path', 'ticket', 'sunat_status', 'sunat_code',

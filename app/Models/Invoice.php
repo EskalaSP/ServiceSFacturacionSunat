@@ -14,7 +14,7 @@ class Invoice extends Model implements Documentable
     use HasDocumentFields, HasPayments, HasSunatIntegration;
 
     protected $fillable = [
-        'tenant_id', 'client_id', 'sucursal_id', 'serie', 'correlativo', 'cod_local',
+        'tenant_id', 'ambiente', 'client_id', 'sucursal_id', 'serie', 'correlativo', 'cod_local',
         'fecha_emision', 'fecha_vencimiento', 'tipo_operacion', 'tipo_moneda',
         'forma_pago', 'client_tipo_doc', 'client_num_doc', 'client_razon_social',
         'client_direccion', 'mto_oper_gravadas', 'mto_oper_exoneradas',

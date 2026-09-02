@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Rbac\Ability;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
@@ -19,14 +20,18 @@ class TenantMembership extends Pivot
 
     public $incrementing = true;
 
-    public const ROLE_OWNER = 'owner';
+    public const ROLE_SIMPLE = 'simple';
 
     public const ROLE_CAJERO = 'cajero';
 
+    /** Acceso completo: ve todo, incluye series, config, SIRE, API, equipo, etc. */
+    public const ROLE_COMPLETO = 'completo';
+
     /** @var array<string,string> */
     public const ROLES = [
-        self::ROLE_OWNER => 'Dueño',
-        self::ROLE_CAJERO => 'Cajero',
+        self::ROLE_COMPLETO => 'Completo (acceso extendido)',
+        self::ROLE_SIMPLE   => 'Simple (vista restringida)',
+        self::ROLE_CAJERO   => 'Cajero',
     ];
 
     protected function casts(): array
@@ -37,14 +42,19 @@ class TenantMembership extends Pivot
         ];
     }
 
-    public function esOwner(): bool
+    public function esSimple(): bool
     {
-        return $this->role === self::ROLE_OWNER;
+        return $this->role === self::ROLE_SIMPLE;
+    }
+
+    public function esCompleto(): bool
+    {
+        return $this->role === self::ROLE_COMPLETO;
     }
 
     /**
      * ¿Esta membresía habilita el permiso indicado?
-     * Owner activo → todo. Cajero → solo lo que tenga en `abilities`.
+     * Completo → todo. Simple → solo permisos base. Cajero → abilities asignadas.
      */
     public function permite(string $ability): bool
     {
@@ -52,8 +62,12 @@ class TenantMembership extends Pivot
             return false;
         }
 
-        if ($this->esOwner()) {
+        if ($this->esCompleto()) {
             return true;
+        }
+
+        if ($this->esSimple()) {
+            return in_array($ability, Ability::presetSimple(), true);
         }
 
         return in_array($ability, $this->abilitiesArray(), true);

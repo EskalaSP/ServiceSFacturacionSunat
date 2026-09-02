@@ -10,7 +10,7 @@ class Summary extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'identifier', 'correlativo', 'fecha_referencia',
+        'tenant_id', 'ambiente', 'identifier', 'correlativo', 'fecha_referencia',
         'fecha_envio', 'total_documentos', 'tipo', 'document_ids',
         'motivo', 'anulado_por',
         'xml_path', 'cdr_path', 'ticket', 'sunat_status', 'sunat_code',

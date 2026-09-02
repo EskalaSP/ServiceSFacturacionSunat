@@ -11,7 +11,7 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
-import type { BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem, SharedData } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -27,7 +27,8 @@ export default function Profile({
     mustVerifyEmail: boolean;
     status?: string;
 }) {
-    const { auth } = usePage().props;
+    const { auth, empresa } = usePage<SharedData>().props;
+    const puedeEliminar = empresa?.esSuperAdmin || empresa?.rol === 'completo';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -139,7 +140,7 @@ export default function Profile({
                     </Form>
                 </div>
 
-                <DeleteUser />
+                {puedeEliminar && <DeleteUser />}
             </SettingsLayout>
         </AppLayout>
     );

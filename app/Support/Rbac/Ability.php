@@ -190,4 +190,36 @@ class Ability
     {
         return array_values(array_diff(self::todas(), self::NO_ASIGNABLES_A_CAJERO));
     }
+
+    /**
+     * Permisos base para el rol "simple" (cliente final restringido).
+     * Solo emite/descarga/reenvía comprobantes: no ve Trámites (anulación,
+     * resumen, retención, percepción, reversión) ni puede anular nada.
+     *
+     * @return list<string>
+     */
+    public static function presetSimple(): array
+    {
+        $docs = [
+            self::TIPO_FACTURA,
+            self::TIPO_BOLETA,
+            self::TIPO_NOTA_CREDITO,
+            self::TIPO_NOTA_DEBITO,
+            self::TIPO_COTIZACION,
+            self::TIPO_NOTA_VENTA,
+        ];
+
+        $abilities = [];
+        foreach ($docs as $tipo) {
+            $abilities[] = "{$tipo}.".self::EMITIR;
+            $abilities[] = "{$tipo}.".self::DESCARGAR;
+            $abilities[] = "{$tipo}.".self::REENVIAR;
+        }
+
+        return array_merge($abilities, [
+            self::CLIENTE_GESTIONAR,
+            self::REPORTE_VER,
+            self::EXPORTAR,
+        ]);
+    }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\Tenancy\EmpresaActiva;
+use App\Models\TenantMembership;
 use App\Support\Rbac\Ability;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -51,9 +52,12 @@ class HandleInertiaRequests extends Middleware
             } else {
                 $membresia = $user->membershipFor($tenant);
                 $rol = $membresia?->role;
-                $abilities = ($membresia && $membresia->esOwner())
-                    ? Ability::todas()
-                    : ($membresia?->abilitiesArray() ?? []);
+                $abilities = match ($membresia?->role) {
+                    TenantMembership::ROLE_COMPLETO => Ability::todas(),
+                    TenantMembership::ROLE_SIMPLE   => Ability::presetSimple(),
+                    TenantMembership::ROLE_CAJERO   => $membresia?->abilitiesArray() ?? [],
+                    default => [],
+                };
             }
         }
 

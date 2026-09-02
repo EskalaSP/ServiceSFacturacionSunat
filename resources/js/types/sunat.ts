@@ -39,6 +39,8 @@ export type TenantSunat = {
 
 export type SunatStatus = 'borrador' | 'pendiente' | 'enviado' | 'aceptado' | 'rechazado' | 'anulacion_en_proceso' | 'anulado';
 
+export type DocumentAmbiente = 'prueba' | 'produccion';
+
 export type DocumentoSunat = {
     id: number;
     tipo_doc: '01' | '03' | '07' | '08' | '09' | '31' | '20' | '40';
@@ -50,6 +52,7 @@ export type DocumentoSunat = {
     total: number;
     moneda: 'PEN' | 'USD' | 'EUR';
     estado: SunatStatus;
+    ambiente: DocumentAmbiente;
     sunat_code?: string | null;
     tiene_pdf: boolean;
     tiene_xml: boolean;

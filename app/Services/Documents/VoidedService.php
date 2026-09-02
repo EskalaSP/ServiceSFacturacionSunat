@@ -66,6 +66,7 @@ class VoidedService
 
         $voided = VoidedDocument::create([
             'tenant_id' => $tenant->id,
+            'ambiente' => $tenant->environment === 'produccion' ? 'produccion' : 'prueba',
             'identifier' => $identifier,
             'correlativo' => $correlativo,
             'fecha_generacion' => $fechaGeneracion,
@@ -227,6 +228,7 @@ class VoidedService
 
         $voided = VoidedDocument::create([
             'tenant_id' => $tenant->id,
+            'ambiente' => $tenant->environment === 'produccion' ? 'produccion' : 'prueba',
             'identifier' => $identifier,
             'correlativo' => $correlativo,
             'fecha_generacion' => $fechaGeneracion,
