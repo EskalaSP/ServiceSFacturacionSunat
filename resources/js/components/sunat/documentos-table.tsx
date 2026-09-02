@@ -3,6 +3,7 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { useState } from 'react';
 import { Ban, Download, FileMinus, FilePlus, FileText, Loader2, RefreshCw, Search, X } from 'lucide-react';
 import { StatusBadge } from '@/components/sunat/status-badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
@@ -154,6 +155,14 @@ export function DocumentosTable({ documentos, searchPlaceholder = 'Buscar en res
                     </div>
                 );
             },
+        },
+        {
+            accessorKey: 'ambiente',
+            header: 'Ambiente',
+            meta: { label: 'Ambiente' },
+            cell: ({ row }) => row.original.ambiente === 'prueba'
+                ? <Badge variant="outline" className="text-amber-600 border-amber-400">Prueba</Badge>
+                : <Badge variant="secondary" className="text-emerald-700 border-emerald-400">Producción</Badge>,
         },
         {
             id: 'actions',

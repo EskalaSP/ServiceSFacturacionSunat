@@ -15,6 +15,7 @@ class BoletaResource extends JsonResource
             'serie' => $this->serie,
             'correlativo' => $this->correlativo,
             'numero_completo' => $this->numero_completo,
+            'ambiente' => $this->ambiente,
             'cod_local' => $this->cod_local,
             'fecha_emision' => $this->fecha_emision->format('Y-m-d H:i:s'),
             'fecha_vencimiento' => $this->fecha_vencimiento?->format('Y-m-d'),

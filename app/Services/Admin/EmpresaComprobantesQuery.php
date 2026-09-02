@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 class EmpresaComprobantesQuery
 {
     /** Columnas de salida (mismo orden en cada SELECT del UNION). */
-    private const COLS = 'tipo, id, serie, correlativo, numero, cliente, cliente_doc, moneda, total, subtotal, igv, estado, sunat_code, sunat_description, sunat_notes, hash_cpe, fecha_emision, fecha_envio, sucursal_id, observacion, has_xml, has_cdr, has_pdf';
+    private const COLS = 'tipo, id, serie, correlativo, numero, cliente, cliente_doc, moneda, total, subtotal, igv, estado, sunat_code, sunat_description, sunat_notes, hash_cpe, fecha_emision, fecha_envio, sucursal_id, observacion, has_xml, has_cdr, has_pdf, ambiente';
 
     /** Etiquetas legibles por tipo. */
     public const TIPOS = [
@@ -112,7 +112,7 @@ class EmpresaComprobantesQuery
                     .'mto_imp_venta AS total, sub_total AS subtotal, mto_igv AS igv, '
                     .'sunat_status AS estado, sunat_code, sunat_description, sunat_notes, hash_cpe, '
                     .'fecha_emision, sent_at AS fecha_envio, sucursal_id, observacion, '
-                    .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', 'pdf_path IS NOT NULL')
+                    .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', 'pdf_path IS NOT NULL').', ambiente'
                 )
                 ->where('tenant_id', $tenantId)
                 ->whereNull('deleted_at');
@@ -132,7 +132,7 @@ class EmpresaComprobantesQuery
                     .'NULL AS total, NULL AS subtotal, NULL AS igv, '
                     .'sunat_status AS estado, sunat_code, sunat_description, NULL AS sunat_notes, hash_cpe, '
                     .'fecha_emision, sent_at AS fecha_envio, sucursal_id, observacion, '
-                    .$flags('xml_path IS NOT NULL OR xml_content IS NOT NULL', 'cdr_path IS NOT NULL OR cdr_content IS NOT NULL', 'pdf_path IS NOT NULL')
+                    .$flags('xml_path IS NOT NULL OR xml_content IS NOT NULL', 'cdr_path IS NOT NULL OR cdr_content IS NOT NULL', 'pdf_path IS NOT NULL').', NULL AS ambiente'
                 )
                 ->where('tenant_id', $tenantId)
                 ->whereNull('deleted_at')
@@ -147,7 +147,7 @@ class EmpresaComprobantesQuery
                     .'imp_retenido AS total, NULL AS subtotal, NULL AS igv, '
                     .'sunat_status AS estado, sunat_code, sunat_description, sunat_notes, hash_cpe, '
                     .'fecha_emision, sent_at AS fecha_envio, NULL AS sucursal_id, observacion, '
-                    .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', 'pdf_path IS NOT NULL')
+                    .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', 'pdf_path IS NOT NULL').', NULL AS ambiente'
                 )
                 ->where('tenant_id', $tenantId)
                 ->whereNull('deleted_at')
@@ -162,7 +162,7 @@ class EmpresaComprobantesQuery
                     .'imp_percibido AS total, NULL AS subtotal, NULL AS igv, '
                     .'sunat_status AS estado, sunat_code, sunat_description, sunat_notes, hash_cpe, '
                     .'fecha_emision, sent_at AS fecha_envio, NULL AS sucursal_id, observacion, '
-                    .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', 'pdf_path IS NOT NULL')
+                    .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', 'pdf_path IS NOT NULL').', NULL AS ambiente'
                 )
                 ->where('tenant_id', $tenantId)
                 ->whereNull('deleted_at')
@@ -176,7 +176,7 @@ class EmpresaComprobantesQuery
                     .'NULL AS cliente, NULL AS cliente_doc, NULL AS moneda, NULL AS total, NULL AS subtotal, NULL AS igv, '
                     .'sunat_status AS estado, sunat_code, sunat_description, sunat_notes, NULL AS hash_cpe, '
                     .'fecha_referencia AS fecha_emision, fecha_envio, NULL AS sucursal_id, NULL AS observacion, '
-                    .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', null)
+                    .$flags('xml_path IS NOT NULL', 'cdr_path IS NOT NULL', null).', ambiente'
                 )
                 ->where('tenant_id', $tenantId)
         );
@@ -189,7 +189,7 @@ class EmpresaComprobantesQuery
                     .'NULL AS cliente, NULL AS cliente_doc, NULL AS moneda, NULL AS total, NULL AS subtotal, NULL AS igv, '
                     .'sunat_status AS estado, sunat_code, sunat_description, sunat_notes, NULL AS hash_cpe, '
                     .'fecha_generacion AS fecha_emision, fecha_comunicacion AS fecha_envio, NULL AS sucursal_id, NULL AS observacion, '
-                    .$flags('xml_path IS NOT NULL', null, null)
+                    .$flags('xml_path IS NOT NULL', null, null).', ambiente'
                 )
                 ->where('tenant_id', $tenantId)
         );
@@ -203,7 +203,7 @@ class EmpresaComprobantesQuery
                     .'mto_imp_venta AS total, sub_total AS subtotal, mto_igv AS igv, '
                     ."status AS estado, NULL AS sunat_code, NULL AS sunat_description, NULL AS sunat_notes, NULL AS hash_cpe, "
                     .'fecha_emision, NULL AS fecha_envio, NULL AS sucursal_id, observacion, '
-                    .$flags(null, null, 'pdf_path IS NOT NULL')
+                    .$flags(null, null, 'pdf_path IS NOT NULL').', NULL AS ambiente'
                 )
                 ->where('tenant_id', $tenantId)
                 ->whereNull('deleted_at')

@@ -32,6 +32,7 @@ type Comprobante = {
     has_xml: number;
     has_cdr: number;
     has_pdf: number;
+    ambiente: string | null;
 };
 
 type Paginacion<T> = {
@@ -228,6 +229,16 @@ export default function EmpresaComprobantes({ empresa, comprobantes, stats, filt
             header: 'Estado',
             meta: { label: 'Estado' },
             cell: ({ row }) => <EstadoBadge estado={row.original.estado} />,
+        },
+        {
+            accessorKey: 'ambiente',
+            header: 'Ambiente',
+            meta: { label: 'Ambiente' },
+            cell: ({ row }) => row.original.ambiente === 'prueba'
+                ? <Badge variant="outline" className="text-amber-600 border-amber-400">Prueba</Badge>
+                : row.original.ambiente === 'produccion'
+                    ? <Badge variant="secondary" className="text-emerald-700 border-emerald-400">Producción</Badge>
+                    : <span className="text-muted-foreground">—</span>,
         },
         {
             id: 'respuesta',
