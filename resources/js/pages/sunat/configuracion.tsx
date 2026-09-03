@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import {
     FileText,
@@ -21,6 +21,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
+import type { SharedData } from '@/types';
 import type { TenantSunat } from '@/types/sunat';
 
 type Props = {
@@ -68,6 +69,8 @@ const Section = ({
 );
 
 export default function Configuracion({ tenant }: Props) {
+    const { props } = usePage<SharedData>();
+    const esSimple = props.empresa?.rol === 'simple';
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
     // Token de consulta y "probar conexión" viven fuera del form principal.
@@ -301,6 +304,7 @@ export default function Configuracion({ tenant }: Props) {
 
                 {/* 3. Credenciales SUNAT */}
                 <Section icon={ShieldCheck} title="3. Credenciales SUNAT" required subtitle="Usuario secundario, certificado y entorno">
+                    {esSimple && <p className="mb-4 text-xs text-muted-foreground">Solo lectura para el rol simple.</p>}
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
                             <Label htmlFor="sol_user">Usuario secundario <Req /></Label>
@@ -308,6 +312,7 @@ export default function Configuracion({ tenant }: Props) {
                                 id="sol_user"
                                 value={data.sol_user}
                                 onChange={(e) => setData('sol_user', e.target.value)}
+                                disabled={esSimple}
                                 maxLength={20}
                                 placeholder="MODDATOS (para beta)"
                             />
@@ -319,6 +324,7 @@ export default function Configuracion({ tenant }: Props) {
                                 id="sol_pass"
                                 value={data.sol_pass}
                                 onChange={(e) => setData('sol_pass', e.target.value)}
+                                disabled={esSimple}
                                 placeholder={tenant?.sol_user ? '••••• (dejar vacío = sin cambios)' : 'MODDATOS (para beta)'}
                             />
                             {errors.sol_pass && <p className="mt-1 text-xs text-red-600">{errors.sol_pass}</p>}
@@ -328,6 +334,7 @@ export default function Configuracion({ tenant }: Props) {
                             <Combobox
                                 value={data.environment}
                                 onChange={(v) => setData('environment', v as 'beta' | 'produccion')}
+                                disabled={esSimple}
                                 options={[
                                     { value: 'beta', label: 'Beta (pruebas)' },
                                     { value: 'produccion', label: 'Producción' },
@@ -340,6 +347,7 @@ export default function Configuracion({ tenant }: Props) {
                                 id="certificate"
                                 type="file"
                                 accept=".pfx,.p12,.pem"
+                                disabled={esSimple}
                                 onChange={(e) => setData('certificate', e.target.files?.[0] ?? null)}
                             />
                             {errors.certificate && <p className="mt-1 text-xs text-red-600">{errors.certificate}</p>}
@@ -351,6 +359,7 @@ export default function Configuracion({ tenant }: Props) {
                                 id="certificate_password"
                                 value={data.certificate_password}
                                 onChange={(e) => setData('certificate_password', e.target.value)}
+                                disabled={esSimple}
                                 placeholder="Solo si subes un archivo nuevo o cambiaste la clave"
                             />
                         </div>
@@ -359,6 +368,7 @@ export default function Configuracion({ tenant }: Props) {
 
                 {/* 4. Series de numeración */}
                 <Section icon={FileText} title="4. Series de numeración" required subtitle="Deben iniciar con F para facturas y B para boletas">
+                    {esSimple && <p className="mb-4 text-xs text-muted-foreground">Solo lectura para el rol simple.</p>}
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <Label htmlFor="serie_factura">Serie Factura <Req /></Label>
@@ -366,6 +376,7 @@ export default function Configuracion({ tenant }: Props) {
                                 id="serie_factura"
                                 value={data.serie_factura}
                                 onChange={(e) => setData('serie_factura', e.target.value.toUpperCase())}
+                                disabled={esSimple}
                                 maxLength={4}
                                 placeholder="F001"
                             />
@@ -377,6 +388,7 @@ export default function Configuracion({ tenant }: Props) {
                                 id="serie_boleta"
                                 value={data.serie_boleta}
                                 onChange={(e) => setData('serie_boleta', e.target.value.toUpperCase())}
+                                disabled={esSimple}
                                 maxLength={4}
                                 placeholder="B001"
                             />
@@ -489,31 +501,33 @@ export default function Configuracion({ tenant }: Props) {
                 </Section>
 
                 {/* 6. Consulta RUC / DNI */}
-                <Section icon={Search} title="6. Consulta RUC / DNI" subtitle="Tu propio token de api.json.pe para autocompletar clientes">
-                    <div className="grid gap-3 md:max-w-xl">
-                        <div>
-                            <Label htmlFor="consulta_token">Token de consulta</Label>
-                            <PasswordInput
-                                id="consulta_token"
-                                value={consultaToken}
-                                onChange={(e) => setConsultaToken(e.target.value)}
-                                placeholder={tenant?.consulta_token_set ? '•••••••• (token configurado)' : 'Pega aquí tu token de api.json.pe'}
-                                autoComplete="off"
-                            />
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                {tenant?.consulta_token_set
-                                    ? 'Ya tienes un token guardado. Escribe uno nuevo para reemplazarlo, o deja vacío y guarda para eliminarlo.'
-                                    : 'Al buscar un documento, primero se revisa tu base de datos; si no está, se consulta con este token. Cada empresa usa su propio token.'}
-                            </p>
+                {!esSimple && (
+                    <Section icon={Search} title="6. Consulta RUC / DNI" subtitle="Tu propio token de api.json.pe para autocompletar clientes">
+                        <div className="grid gap-3 md:max-w-xl">
+                            <div>
+                                <Label htmlFor="consulta_token">Token de consulta</Label>
+                                <PasswordInput
+                                    id="consulta_token"
+                                    value={consultaToken}
+                                    onChange={(e) => setConsultaToken(e.target.value)}
+                                    placeholder={tenant?.consulta_token_set ? '•••••••• (token configurado)' : 'Pega aquí tu token de api.json.pe'}
+                                    autoComplete="off"
+                                />
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {tenant?.consulta_token_set
+                                        ? 'Ya tienes un token guardado. Escribe uno nuevo para reemplazarlo, o deja vacío y guarda para eliminarlo.'
+                                        : 'Al buscar un documento, primero se revisa tu base de datos; si no está, se consulta con este token. Cada empresa usa su propio token.'}
+                                </p>
+                            </div>
+                            <div>
+                                <Button type="button" variant="outline" disabled={savingToken} onClick={guardarToken}>
+                                    {savingToken && <Loader2 className="mr-2 size-4 animate-spin" />}
+                                    Guardar token
+                                </Button>
+                            </div>
                         </div>
-                        <div>
-                            <Button type="button" variant="outline" disabled={savingToken} onClick={guardarToken}>
-                                {savingToken && <Loader2 className="mr-2 size-4 animate-spin" />}
-                                Guardar token
-                            </Button>
-                        </div>
-                    </div>
-                </Section>
+                    </Section>
+                )}
 
                 {/* Resultado de "probar conexión" */}
                 {testResult && (
@@ -547,10 +561,12 @@ export default function Configuracion({ tenant }: Props) {
                 )}
 
                 <div className="flex flex-wrap justify-end gap-3 border-t pt-4">
-                    <Button type="button" variant="outline" disabled={testing} onClick={probarConexion}>
-                        {testing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Wifi className="mr-2 size-4" />}
-                        Probar conexión
-                    </Button>
+                    {!esSimple && (
+                        <Button type="button" variant="outline" disabled={testing} onClick={probarConexion}>
+                            {testing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Wifi className="mr-2 size-4" />}
+                            Probar conexión
+                        </Button>
+                    )}
                     <Button type="submit" disabled={processing}>
                         {processing && <Loader2 className="mr-2 size-4 animate-spin" />}
                         Guardar configuración

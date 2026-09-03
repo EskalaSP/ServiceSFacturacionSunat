@@ -1,9 +1,9 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { DocumentosTable } from '@/components/sunat/documentos-table';
 import { Button } from '@/components/ui/button';
 import SunatLayout from '@/layouts/sunat-layout';
-import type { DocumentoSunat } from '@/types';
+import type { DocumentoSunat, SharedData } from '@/types';
 
 type Props = {
     titulo: string;
@@ -18,6 +18,9 @@ type Props = {
 
 /** Listado genérico de comprobantes por tipo, con botón para emitir uno nuevo. */
 export default function DocumentosIndex({ titulo, subtitulo, nuevo, documentos, ocultarTipo = true, emptyMessage, searchPlaceholder }: Props) {
+    const { props } = usePage<SharedData>();
+    const esSimple = props.empresa?.rol === 'simple';
+
     return (
         <SunatLayout>
             <Head title={titulo} />
@@ -28,11 +31,13 @@ export default function DocumentosIndex({ titulo, subtitulo, nuevo, documentos, 
                     {subtitulo && <p className="text-sm text-muted-foreground">{subtitulo}</p>}
                 </div>
 
-                <div className="mb-4 flex justify-end">
-                    <Button asChild className="gap-2 rounded-xl">
-                        <Link href={nuevo.href}><Plus className="size-4" /> {nuevo.label}</Link>
-                    </Button>
-                </div>
+                {!esSimple && (
+                    <div className="mb-4 flex justify-end">
+                        <Button asChild className="gap-2 rounded-xl">
+                            <Link href={nuevo.href}><Plus className="size-4" /> {nuevo.label}</Link>
+                        </Button>
+                    </div>
+                )}
 
                 <DocumentosTable
                     documentos={documentos}

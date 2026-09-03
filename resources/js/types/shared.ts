@@ -6,7 +6,7 @@ export type EmpresaOption = {
     razon_social: string;
 };
 
-export type EmpresaRol = 'super_admin' | 'owner' | 'cajero' | null;
+export type EmpresaRol = 'super_admin' | 'owner' | 'simple' | 'cajero' | null;
 
 /** Contexto de la empresa activa + permisos del usuario (para gating de UI). */
 export type EmpresaShared = {

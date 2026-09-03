@@ -53,6 +53,7 @@ export function DocumentosTable({ documentos, searchPlaceholder = 'Buscar en res
     const confirm = useConfirm();
     const { props } = usePage<SharedData>();
     const puede = (a: string) => props.empresa?.can?.includes(a) ?? false;
+    const esSimple = props.empresa?.rol === 'simple';
     const [anularDoc, setAnularDoc] = useState<DocumentoSunat | null>(null);
     const [motivo, setMotivo] = useState('');
     const [motivoError, setMotivoError] = useState('');
@@ -188,9 +189,9 @@ export function DocumentosTable({ documentos, searchPlaceholder = 'Buscar en res
                     ] : []),
                     ...(esComprobante ? [{ label: 'Consultar en SUNAT', icon: Search, separatorBefore: tieneDescarga || doc.estado === 'anulado', onSelect: () => router.visit(`/sunat/consulta-cpe?tipo=${doc.tipo_doc}&serie=${encodeURIComponent(doc.serie)}&correlativo=${doc.correlativo}&fecha=${encodeURIComponent(doc.fecha)}&monto=${doc.total}`) }] : []),
                     ...(puedeReenviar ? [{ label: doc.sunat_code === 'SUNAT_TIMEOUT' ? 'Reintentar envío' : 'Reenviar a SUNAT', icon: RefreshCw, onSelect: () => reenviar(doc) }] : []),
-                    ...(aceptado && esVenta ? [{ label: 'Emitir nota de crédito', icon: FileMinus, separatorBefore: true, onSelect: () => router.visit(`/sunat/nota-credito/nueva?doc_id=${doc.id}&tipo_doc=${doc.tipo_doc}`) }] : []),
-                    ...(aceptado && esVenta ? [{ label: 'Emitir nota de débito', icon: FilePlus, onSelect: () => router.visit(`/sunat/nota-debito/nueva?doc_id=${doc.id}&tipo=${doc.tipo_doc}`) }] : []),
-                    ...(aceptado && esComprobante && puede(`${TIPO_ABILITY[doc.tipo_doc]}.anular`) ? [{ label: 'Anular', icon: Ban, danger: true, separatorBefore: true, onSelect: () => abrirAnular(doc) }] : []),
+                    ...(!esSimple && aceptado && esVenta ? [{ label: 'Emitir nota de crédito', icon: FileMinus, separatorBefore: true, onSelect: () => router.visit(`/sunat/nota-credito/nueva?doc_id=${doc.id}&tipo_doc=${doc.tipo_doc}`) }] : []),
+                    ...(!esSimple && aceptado && esVenta ? [{ label: 'Emitir nota de débito', icon: FilePlus, onSelect: () => router.visit(`/sunat/nota-debito/nueva?doc_id=${doc.id}&tipo=${doc.tipo_doc}`) }] : []),
+                    ...(!esSimple && aceptado && esComprobante && puede(`${TIPO_ABILITY[doc.tipo_doc]}.anular`) ? [{ label: 'Anular', icon: Ban, danger: true, separatorBefore: true, onSelect: () => abrirAnular(doc) }] : []),
                 ];
                 if (actions.length === 0) return <span className="text-muted-foreground">—</span>;
                 return <DataTableRowActions actions={actions} />;

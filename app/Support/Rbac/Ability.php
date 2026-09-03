@@ -200,26 +200,8 @@ class Ability
      */
     public static function presetSimple(): array
     {
-        $docs = [
-            self::TIPO_FACTURA,
-            self::TIPO_BOLETA,
-            self::TIPO_NOTA_CREDITO,
-            self::TIPO_NOTA_DEBITO,
-            self::TIPO_COTIZACION,
-            self::TIPO_NOTA_VENTA,
+        return [
+            self::CONFIG_EDITAR,
         ];
-
-        $abilities = [];
-        foreach ($docs as $tipo) {
-            $abilities[] = "{$tipo}.".self::EMITIR;
-            $abilities[] = "{$tipo}.".self::DESCARGAR;
-            $abilities[] = "{$tipo}.".self::REENVIAR;
-        }
-
-        return array_merge($abilities, [
-            self::CLIENTE_GESTIONAR,
-            self::REPORTE_VER,
-            self::EXPORTAR,
-        ]);
     }
 }
