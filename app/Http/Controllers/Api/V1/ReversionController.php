@@ -35,7 +35,7 @@ class ReversionController extends Controller
 
         $tenant = $request->get('tenant');
         $validated = $request->all();
-        $fechaCom = $validated['fecha_comunicacion'] ?? now()->format('Y-m-d');
+        $fechaCom = $validated['fecha_comunicacion'] ?? Carbon::now('America/Lima')->format('Y-m-d');
         $enviarAuto = $request->boolean('enviar_automatico', true);
 
         // Validar que los documentos existan y estén aceptados

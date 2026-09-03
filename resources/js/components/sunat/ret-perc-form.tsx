@@ -6,6 +6,7 @@ import { PdfPreviewModal } from '@/components/sunat/pdf-preview-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { todayLimaDate } from '@/lib/lima-date';
 
 export type RetPercConfig = {
     titulo: string;
@@ -29,7 +30,7 @@ const PDF_FORMATOS = [{ v: 'a4', l: 'A4' }, { v: 'a5', l: 'A5' }, { v: 'ticket-8
 
 type Doc = { tipo_doc: string; num_doc: string; fecha_emision: string; imp_total: string; moneda: string };
 
-const hoy = () => new Date().toLocaleDateString('en-CA');
+const hoy = () => todayLimaDate();
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return (

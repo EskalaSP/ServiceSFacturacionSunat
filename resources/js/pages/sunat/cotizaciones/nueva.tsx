@@ -8,6 +8,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
+import { todayLimaDate } from '@/lib/lima-date';
 import type { ClienteSunat, TenantSunat } from '@/types';
 
 // ─── Catálogos ────────────────────────────────────────────────────────────────
@@ -21,7 +22,7 @@ type Props = {
 
 export default function NuevaCotizacion({ tenant, clientes }: Props) {
 
-    const [fecha, setFecha]               = useState(new Date().toLocaleDateString('en-CA'));
+    const [fecha, setFecha]               = useState(todayLimaDate());
     const [fechaVenc, setFechaVenc]        = useState('');
     const [moneda, setMoneda]              = useState<'PEN' | 'USD'>('PEN');
     const [observacion, setObservacion]    = useState('');

@@ -43,7 +43,7 @@ class VoidedService
         ?string $motivo = null,
         ?int $userId = null,
     ): array {
-        $fechaCom = $fechaComunicacion ?: now()->format('Y-m-d');
+        $fechaCom = $fechaComunicacion ?: Carbon::now('America/Lima')->format('Y-m-d');
 
         foreach ($detalles as $detalle) {
             if (($detalle['tipo_documento'] ?? null) === '03') {
@@ -66,7 +66,7 @@ class VoidedService
 
         $voided = VoidedDocument::create([
             'tenant_id' => $tenant->id,
-            'ambiente' => $tenant->environment === 'produccion' ? 'produccion' : 'prueba',
+            'ambiente' => $tenant->environment === 'beta' ? 'prueba' : 'produccion',
             'identifier' => $identifier,
             'correlativo' => $correlativo,
             'fecha_generacion' => $fechaGeneracion,
@@ -211,7 +211,7 @@ class VoidedService
      */
     public function crearReversion(Tenant $tenant, string $fechaGeneracion, ?string $fechaComunicacion, array $detalles, bool $enviarAuto = true): array
     {
-        $fechaCom = $fechaComunicacion ?: now()->format('Y-m-d');
+        $fechaCom = $fechaComunicacion ?: Carbon::now('America/Lima')->format('Y-m-d');
 
         $errores = $this->validarReversion($tenant->id, $detalles);
         if (! empty($errores)) {
@@ -228,7 +228,7 @@ class VoidedService
 
         $voided = VoidedDocument::create([
             'tenant_id' => $tenant->id,
-            'ambiente' => $tenant->environment === 'produccion' ? 'produccion' : 'prueba',
+            'ambiente' => $tenant->environment === 'beta' ? 'prueba' : 'produccion',
             'identifier' => $identifier,
             'correlativo' => $correlativo,
             'fecha_generacion' => $fechaGeneracion,

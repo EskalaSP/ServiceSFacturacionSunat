@@ -30,7 +30,7 @@ class VoidedController extends Controller
         try {
             $validated = $request->validated();
 
-            $fechaCom = $validated['fecha_comunicacion'] ?? now()->format('Y-m-d');
+            $fechaCom = $validated['fecha_comunicacion'] ?? \Illuminate\Support\Carbon::now('America/Lima')->format('Y-m-d');
             $validated['fecha_comunicacion'] = $fechaCom;
 
             // SUNAT rechaza la comunicación de baja (RA) para boletas (tipo 03).

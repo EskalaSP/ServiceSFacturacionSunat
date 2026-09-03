@@ -9,6 +9,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { DataTableRowActions } from '@/components/ui/data-table-row-actions';
 import { Label } from '@/components/ui/label';
+import { formatDateLima } from '@/lib/lima-date';
 import type { DocumentoSunat, SharedData } from '@/types';
 
 const TIPO_LABEL: Record<string, string> = {
@@ -121,7 +122,7 @@ export function DocumentosTable({ documentos, searchPlaceholder = 'Buscar en res
             meta: { label: 'Fecha' },
             cell: ({ row }) => (
                 <span className="whitespace-nowrap text-sm text-muted-foreground">
-                    {new Date(row.original.fecha).toLocaleDateString('es-PE')}
+                    {formatDateLima(row.original.fecha)}
                 </span>
             ),
         },

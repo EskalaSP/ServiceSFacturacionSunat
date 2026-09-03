@@ -52,7 +52,7 @@ class CreateCreditNoteAction
 
             $creditNote = CreditNote::create([
                 'tenant_id' => $tenant->id,
-                'ambiente' => $tenant->environment === 'produccion' ? 'produccion' : 'prueba',
+                'ambiente' => $tenant->environment === 'beta' ? 'prueba' : 'produccion',
                 'sucursal_id' => $sucursal?->id,
                 'cod_local' => $sucursal?->cod_local ?? $data['cod_local'] ?? '0000',
                 'client_id' => $client->id,

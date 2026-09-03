@@ -68,7 +68,7 @@ class SummaryService
 
         $summary = Summary::create([
             'tenant_id' => $tenant->id,
-            'ambiente' => $tenant->environment === 'produccion' ? 'produccion' : 'prueba',
+            'ambiente' => $tenant->environment === 'beta' ? 'prueba' : 'produccion',
             'identifier' => $identifier,
             'correlativo' => $correlativo,
             'fecha_referencia' => $fechaResumen->format('Y-m-d'),

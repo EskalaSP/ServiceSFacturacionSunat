@@ -140,8 +140,8 @@ class EmpresaComprobanteController extends Controller
         abort_if($motivo === '', 422, 'El motivo de anulación es obligatorio.');
 
         $payload = $tipo === '03'
-            ? ['fecha_resumen' => now()->format('Y-m-d'), 'anular' => [['id' => $doc->id, 'motivo' => $motivo]]]
-            : ['fecha_generacion' => now()->format('Y-m-d'), 'fecha_comunicacion' => now()->format('Y-m-d'), 'detalles' => [[
+            ? ['fecha_resumen' => \Illuminate\Support\Carbon::now('America/Lima')->format('Y-m-d'), 'anular' => [['id' => $doc->id, 'motivo' => $motivo]]]
+            : ['fecha_generacion' => \Illuminate\Support\Carbon::now('America/Lima')->format('Y-m-d'), 'fecha_comunicacion' => \Illuminate\Support\Carbon::now('America/Lima')->format('Y-m-d'), 'detalles' => [[
                 'tipo_documento' => $tipo, 'serie' => $doc->serie, 'correlativo' => (string) $doc->correlativo, 'motivo' => $motivo,
             ]]];
 

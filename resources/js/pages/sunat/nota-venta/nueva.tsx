@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
-
-const hoy = () => new Date().toLocaleDateString('en-CA');
+import { todayLimaDate } from '@/lib/lima-date';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return (
@@ -20,7 +19,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function NuevaNotaVenta() {
-    const [fecha, setFecha] = useState(hoy());
+    const [fecha, setFecha] = useState(todayLimaDate());
     const [moneda, setMoneda] = useState<'PEN' | 'USD'>('PEN');
     const [formaPago, setFormaPago] = useState('Contado');
     const [observacion, setObservacion] = useState('');

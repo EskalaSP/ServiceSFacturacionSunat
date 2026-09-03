@@ -279,7 +279,7 @@ class DashboardController extends Controller
             ->groupBy('environment')
             ->get()
             ->map(fn ($r) => [
-                'entorno' => $r->environment === 'production' ? 'Producción' : 'Beta',
+                'entorno' => $r->environment === 'beta' ? 'Beta' : 'Producción',
                 'total' => (int) $r->total,
             ])
             ->all();

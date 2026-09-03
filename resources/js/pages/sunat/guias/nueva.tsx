@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
+import { todayLimaDate } from '@/lib/lima-date';
 import type { SerieSunat, SharedData, TenantSunat } from '@/types';
 
 type Emitido = { tipo: string; id: number; numero: string; formato?: string };
@@ -114,8 +115,8 @@ export default function NuevaGuia({ tenant, series_remitente, series_transportis
     const [tipo, setTipo] = useState<'09' | '31'>(puedeRemitente ? '09' : '31');
     const series = tipo === '09' ? series_remitente : series_transportista;
     const [serie, setSerie] = useState(series[0]?.serie ?? '');
-    const [fechaEmision, setFechaEmision] = useState(new Date().toLocaleDateString('en-CA'));
-    const [fechaTraslado, setFechaTraslado] = useState(new Date().toLocaleDateString('en-CA'));
+    const [fechaEmision, setFechaEmision] = useState(todayLimaDate());
+    const [fechaTraslado, setFechaTraslado] = useState(todayLimaDate());
     const [observacion, setObservacion] = useState('');
 
     const [codTraslado, setCodTraslado] = useState('01');

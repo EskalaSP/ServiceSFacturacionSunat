@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Combobox } from '@/components/ui/combobox';
 import SunatLayout from '@/layouts/sunat-layout';
+import { todayLimaDate } from '@/lib/lima-date';
 import type { SerieSunat, TenantSunat } from '@/types';
 
 type Emitido = { tipo: string; id: number; numero: string; formato?: string };
@@ -73,7 +74,7 @@ export default function NuevaNotaDebito({ motivos, series, doc_original, tenant 
     const [cliente, setCliente]         = useState<ClienteData | null>(doc_original ? clienteDeDoc(doc_original) : null);
 
     const [serie, setSerie]             = useState(series[0]?.serie ?? 'FD01');
-    const [fecha, setFecha]             = useState(new Date().toLocaleDateString('en-CA'));
+    const [fecha, setFecha]             = useState(todayLimaDate());
     const [motivo, setMotivo]           = useState('');
     const [desMotivo, setDesMotivo]     = useState('');
     const [items, setItems]             = useState<ItemRow[]>(

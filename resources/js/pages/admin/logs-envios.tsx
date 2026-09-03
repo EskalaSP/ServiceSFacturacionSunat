@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
 import { Input } from '@/components/ui/input';
 import { Pagination, type PaginationLink } from '@/components/ui/pagination';
+import { formatDateTimeLima } from '@/lib/lima-date';
 import type { BreadcrumbItem } from '@/types';
 
 type Log = {
@@ -38,7 +39,7 @@ const estadoStyle: Record<string, string> = {
     pendiente: 'bg-amber-500/15 text-amber-600',
 };
 
-const fecha = (value: string | null) => value ? new Date(value.replace(' ', 'T')).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+const fecha = (value: string | null) => value ? formatDateTimeLima(value) : '—';
 const dinero = (value: number | string | null) => value === null ? '—' : `S/ ${Number(value).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
 
 function Estado({ value }: { value: string }) {

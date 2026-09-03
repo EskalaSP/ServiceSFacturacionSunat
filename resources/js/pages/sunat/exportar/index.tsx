@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
+import { todayLimaDate } from '@/lib/lima-date';
 
 const DOCS = [
     { key: 'facturas', label: 'Facturas' },
@@ -13,7 +14,7 @@ const DOCS = [
     { key: 'notas-debito', label: 'Notas de débito' },
 ];
 
-const hoy = () => new Date().toLocaleDateString('en-CA');
+const hoy = () => todayLimaDate();
 
 export default function Exportar() {
     const [desde, setDesde] = useState(hoy());

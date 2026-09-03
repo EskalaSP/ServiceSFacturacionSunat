@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { formatDateTimeLima } from '@/lib/lima-date';
 import type { BreadcrumbItem } from '@/types';
 
 type Tenant = {
@@ -116,7 +117,7 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
             'El api_secret no se puede volver a mostrar. Si lo pierdes,',
             'deberás regenerar las credenciales desde el panel.',
             '',
-            `Generado: ${new Date().toLocaleString('es-PE')}`,
+            `Generado: ${formatDateTimeLima(new Date())}`,
             '',
         ].join('\r\n');
 
@@ -398,7 +399,7 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                                 <Badge variant="secondary">Inactiva</Badge>
                             )}
                             <div className="mt-3 text-xs text-muted-foreground">
-                                Creada {tenant.created_at ? new Date(tenant.created_at).toLocaleString('es-PE') : '—'}
+                                Creada {formatDateTimeLima(tenant.created_at)}
                             </div>
                         </Card>
 

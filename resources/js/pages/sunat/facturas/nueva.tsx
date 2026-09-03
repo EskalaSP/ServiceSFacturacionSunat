@@ -9,6 +9,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
+import { todayLimaDate } from '@/lib/lima-date';
 import type { ClienteSunat, SerieSunat, TenantSunat } from '@/types';
 
 type Emitido = { tipo: string; id: number; numero: string; formato?: string };
@@ -109,7 +110,7 @@ export default function NuevaFactura({ tenant, series_factura, series_boleta, cl
     const [tipoDoc, setTipoDoc]   = useState<'01' | '03'>(tipo_inicial === 'boleta' ? '03' : '01');
     const series                  = tipoDoc === '01' ? series_factura : series_boleta;
     const [serie, setSerie]       = useState(series[0]?.serie ?? (tipoDoc === '01' ? 'F001' : 'B001'));
-    const [fecha, setFecha]       = useState(new Date().toLocaleDateString('en-CA'));
+    const [fecha, setFecha]       = useState(todayLimaDate());
     const [moneda, setMoneda]     = useState<'PEN' | 'USD'>('PEN');
     const [tipoOp, setTipoOp]     = useState('0101');
 
