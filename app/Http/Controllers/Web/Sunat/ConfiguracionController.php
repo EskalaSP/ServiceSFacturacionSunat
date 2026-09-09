@@ -19,26 +19,32 @@ class ConfiguracionController extends Controller
         $esSimple = $membresia?->role === TenantMembership::ROLE_SIMPLE;
 
         if (! $tenant) {
-            $tenant = \App\Models\Tenant::create([
-                'user_id' => $user->id,
-                'ruc' => '10463838327',
-                'razon_social' => 'SUAREZ ORBEGOSO LUIS ANDRES',
-                'sol_user' => '',
-                'sol_pass' => '',
-                'environment' => 'beta',
-                'plan' => 'free',
-                'is_active' => true,
-            ]);
+            $rucProvisional = '20'.str_pad((string) $user->id, 9, '0', STR_PAD_LEFT);
 
-            \App\Models\Serie::firstOrCreate(
-                ['tenant_id' => $tenant->id, 'tipo_documento' => '01', 'serie' => 'F001'],
-                ['correlativo' => 0, 'is_active' => true]
+            $tenant = \App\Models\Tenant::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'ruc' => $rucProvisional,
+                    'razon_social' => $user->name ?: 'Empresa sin nombre',
+                    'sol_user' => '',
+                    'sol_pass' => '',
+                    'environment' => 'beta',
+                    'plan' => 'free',
+                    'is_active' => true,
+                ]
             );
 
-            \App\Models\Serie::firstOrCreate(
-                ['tenant_id' => $tenant->id, 'tipo_documento' => '03', 'serie' => 'B001'],
-                ['correlativo' => 0, 'is_active' => true]
-            );
+            if ($tenant->wasRecentlyCreated) {
+                \App\Models\Serie::firstOrCreate(
+                    ['tenant_id' => $tenant->id, 'tipo_documento' => '01', 'serie' => 'F001'],
+                    ['correlativo' => 0, 'is_active' => true]
+                );
+
+                \App\Models\Serie::firstOrCreate(
+                    ['tenant_id' => $tenant->id, 'tipo_documento' => '03', 'serie' => 'B001'],
+                    ['correlativo' => 0, 'is_active' => true]
+                );
+            }
         }
 
         $series = $tenant

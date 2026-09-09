@@ -162,6 +162,7 @@ chmod -R 775 /home/deploy/api-pro/storage /home/deploy/api-pro/bootstrap/cache
 **¿Por qué?** El worker de colas corre como `deploy`, pero cuando un cliente sube su certificado digital via API o panel, PHP-FPM (que corre como `www-data`) crea la carpeta y el archivo. Por defecto Linux pone candado `700` — solo el creador puede leerlo. El worker (`deploy`) intenta leer el certificado para firmar la factura y no puede → error `CERT_ERROR`.
 
 **¿Qué hace este paso?** Instala ACL (Access Control Lists) y configura reglas en `storage/app/private/` para que:
+
 - `www-data` mantenga control total (`rwx`): puede crear, editar y eliminar certificados — necesario para el upload
 - `deploy` tenga solo lectura (`r-x`): puede leer el certificado para firmar, pero no puede modificarlo ni borrarlo — mínimo privilegio
 - El flag `-d` graba estas reglas como **herencia automática**: cualquier certificado que se cree en el futuro nace ya con estos permisos, sin intervención manual
@@ -179,6 +180,7 @@ setfacl -R -d -m u:deploy:rx    /home/deploy/api-pro/storage/app/private/
 ```
 
 Verificar que quedó bien:
+
 ```bash
 getfacl /home/deploy/api-pro/storage/app/private/
 # Debe mostrar: user:www-data:rwx y user:deploy:r-x, más sus versiones default:
@@ -338,7 +340,7 @@ tail -f /home/deploy/api-pro/storage/logs/laravel.log
 Una vez deployado, para cada update:
 
 ```bash
-su - deploy
+ya l
 cd ~/api-pro
 php artisan down
 
@@ -390,15 +392,15 @@ crontab -u deploy -e
 
 ## Troubleshooting común
 
-| Síntoma | Causa | Fix |
-|---|---|---|
-| `502 Bad Gateway` | PHP-FPM caído | `systemctl restart php8.3-fpm` |
-| `419 Page Expired` | session driver mal config | Verifica `SESSION_DRIVER=database` y corre migrations |
-| `Permission denied` en logs | Permisos storage/ | `chmod -R 775 storage bootstrap/cache && chown -R deploy:www-data storage` |
-| Jobs no procesan | Worker caído | `supervisorctl status` → `restart api-pro-worker:*` |
-| `SQLSTATE[HY000] [2002]` | MySQL caído | `systemctl status mysql` → `start mysql` |
-| Cambios .env no toman efecto | Config cacheado | `php artisan config:clear && php artisan config:cache` |
-| Nginx `413 Request Entity Too Large` | Subida grande (cert .pfx) | Subir `client_max_body_size 50M` en nginx, restart |
+| Síntoma                              | Causa                     | Fix                                                                        |
+| ------------------------------------ | ------------------------- | -------------------------------------------------------------------------- |
+| `502 Bad Gateway`                    | PHP-FPM caído             | `systemctl restart php8.3-fpm`                                             |
+| `419 Page Expired`                   | session driver mal config | Verifica `SESSION_DRIVER=database` y corre migrations                      |
+| `Permission denied` en logs          | Permisos storage/         | `chmod -R 775 storage bootstrap/cache && chown -R deploy:www-data storage` |
+| Jobs no procesan                     | Worker caído              | `supervisorctl status` → `restart api-pro-worker:*`                        |
+| `SQLSTATE[HY000] [2002]`             | MySQL caído               | `systemctl status mysql` → `start mysql`                                   |
+| Cambios .env no toman efecto         | Config cacheado           | `php artisan config:clear && php artisan config:cache`                     |
+| Nginx `413 Request Entity Too Large` | Subida grande (cert .pfx) | Subir `client_max_body_size 50M` en nginx, restart                         |
 
 ---
 

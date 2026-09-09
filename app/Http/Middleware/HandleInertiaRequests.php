@@ -53,6 +53,7 @@ class HandleInertiaRequests extends Middleware
                 $membresia = $user->membershipFor($tenant);
                 $rol = $membresia?->role;
                 $abilities = match ($membresia?->role) {
+                    TenantMembership::ROLE_OWNER   => Ability::todas(),
                     TenantMembership::ROLE_COMPLETO => Ability::todas(),
                     TenantMembership::ROLE_SIMPLE   => Ability::presetSimple(),
                     TenantMembership::ROLE_CAJERO   => $membresia?->abilitiesArray() ?? [],

@@ -20,6 +20,8 @@ class TenantMembership extends Pivot
 
     public $incrementing = true;
 
+    public const ROLE_OWNER = 'owner';
+
     public const ROLE_SIMPLE = 'simple';
 
     public const ROLE_CAJERO = 'cajero';
@@ -29,6 +31,7 @@ class TenantMembership extends Pivot
 
     /** @var array<string,string> */
     public const ROLES = [
+        self::ROLE_OWNER    => 'Dueño (acceso total)',
         self::ROLE_COMPLETO => 'Completo (acceso extendido)',
         self::ROLE_SIMPLE   => 'Simple (vista restringida)',
         self::ROLE_CAJERO   => 'Cajero',
@@ -49,7 +52,7 @@ class TenantMembership extends Pivot
 
     public function esCompleto(): bool
     {
-        return $this->role === self::ROLE_COMPLETO;
+        return in_array($this->role, [self::ROLE_COMPLETO, self::ROLE_OWNER], true);
     }
 
     /**
