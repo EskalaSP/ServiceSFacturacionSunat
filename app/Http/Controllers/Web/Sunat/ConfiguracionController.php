@@ -71,11 +71,11 @@ class ConfiguracionController extends Controller
                 'logo_url' => $tenant->logo_path
                     ? \Illuminate\Support\Facades\Storage::disk('public')->url($tenant->logo_path).'?v='.($tenant->updated_at?->timestamp ?? time())
                     : null,
-                'sol_user' => $tenant->sol_user ?? '',
-                'environment' => $tenant->environment ?? 'beta',
-                'serie_factura' => $series->firstWhere('tipo_documento', '01')?->serie ?? 'F001',
-                'serie_boleta' => $series->firstWhere('tipo_documento', '03')?->serie ?? 'B001',
-                'consulta_token_set' => ! empty($tenant->consulta_token),
+                'sol_user' => $esSimple ? '' : ($tenant->sol_user ?? ''),
+                'environment' => $esSimple ? 'produccion' : ($tenant->environment ?? 'beta'),
+                'serie_factura' => $esSimple ? '' : ($series->firstWhere('tipo_documento', '01')?->serie ?? 'F001'),
+                'serie_boleta' => $esSimple ? '' : ($series->firstWhere('tipo_documento', '03')?->serie ?? 'B001'),
+                'consulta_token_set' => ! $esSimple && ! empty($tenant->consulta_token),
             ] : null,
         ]);
     }
@@ -165,7 +165,7 @@ class ConfiguracionController extends Controller
             $tenant->update(['logo_path' => $path]);
         }
 
-        if ($request->hasFile('certificate')) {
+        if (! $esSimple && $request->hasFile('certificate')) {
             $archivo = $request->file('certificate');
             $certService = new \App\Services\CertificateService;
 
@@ -185,7 +185,7 @@ class ConfiguracionController extends Controller
             $tenant->update(['certificate_path' => $certPath]);
         }
 
-        if ($request->filled('certificate_password')) {
+        if (! $esSimple && $request->filled('certificate_password')) {
             $tenant->update(['certificate_password' => $data['certificate_password']]);
         }
 
@@ -203,7 +203,7 @@ class ConfiguracionController extends Controller
             );
         }
 
-        return redirect()->route('sunat.dashboard')
+        return redirect()->route($esSimple ? 'sunat.configuracion' : 'sunat.dashboard')
             ->with('success', 'Configuración SUNAT guardada correctamente.');
     }
 
@@ -220,6 +220,7 @@ class ConfiguracionController extends Controller
         }
 
         \Illuminate\Support\Facades\Gate::authorize('editar-empresa', $tenant);
+        abort_if($request->user()?->membershipFor($tenant)?->role === TenantMembership::ROLE_SIMPLE, 403);
 
         $token = trim((string) ($data['consulta_token'] ?? ''));
         $tenant->update(['consulta_token' => $token !== '' ? $token : null]);
@@ -229,15 +230,18 @@ class ConfiguracionController extends Controller
             : 'Token de consulta eliminado.');
     }
 
-    public function probarConexion(): \Illuminate\Http\JsonResponse
+    public function probarConexion(Request $request): \Illuminate\Http\JsonResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
+
+        if ($tenant) {
+            \Illuminate\Support\Facades\Gate::authorize('editar-empresa', $tenant);
+            abort_if($request->user()?->membershipFor($tenant)?->role === TenantMembership::ROLE_SIMPLE, 403);
+        }
 
         if (! $tenant || ! $tenant->sol_user || ! $tenant->sol_pass) {
             return response()->json(['ok' => false, 'mensaje' => 'Credenciales SOL no configuradas o empresa no registrada.']);
         }
-
-        \Illuminate\Support\Facades\Gate::authorize('editar-empresa', $tenant);
 
         return response()->json([
             'ok' => true,

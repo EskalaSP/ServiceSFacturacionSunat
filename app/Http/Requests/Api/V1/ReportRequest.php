@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Support\Reports\DocumentoFiltros;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -27,7 +28,12 @@ class ReportRequest extends FormRequest
             'formato' => 'nullable|string|in:json,pdf',
             'agrupacion' => 'nullable|string|in:dia,semana,mes',
             'vencido' => 'nullable|boolean',
-        ];
+        ] + DocumentoFiltros::reglas();
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge(DocumentoFiltros::prepararEntrada($this->all()));
     }
 
     public function withValidator(Validator $validator): void

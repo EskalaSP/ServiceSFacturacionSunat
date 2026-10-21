@@ -10,6 +10,7 @@ use App\Models\DebitNote;
 use App\Models\DispatchGuide;
 use App\Models\Invoice;
 use App\Models\Tenant;
+use App\Models\TenantMembership;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -24,6 +25,11 @@ class DashboardController extends Controller
     public function index(): Response|RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
+        $membresia = $tenant ? auth()->user()?->membershipFor($tenant) : null;
+
+        if ($membresia?->role === TenantMembership::ROLE_SIMPLE) {
+            return redirect()->route('sunat.historial');
+        }
 
         if (! $tenant || empty($tenant->sol_user)) {
             return redirect()->route('sunat.configuracion')

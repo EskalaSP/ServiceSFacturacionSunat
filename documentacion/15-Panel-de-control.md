@@ -454,6 +454,16 @@ curl "https://tu-api.com/api/v1/reportes/registro-ventas?mes=202604&formato=xlsx
   -o registro-ventas-202604.xlsx
 ```
 
+**Filtros opcionales** (coma o arreglo):
+
+| Parámetro | Valores | Default |
+|---|---|---|
+| `tipos` | `factura`, `boleta`, `nota-credito`, `nota-debito` | `factura,boleta` |
+| `estados` | `aceptado`, `aceptado_obs`, `rechazado`, `anulado` | todos |
+| `ambientes` | `produccion`, `prueba` | ambos |
+
+El detalle se ordena por fecha de emisión y Serie-Correlativo. PDF y Excel muestran únicamente los tipos y ambientes seleccionados, con bloques de totales independientes para Producción y Prueba; no generan filas de total sin documentos. Las notas de crédito y débito solo aparecen cuando se solicitan explícitamente. En Excel, el detalle tiene autofiltro, encabezado congelado, fechas reales y totales que se recalculan con las filas visibles. **TOTAL ACEPTADOS** es el único total contable válido; rechazados y anulados se muestran de forma informativa y no se calcula ningún neto. Pendientes, enviados y `anulacion_en_proceso` no forman parte del registro de ventas.
+
 ### `GET /reportes/ventas-consolidado`
 
 **Query:** `desde`, `hasta`, `moneda`, `sucursal_id`.

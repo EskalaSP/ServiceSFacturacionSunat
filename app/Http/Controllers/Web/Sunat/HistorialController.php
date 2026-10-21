@@ -16,6 +16,7 @@ use App\Models\VoidedDocument;
 use App\Services\Documents\DocumentoListingService;
 use App\Services\Documents\SummaryService;
 use App\Services\Documents\VoidedService;
+use App\Support\Reports\DocumentoFiltros;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -33,19 +34,24 @@ class HistorialController extends Controller
             return redirect()->route('sunat.configuracion');
         }
 
-        $tipo = $request->input('tipo', 'todos');
+        // `tipo`/`estado` (un solo valor) siguen aceptados; las listas vac\u00edas significan "todos".
+        $tipos = array_values(array_diff(DocumentoFiltros::lista($request->input('tipos', $request->input('tipo'))), ['todos']));
+        $estados = array_values(array_intersect(DocumentoFiltros::lista($request->input('estados', $request->input('estado'))), array_keys(DocumentoFiltros::ESTADOS)));
+        $ambientes = array_values(array_intersect(DocumentoFiltros::lista($request->input('ambientes')), array_keys(DocumentoFiltros::AMBIENTES)));
+
         $filtros = [
-            'estado' => $request->input('estado'),
+            'estados' => $estados,
+            'ambientes' => $ambientes,
             'desde' => $request->input('desde'),
             'hasta' => $request->input('hasta'),
             'cliente' => $request->input('cliente'),
         ];
 
-        $data = $listing->listar($tenant, $tipo, $filtros);
+        $data = $listing->listar($tenant, $tipos ?: 'todos', $filtros);
 
         return Inertia::render('sunat/historial', [
             'documentos' => ['data' => $data, 'total' => count($data)],
-            'filtros' => array_merge(['tipo' => $tipo], $filtros),
+            'filtros' => array_merge(['tipos' => $tipos], $filtros),
             'tenant' => ['environment' => $tenant->environment ?? 'beta'],
         ]);
     }
@@ -53,6 +59,7 @@ class HistorialController extends Controller
     public function pdf(string $tipo, int $id): mixed
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        Gate::authorize('descargar', [$tenant, $this->abilityPara($tipo)]);
         $doc = $this->modelPara($tipo)::forTenant($tenant->id)->findOrFail($id);
 
         if (! empty($doc->pdf_path) && Storage::disk('public')->exists($doc->pdf_path)) {
@@ -65,6 +72,7 @@ class HistorialController extends Controller
     public function xml(string $tipo, int $id): mixed
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        Gate::authorize('descargar', [$tenant, $this->abilityPara($tipo)]);
         $doc = $this->modelPara($tipo)::forTenant($tenant->id)->findOrFail($id);
 
         if (! empty($doc->xml_path) && Storage::disk('public')->exists($doc->xml_path)) {
@@ -77,6 +85,7 @@ class HistorialController extends Controller
     public function cdr(string $tipo, int $id): mixed
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        Gate::authorize('descargar', [$tenant, $this->abilityPara($tipo)]);
         $doc = $this->modelPara($tipo)::forTenant($tenant->id)->findOrFail($id);
 
         if (! empty($doc->cdr_path) && Storage::disk('public')->exists($doc->cdr_path)) {
@@ -93,6 +102,7 @@ class HistorialController extends Controller
     public function reenviar(string $tipo, int $id): RedirectResponse
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        Gate::authorize('reenviar', [$tenant, $this->abilityPara($tipo)]);
         $model = $this->modelPara($tipo);
         $doc = $model::forTenant($tenant->id)->findOrFail($id);
 
@@ -115,6 +125,7 @@ class HistorialController extends Controller
     public function descargarAnulacion(string $tipo, int $id, string $archivo): mixed
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actualOFallar();
+        Gate::authorize('descargar', [$tenant, $this->abilityPara($tipo)]);
         abort_unless(in_array($archivo, ['xml', 'cdr'], true), 404);
 
         $doc = $this->modelPara($tipo)::forTenant($tenant->id)->findOrFail($id);
@@ -225,6 +236,20 @@ class HistorialController extends Controller
             '20' => Retention::class,
             '40' => Perception::class,
             default => Invoice::class,
+        };
+    }
+
+    private function abilityPara(string $tipo): string
+    {
+        return match ($tipo) {
+            '03' => 'boleta',
+            '07' => 'nota_credito',
+            '08' => 'nota_debito',
+            '09' => 'guia_remitente',
+            '31' => 'guia_transportista',
+            '20' => 'retencion',
+            '40' => 'percepcion',
+            default => 'factura',
         };
     }
 }

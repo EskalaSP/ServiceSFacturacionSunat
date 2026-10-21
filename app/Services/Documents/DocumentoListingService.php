@@ -10,21 +10,24 @@ use App\Models\Invoice;
 use App\Models\Perception;
 use App\Models\Retention;
 use App\Models\Tenant;
+use App\Support\Reports\DocumentoFiltros;
 
-/**
+/** 
  * Punto único para listar comprobantes en formato uniforme.
  * Lo usan el Historial (todos los tipos) y los listados por tipo de "Emitir".
  */
 class DocumentoListingService
 {
     /**
-     * @param  array{estado?:?string,desde?:?string,hasta?:?string,cliente?:?string}  $filtros
+     * @param  string|string[]  $tipo  'todos', una clave de fuente o una lista de claves
+     * @param  array{estado?:?string,estados?:?array,ambientes?:?array,desde?:?string,hasta?:?string,cliente?:?string}  $filtros
      * @return array<int,array<string,mixed>>
      */
-    public function listar(Tenant $tenant, string $tipo = 'todos', array $filtros = []): array
+    public function listar(Tenant $tenant, string|array $tipo = 'todos', array $filtros = []): array
     {
         $fuentes = $this->fuentes($tenant, $filtros);
-        $seleccion = array_key_exists($tipo, $fuentes) ? [$tipo] : array_keys($fuentes);
+        $elegidos = array_values(array_intersect(DocumentoFiltros::lista($tipo), array_keys($fuentes)));
+        $seleccion = $elegidos ?: array_keys($fuentes);
 
         $merged = collect();
         foreach ($seleccion as $key) {
@@ -38,13 +41,26 @@ class DocumentoListingService
     private function fuentes(Tenant $tenant, array $filtros): array
     {
         $estado = $filtros['estado'] ?? null;
+        $estados = DocumentoFiltros::lista($filtros['estados'] ?? null);
+        $ambientes = DocumentoFiltros::lista($filtros['ambientes'] ?? null);
         $desde = $filtros['desde'] ?? null;
         $hasta = $filtros['hasta'] ?? null;
         $cliente = $filtros['cliente'] ?? null;
 
-        $comunes = function ($query, ?string $campoCliente) use ($estado, $desde, $hasta, $cliente) {
+        // Sin selección = todos. Fuentes sin columna `ambiente` / `sunat_notes` se tratan como producción / sin notas.
+        $comunes = function ($query, ?string $campoCliente, bool $tieneAmbiente = true, bool $tieneNotas = true) use ($estado, $estados, $ambientes, $desde, $hasta, $cliente) {
             if ($estado) {
                 $query->where('sunat_status', $estado);
+            }
+            if ($estados) {
+                DocumentoFiltros::aplicarEstados($query, array_values(array_intersect($estados, array_keys(DocumentoFiltros::ESTADOS))), $tieneNotas);
+            }
+            if ($ambientes) {
+                if ($tieneAmbiente) {
+                    $query->whereIn('ambiente', $ambientes);
+                } elseif (! in_array('produccion', $ambientes, true)) {
+                    $query->whereRaw('1 = 0');
+                }
             }
             if ($desde) {
                 $query->whereDate('fecha_emision', '>=', $desde);
@@ -64,9 +80,9 @@ class DocumentoListingService
             'boletas' => fn () => $comunes(Boleta::forTenant($tenant->id), 'client_razon_social')->limit(300)->get()->map(fn ($d) => $this->mapDoc($d, '03')),
             'notas-credito' => fn () => $comunes(CreditNote::forTenant($tenant->id), 'client_razon_social')->limit(200)->get()->map(fn ($d) => $this->mapDoc($d, '07')),
             'notas-debito' => fn () => $comunes(DebitNote::forTenant($tenant->id), 'client_razon_social')->limit(200)->get()->map(fn ($d) => $this->mapDoc($d, '08')),
-            'guias' => fn () => $comunes(DispatchGuide::forTenant($tenant->id), 'destinatario_razon_social')->limit(200)->get()->map(fn ($d) => $this->mapGuia($d)),
-            'retenciones' => fn () => $comunes(Retention::forTenant($tenant->id), 'proveedor_razon_social')->limit(150)->get()->map(fn ($d) => $this->mapRetPerc($d, '20')),
-            'percepciones' => fn () => $comunes(Perception::forTenant($tenant->id), 'cliente_razon_social')->limit(150)->get()->map(fn ($d) => $this->mapRetPerc($d, '40')),
+            'guias' => fn () => $comunes(DispatchGuide::forTenant($tenant->id), 'destinatario_razon_social', false, false)->limit(200)->get()->map(fn ($d) => $this->mapGuia($d)),
+            'retenciones' => fn () => $comunes(Retention::forTenant($tenant->id), 'proveedor_razon_social', false)->limit(150)->get()->map(fn ($d) => $this->mapRetPerc($d, '20')),
+            'percepciones' => fn () => $comunes(Perception::forTenant($tenant->id), 'cliente_razon_social', false)->limit(150)->get()->map(fn ($d) => $this->mapRetPerc($d, '40')),
         ];
     }
 

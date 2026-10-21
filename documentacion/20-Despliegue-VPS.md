@@ -161,28 +161,37 @@ chmod -R 775 /home/deploy/api-pro/storage /home/deploy/api-pro/bootstrap/cache
 
 **¿Por qué?** El worker de colas corre como `deploy`, pero cuando un cliente sube su certificado digital via API o panel, PHP-FPM (que corre como `www-data`) crea la carpeta y el archivo. Por defecto Linux pone candado `700` — solo el creador puede leerlo. El worker (`deploy`) intenta leer el certificado para firmar la factura y no puede → error `CERT_ERROR`.
 
-**¿Qué hace este paso?** Instala ACL (Access Control Lists) y configura reglas en `storage/app/private/` para que:
+**¿Qué hace este paso?** Instala ACL (Access Control Lists) y configura reglas en `storage/app/private/certificates/` para que:
 
 - `www-data` mantenga control total (`rwx`): puede crear, editar y eliminar certificados — necesario para el upload
 - `deploy` tenga solo lectura (`r-x`): puede leer el certificado para firmar, pero no puede modificarlo ni borrarlo — mínimo privilegio
 - El flag `-d` graba estas reglas como **herencia automática**: cualquier certificado que se cree en el futuro nace ya con estos permisos, sin intervención manual
+- La máscara ACL quede en `rwx` para no recortar los permisos heredados
 
 ```bash
 apt install -y acl
 
+# Asegurar la carpeta base de certificados
+mkdir -p /home/deploy/api-pro/storage/app/private/certificates
+
 # Aplicar a archivos/carpetas ya existentes
-setfacl -R -m u:www-data:rwx /home/deploy/api-pro/storage/app/private/
-setfacl -R -m u:deploy:rx    /home/deploy/api-pro/storage/app/private/
+setfacl -R -m u:www-data:rwx /home/deploy/api-pro/storage/app/private/certificates/
+setfacl -R -m u:deploy:rx    /home/deploy/api-pro/storage/app/private/certificates/
+setfacl -R -m m:rwx          /home/deploy/api-pro/storage/app/private/certificates/
+
+# Aplicar también a cada carpeta de RUC ya creada
+find /home/deploy/api-pro/storage/app/private/certificates -mindepth 1 -maxdepth 1 -type d -exec setfacl -m u:www-data:rwx,u:deploy:rx,m:rwx {} \;
 
 # Aplicar como regla heredada para todo lo que se cree en el futuro
-setfacl -R -d -m u:www-data:rwx /home/deploy/api-pro/storage/app/private/
-setfacl -R -d -m u:deploy:rx    /home/deploy/api-pro/storage/app/private/
+setfacl -R -d -m u:www-data:rwx /home/deploy/api-pro/storage/app/private/certificates/
+setfacl -R -d -m u:deploy:rx    /home/deploy/api-pro/storage/app/private/certificates/
+setfacl -R -d -m m:rwx          /home/deploy/api-pro/storage/app/private/certificates/
 ```
 
 Verificar que quedó bien:
 
 ```bash
-getfacl /home/deploy/api-pro/storage/app/private/
+getfacl /home/deploy/api-pro/storage/app/private/certificates/
 # Debe mostrar: user:www-data:rwx y user:deploy:r-x, más sus versiones default:
 ```
 

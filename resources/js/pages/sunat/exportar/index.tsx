@@ -1,17 +1,32 @@
 import { Head } from '@inertiajs/react';
-import { Check, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useState } from 'react';
+import { MultiSelect } from '@/components/multi-select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SunatLayout from '@/layouts/sunat-layout';
+import { armarQuery, descargarArchivo } from '@/lib/descarga';
 import { todayLimaDate } from '@/lib/lima-date';
 
-const DOCS = [
-    { key: 'facturas', label: 'Facturas' },
-    { key: 'boletas', label: 'Boletas' },
-    { key: 'notas-credito', label: 'Notas de crédito' },
-    { key: 'notas-debito', label: 'Notas de débito' },
+const TIPOS = [
+    { value: 'factura', label: 'Facturas' },
+    { value: 'boleta', label: 'Boletas' },
+    { value: 'nota-credito', label: 'Notas de crédito' },
+    { value: 'nota-debito', label: 'Notas de débito' },
+];
+const ESTADOS = [
+    { value: 'aceptado', label: 'Aceptado' },
+    { value: 'aceptado_obs', label: 'Aceptado con observaciones' },
+    { value: 'pendiente', label: 'Pendiente' },
+    { value: 'enviado', label: 'Enviado' },
+    { value: 'rechazado', label: 'Rechazado' },
+    { value: 'anulado', label: 'Anulado' },
+    { value: 'anulacion_en_proceso', label: 'Anulación en proceso' },
+];
+const AMBIENTES = [
+    { value: 'produccion', label: 'Producción' },
+    { value: 'prueba', label: 'Prueba' },
 ];
 
 const hoy = () => todayLimaDate();
@@ -20,14 +35,22 @@ export default function Exportar() {
     const [desde, setDesde] = useState(hoy());
     const [hasta, setHasta] = useState(hoy());
     const [tipo, setTipo] = useState('xml');
-    const [docs, setDocs] = useState<string[]>(DOCS.map((d) => d.key));
+    const [tipos, setTipos] = useState<string[]>(['factura', 'boleta']);
+    const [estados, setEstados] = useState<string[]>(['aceptado', 'aceptado_obs']);
+    const [ambientes, setAmbientes] = useState<string[]>(['produccion']);
+    const [cargando, setCargando] = useState(false);
+    const [error, setError] = useState('');
 
-    const toggleDoc = (k: string) => setDocs((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
-
-    const descargar = () => {
-        const params = new URLSearchParams({ fecha_desde: desde, fecha_hasta: hasta, tipo, documentos: docs.join(',') });
-        window.location.href = `/sunat/exportar/descargar?${params.toString()}`;
+    const descargar = async () => {
+        setCargando(true);
+        setError('');
+        const query = armarQuery({ fecha_desde: desde, fecha_hasta: hasta, tipo, tipos, estados, ambientes });
+        const r = await descargarArchivo(`/sunat/exportar/descargar?${query}`, `comprobantes_${desde}_${hasta}.zip`);
+        if (!r.ok) setError(r.error);
+        setCargando(false);
     };
+
+    const incompleto = tipos.length === 0 || estados.length === 0 || ambientes.length === 0;
 
     return (
         <SunatLayout>
@@ -55,22 +78,15 @@ export default function Exportar() {
                         </div>
                     </div>
 
-                    <div>
-                        <Label className="mb-2 block">Documentos</Label>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                            {DOCS.map((d) => (
-                                <label key={d.key} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
-                                    <span className="relative flex size-4 items-center justify-center">
-                                        <input type="checkbox" checked={docs.includes(d.key)} onChange={() => toggleDoc(d.key)} className="peer size-4 shrink-0 cursor-pointer appearance-none rounded border-2 border-muted-foreground/40 bg-transparent transition-colors checked:border-primary checked:bg-primary" />
-                                        <Check className="pointer-events-none absolute size-3 text-white opacity-0 peer-checked:opacity-100" strokeWidth={3} />
-                                    </span>
-                                    {d.label}
-                                </label>
-                            ))}
-                        </div>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="grid gap-1.5"><Label>Tipo de documento</Label><MultiSelect value={tipos} onChange={setTipos} options={TIPOS} placeholder="Ninguno" /></div>
+                        <div className="grid gap-1.5"><Label>Estado</Label><MultiSelect value={estados} onChange={setEstados} options={ESTADOS} placeholder="Ninguno" /></div>
+                        <div className="grid gap-1.5"><Label>Ambiente</Label><MultiSelect value={ambientes} onChange={setAmbientes} options={AMBIENTES} placeholder="Ninguno" /></div>
                     </div>
 
-                    <Button type="button" onClick={descargar} disabled={docs.length === 0}><Download className="size-4" /> Descargar ZIP</Button>
+                    {error && <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</div>}
+
+                    <Button type="button" onClick={descargar} disabled={incompleto || cargando}><Download className="size-4" /> {cargando ? 'Generando…' : 'Descargar ZIP'}</Button>
                 </section>
             </div>
         </SunatLayout>

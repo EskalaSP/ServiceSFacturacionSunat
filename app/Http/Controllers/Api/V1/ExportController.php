@@ -6,10 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Traits\ApiResponse;
-use App\Models\Boleta;
-use App\Models\CreditNote;
-use App\Models\DebitNote;
-use App\Models\Invoice;
+use App\Support\Reports\DocumentoFiltros;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -22,12 +19,8 @@ class ExportController extends Controller
 
     private const TIPOS_VALIDOS = ['facturas', 'boletas', 'notas-credito', 'notas-debito'];
 
-    private const MODELO_MAP = [
-        'facturas'      => Invoice::class,
-        'boletas'       => Boleta::class,
-        'notas-credito' => CreditNote::class,
-        'notas-debito'  => DebitNote::class,
-    ];
+    /** Carpeta dentro del ZIP (se mantiene la estructura anterior). */
+    private const CARPETAS = ['factura' => 'facturas', 'boleta' => 'boletas', 'nota-credito' => 'notas-credito', 'nota-debito' => 'notas-debito'];
 
     /**
      * GET /comprobantes/exportar-zip
@@ -36,9 +29,13 @@ class ExportController extends Controller
      *   fecha_desde  (Y-m-d, requerido)
      *   fecha_hasta  (Y-m-d, requerido)
      *   tipo         xml|pdf|ambos  (default: xml)
-     *   documentos   facturas,boletas,notas-credito,notas-debito  (default: todos)
+     *   tipos        factura,boleta,nota-credito,nota-debito  (default: factura,boleta)
+     *   estados      aceptado,aceptado_obs,pendiente,enviado,rechazado,anulado,anulacion_en_proceso  (default: aceptado,aceptado_obs)
+     *   ambientes    produccion,prueba  (default: produccion)
+     *   documentos   (legado) facturas,boletas,notas-credito,notas-debito; equivale a tipos
+     *   estado       (legado) un solo estado; "todos" = todos los estados
      *   sucursal_id  int  (opcional)
-     *   estado       aceptado|pendiente|rechazado|todos  (default: todos)
+     *   Los filtros aceptan lista separada por comas o arreglo (tipos[]=...).
      */
     public function zip(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
     {
@@ -72,47 +69,53 @@ class ExportController extends Controller
             return $this->error('El parámetro tipo debe ser xml, pdf o ambos.', 422);
         }
 
-        $documentosParam = $request->query('documentos', 'facturas,boletas,notas-credito,notas-debito');
-        $tiposDoc = array_filter(
-            array_map('trim', explode(',', (string) $documentosParam)),
-            fn ($t) => in_array($t, self::TIPOS_VALIDOS, true)
-        );
-
-        if (empty($tiposDoc)) {
-            return $this->error('Ningún tipo de documento válido especificado. Use: ' . implode(', ', self::TIPOS_VALIDOS), 422);
+        $documentosParam = $request->query('documentos');
+        if ($documentosParam !== null && ! $request->has('tipos')) {
+            $legado = DocumentoFiltros::lista($documentosParam);
+            if (array_diff($legado, self::TIPOS_VALIDOS) === $legado) {
+                return $this->error('Ningún tipo de documento válido especificado. Use: '.implode(', ', self::TIPOS_VALIDOS), 422);
+            }
         }
 
+        foreach (['tipos' => array_keys(DocumentoFiltros::TIPOS), 'estados' => array_keys(DocumentoFiltros::ESTADOS), 'ambientes' => array_keys(DocumentoFiltros::AMBIENTES)] as $campo => $validos) {
+            $invalidos = array_diff(DocumentoFiltros::lista($request->query($campo)), $validos);
+            if ($invalidos) {
+                return $this->error("Valores inválidos en {$campo}: ".implode(', ', $invalidos).'. Use: '.implode(', ', $validos), 422);
+            }
+        }
+
+        $filtros = DocumentoFiltros::normalizar($request->query(), DocumentoFiltros::CONTEXTO_ZIP);
         $sucursalId = $request->query('sucursal_id');
-        $estado     = $request->query('estado', 'todos');
 
         // --- Recolectar archivos ---
         $archivos = [];
+        $totalDocumentos = 0;
 
-        foreach ($tiposDoc as $tipo) {
-            $modelClass = self::MODELO_MAP[$tipo];
+        foreach ($filtros['tipos'] as $tipo) {
+            $meta = DocumentoFiltros::TIPOS[$tipo];
+            $carpetaTipo = self::CARPETAS[$tipo];
 
-            $query = $modelClass::where('tenant_id', $tenant->id)
-                ->whereBetween('fecha_emision', [$fechaDesde->toDateString(), $fechaHasta->toDateString()]);
+            $query = $meta['modelo']::where('tenant_id', $tenant->id)
+                ->whereBetween('fecha_emision', [$fechaDesde->toDateTimeString(), $fechaHasta->toDateTimeString()]);
 
             if ($sucursalId) {
                 $query->where('sucursal_id', (int) $sucursalId);
             }
 
-            if ($estado !== 'todos') {
-                $query->where('sunat_status', $estado);
-            }
+            DocumentoFiltros::aplicar($query, $filtros);
 
-            $docs = $query->get(['id', 'serie', 'correlativo', 'fecha_emision', 'xml_path', 'pdf_path', 'sunat_status']);
+            $docs = $query->select(['id', 'serie', 'correlativo', 'fecha_emision', 'xml_path', 'pdf_path', 'sunat_status'])->cursor();
 
             foreach ($docs as $doc) {
-                $numero = $doc->serie . '-' . str_pad((string) $doc->correlativo, 6, '0', STR_PAD_LEFT);
-                $folder = $tipo . '/' . $doc->fecha_emision->format('Y-m');
+                $totalDocumentos++;
+                $numero = $doc->serie.'-'.str_pad((string) $doc->correlativo, 6, '0', STR_PAD_LEFT);
+                $folder = $carpetaTipo.'/'.$doc->fecha_emision->format('Y-m');
 
                 if (in_array($tipoArchivo, ['xml', 'ambos'], true) && $doc->xml_path) {
                     if (Storage::disk('public')->exists($doc->xml_path)) {
                         $archivos[] = [
                             'disk_path' => $doc->xml_path,
-                            'zip_name'  => "{$folder}/{$numero}.xml",
+                            'zip_name' => "{$folder}/{$numero}.xml",
                         ];
                     }
                 }
@@ -121,25 +124,28 @@ class ExportController extends Controller
                     if (Storage::disk('public')->exists($doc->pdf_path)) {
                         $archivos[] = [
                             'disk_path' => $doc->pdf_path,
-                            'zip_name'  => "{$folder}/{$numero}.pdf",
+                            'zip_name' => "{$folder}/{$numero}.pdf",
                         ];
                     }
                 }
             }
         }
 
+        if ($totalDocumentos === 0) {
+            return $this->error('No hay documentos que coincidan con los filtros seleccionados (tipos, estados, ambiente y fechas).', 404);
+        }
+
         if (empty($archivos)) {
             return $this->error(
-                'No se encontraron archivos para los criterios especificados. ' .
-                'Verifique que los documentos tengan XML/PDF generados y estén dentro del rango de fechas.',
+                "Se encontraron {$totalDocumentos} documento(s), pero ninguno tiene archivos {$tipoArchivo} generados.",
                 404
             );
         }
 
         // --- Generar ZIP en un archivo temporal ---
-        $tmpPath = tempnam(sys_get_temp_dir(), 'export_') . '.zip';
+        $tmpPath = tempnam(sys_get_temp_dir(), 'export_').'.zip';
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($tmpPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             return $this->error('No se pudo crear el archivo ZIP.', 500);
         }
@@ -147,7 +153,7 @@ class ExportController extends Controller
         $diskRoot = Storage::disk('public')->path('');
 
         foreach ($archivos as $archivo) {
-            $absolutePath = $diskRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $archivo['disk_path']);
+            $absolutePath = $diskRoot.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $archivo['disk_path']);
             $zip->addFile($absolutePath, $archivo['zip_name']);
         }
 
@@ -171,8 +177,8 @@ class ExportController extends Controller
             fclose($handle);
             @unlink($tmpPath);
         }, $nombreZip, [
-            'Content-Type'        => 'application/zip',
-            'Content-Length'      => filesize($tmpPath),
+            'Content-Type' => 'application/zip',
+            'Content-Length' => filesize($tmpPath),
             'Content-Disposition' => "attachment; filename=\"{$nombreZip}\"",
         ]);
     }

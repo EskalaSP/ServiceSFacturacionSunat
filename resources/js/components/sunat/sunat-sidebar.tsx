@@ -28,6 +28,7 @@ import {
     Users,
     UsersRound,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import {
     Collapsible,
@@ -48,7 +49,6 @@ import {
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { SharedData } from '@/types';
-import type { LucideIcon } from 'lucide-react';
 
 type Item = {
     title: string;
@@ -239,7 +239,7 @@ export function SunatSidebar() {
         }
 
         if (grupo.label === 'Consultas') {
-            return grupo.items.filter((item) => item.title === 'Historial');
+            return grupo.items.filter(visible);
         }
 
         if (grupo.label === 'Empresa') {
@@ -302,7 +302,7 @@ export function SunatSidebar() {
             <SidebarContent>
                 <SidebarGroup className="px-2 py-0">
                     <SidebarMenu>
-                        <SidebarMenuItem>
+                        {!esSimple && <SidebarMenuItem>
                             <SidebarMenuButton
                                 asChild
                                 isActive={isCurrentUrl('/sunat')}
@@ -313,7 +313,7 @@ export function SunatSidebar() {
                                     <span>Panel</span>
                                 </Link>
                             </SidebarMenuButton>
-                        </SidebarMenuItem>
+                        </SidebarMenuItem>}
 
                         {GRUPOS.map((grupo) => {
                             const items = itemsVisibles(grupo);

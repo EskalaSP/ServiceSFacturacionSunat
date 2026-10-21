@@ -191,17 +191,19 @@ class Ability
         return array_values(array_diff(self::todas(), self::NO_ASIGNABLES_A_CAJERO));
     }
 
-    /**
-     * Permisos base para el rol "simple" (cliente final restringido).
-     * Solo emite/descarga/reenvía comprobantes: no ve Trámites (anulación,
-     * resumen, retención, percepción, reversión) ni puede anular nada.
-     *
-     * @return list<string>
-     */
+    /** @return list<string> Permisos de consulta y configuración comercial del rol simple. */
     public static function presetSimple(): array
     {
-        return [
+        $descargas = array_map(
+            fn (string $tipo) => "{$tipo}.".self::DESCARGAR,
+            self::tipos(),
+        );
+
+        return array_merge($descargas, [
+            self::REPORTE_VER,
+            self::EXPORTAR,
+            self::CONSULTA_CPE,
             self::CONFIG_EDITAR,
-        ];
+        ]);
     }
 }

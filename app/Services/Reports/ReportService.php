@@ -10,8 +10,10 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Sucursal;
 use App\Models\Tenant;
+use App\Support\Reports\DocumentoFiltros;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -22,45 +24,140 @@ class ReportService
         $desde = $filters['fecha_desde'];
         $hasta = $filters['fecha_hasta'];
 
-        $invoices = $this->queryDocuments(Invoice::query(), $tenant, $filters, 'sunat')
-            ->get()->map(fn ($d) => $this->mapDocumentRow($d, '01', 'FACTURA'));
+        // Todos los estados de venta (aceptado, rechazado, anulado); los totales se separan por ambiente y estado.
+        $sel = DocumentoFiltros::normalizar($filters, DocumentoFiltros::CONTEXTO_VENTAS);
 
-        $boletas = $this->queryDocuments(Boleta::query(), $tenant, $filters, 'sunat')
-            ->get()->map(fn ($d) => $this->mapDocumentRow($d, '03', 'BOLETA'));
+        // Rango inclusivo del último día aunque fecha_emision tenga hora.
+        $base = Arr::except($filters, ['estado_sunat']);
+        $base['fecha_desde'] = Carbon::parse($desde)->startOfDay()->toDateTimeString();
+        $base['fecha_hasta'] = Carbon::parse($hasta)->endOfDay()->toDateTimeString();
 
-        $creditNotes = $this->queryDocuments(CreditNote::query(), $tenant, $filters, 'sunat')
-            ->get()->map(fn ($d) => $this->mapDocumentRow($d, '07', 'NOTA DE CRÉDITO'));
+        $porTipo = [];
+        foreach (DocumentoFiltros::TIPOS as $clave => $meta) {
+            $porTipo[$meta['codigo']] = in_array($clave, $sel['tipos'], true)
+                ? $this->filasRegistroVentas($clave, $meta, $tenant, $base, $sel)
+                : collect();
+        }
 
-        $debitNotes = $this->queryDocuments(DebitNote::query(), $tenant, $filters, 'sunat')
-            ->get()->map(fn ($d) => $this->mapDocumentRow($d, '08', 'NOTA DE DÉBITO'));
+        $all = collect($porTipo)->flatMap(fn (Collection $docs) => $docs->all())
+            ->sort(fn (array $a, array $b) => [$a['fecha_emision'], $a['serie'], (int) $a['correlativo']]
+                <=> [$b['fecha_emision'], $b['serie'], (int) $b['correlativo']])
+            ->values();
 
-        $all = $invoices->concat($boletas)->concat($creditNotes)->concat($debitNotes)
-            ->sortBy('fecha_emision')->values();
-
-        $totalesPorTipo = [
-            '01' => $this->sumarTotales($invoices),
-            '03' => $this->sumarTotales($boletas),
-            '07' => $this->sumarTotales($creditNotes),
-            '08' => $this->sumarTotales($debitNotes),
-        ];
-
-        $granTotal = $this->sumarTotales($all);
-        $ventaNeta = round(
-            ($totalesPorTipo['01']['mto_imp_venta'] + $totalesPorTipo['03']['mto_imp_venta'] + $totalesPorTipo['08']['mto_imp_venta'])
-            - $totalesPorTipo['07']['mto_imp_venta'],
-            2
-        );
+        // Compatibilidad: estos totales cuentan solo aceptados de producción, nunca mezclan ambientes ni estados.
+        $validos = $all->where('ambiente', 'produccion')->where('estado_grupo', 'aceptado');
+        $totalesPorTipo = [];
+        foreach (DocumentoFiltros::TIPOS as $meta) {
+            $totalesPorTipo[$meta['codigo']] = $this->sumarTotales($validos->where('tipo_doc', $meta['codigo']));
+        }
+        $bloques = $this->bloquesVentas($all, $sel['ambientes'], $sel['tipos']);
 
         return [
             'titulo' => 'REGISTRO DE VENTAS',
             'periodo' => ['desde' => $desde, 'hasta' => $hasta],
-            'filtros' => $this->filtrosAplicados($filters),
+            'filtros' => array_merge($this->filtrosAplicados($base), DocumentoFiltros::etiquetas($sel)),
+            'filtros_seleccion' => $sel,
             'documentos' => $all,
             'totales_por_tipo' => $totalesPorTipo,
-            'gran_total' => $granTotal,
-            'venta_neta' => $ventaNeta,
+            'gran_total' => $this->sumarTotales($validos),
+            'bloques' => $bloques,
             'total_documentos' => $all->count(),
         ];
+    }
+
+    /** Totales por ambiente: aceptados como total contable; rechazados y anulados solo informativos. */
+    private function bloquesVentas(Collection $all, array $ambientes, array $tiposSeleccionados): array
+    {
+        $bloques = [];
+        $tipos = collect(DocumentoFiltros::TIPOS)
+            ->only($tiposSeleccionados)
+            ->mapWithKeys(fn (array $meta, string $clave) => [$clave => $meta]);
+
+        foreach (DocumentoFiltros::AMBIENTES as $clave => $nombre) {
+            if (! in_array($clave, $ambientes, true)) {
+                continue;
+            }
+
+            $docs = $all->where('ambiente', $clave);
+            if ($docs->isEmpty()) {
+                continue;
+            }
+
+            $suma = fn (array $tipos, string $grupo) => $this->sumarTotales(
+                $docs->filter(fn (array $d) => in_array($d['tipo_doc'], $tipos, true) && $d['estado_grupo'] === $grupo)
+            );
+
+            $codigosVenta = $tipos->reject(fn (array $_, string $tipo) => $tipo === 'nota-credito')->pluck('codigo')->all();
+            $aceptados = $suma($codigosVenta, 'aceptado');
+            $rechazados = $suma($codigosVenta, 'rechazado');
+            $anulados = $suma($codigosVenta, 'anulado');
+
+            $mayus = mb_strtoupper($nombre);
+            $lineas = [];
+            foreach ($tipos as $tipo => $meta) {
+                $subtotal = $suma([$meta['codigo']], 'aceptado');
+                if ($subtotal['cantidad'] > 0) {
+                    $lineas[] = [
+                        'clave' => $tipo,
+                        'etiqueta' => 'Subtotal '.$meta['nombre'].' aceptadas',
+                        'estilo' => 'detalle',
+                        'tipos' => [$meta['nombre']],
+                        'estados' => ['Aceptado', 'Aceptado con observaciones'],
+                        'totales' => $subtotal,
+                    ];
+                }
+            }
+            if ($aceptados['cantidad'] > 0) {
+                $lineas[] = ['clave' => 'aceptados', 'etiqueta' => "TOTAL ACEPTADOS ({$mayus})", 'estilo' => 'total', 'tipos' => $tipos->reject(fn (array $_, string $tipo) => $tipo === 'nota-credito')->pluck('nombre')->all(), 'estados' => ['Aceptado', 'Aceptado con observaciones'], 'totales' => $aceptados];
+            }
+            if ($rechazados['cantidad'] > 0) {
+                $lineas[] = ['clave' => 'rechazados', 'etiqueta' => "TOTAL RECHAZADOS ({$mayus})", 'estilo' => 'rechazado', 'tipos' => $tipos->reject(fn (array $_, string $tipo) => $tipo === 'nota-credito')->pluck('nombre')->all(), 'estados' => ['Rechazado'], 'totales' => $rechazados];
+            }
+            if ($anulados['cantidad'] > 0) {
+                $lineas[] = ['clave' => 'anulados', 'etiqueta' => "TOTAL ANULADOS ({$mayus})", 'estilo' => 'anulado', 'tipos' => $tipos->reject(fn (array $_, string $tipo) => $tipo === 'nota-credito')->pluck('nombre')->all(), 'estados' => ['Anulado'], 'totales' => $anulados];
+            }
+            $bloques[$clave] = [
+                'clave' => $clave,
+                'nombre' => $nombre,
+                'lineas' => $lineas,
+            ];
+        }
+
+        return $bloques;
+    }
+
+    /** Filas del registro de ventas de un tipo, leídas con cursor y solo las columnas necesarias. */
+    private function filasRegistroVentas(string $clave, array $meta, Tenant $tenant, array $base, array $sel): Collection
+    {
+        $columnas = [
+            'id', 'fecha_emision', 'serie', 'correlativo', 'client_tipo_doc', 'client_num_doc', 'client_razon_social',
+            'mto_oper_gravadas', 'mto_oper_exoneradas', 'mto_oper_inafectas', 'mto_oper_gratuitas',
+            'mto_igv', 'mto_isc', 'mto_icbper', 'mto_imp_venta', 'tipo_moneda',
+            'sunat_status', 'sunat_code', 'sunat_notes', 'ambiente',
+        ];
+        if (in_array($clave, ['factura', 'boleta'], true)) {
+            $columnas[] = 'fecha_vencimiento';
+        }
+
+        $query = $this->queryDocuments($meta['modelo']::query(), $tenant, $base, 'sunat')->select($columnas);
+        DocumentoFiltros::aplicar($query, $sel);
+
+        $filas = [];
+        foreach ($query->cursor() as $doc) {
+            $fila = $this->mapDocumentRow($doc, $meta['codigo'], $meta['nombre']);
+
+            $estado = DocumentoFiltros::texto($doc->sunat_status);
+            $clave = $estado === 'aceptado' && $fila['con_observaciones'] ? 'aceptado_obs' : $estado;
+            $fila['estado_sunat'] = $estado;
+            $fila['estado_clave'] = $clave;
+            $fila['estado_grupo'] = $estado;
+            $fila['estado_etiqueta'] = DocumentoFiltros::ESTADOS[$clave] ?? ucfirst($estado);
+            $fila['ambiente'] = DocumentoFiltros::texto($doc->ambiente);
+            $fila['ambiente_etiqueta'] = DocumentoFiltros::AMBIENTES[$fila['ambiente']] ?? ucfirst($fila['ambiente']);
+            $filas[] = $fila;
+        }
+
+        return collect($filas);
     }
 
     public function ventasConsolidado(Tenant $tenant, array $filters): array
@@ -109,6 +206,7 @@ class ReportService
         $allVentas = $invoices->concat($boletas);
         $topClientes = $allVentas->groupBy('client_num_doc')->map(function ($docs, $numDoc) {
             $nc = 0; // simplificado - la reducción de NC por cliente requeriría vincular doc_afectado
+
             return [
                 'num_doc' => $numDoc,
                 'razon_social' => $docs->first()->client_razon_social,
@@ -169,7 +267,7 @@ class ReportService
                     'tipo_doc_afectado' => $nc->doc_afectado_tipo,
                     'serie_afectado' => $nc->doc_afectado_serie,
                     'correlativo_afectado' => $nc->doc_afectado_correlativo,
-                    'doc_afectado' => $nc->doc_afectado_serie . '-' . $nc->doc_afectado_correlativo,
+                    'doc_afectado' => $nc->doc_afectado_serie.'-'.$nc->doc_afectado_correlativo,
                     'cod_motivo' => $nc->cod_motivo,
                     'des_motivo' => $nc->des_motivo,
                     'client_num_doc' => $nc->client_num_doc,
@@ -193,7 +291,7 @@ class ReportService
                     'tipo_doc_afectado' => $nd->doc_afectado_tipo,
                     'serie_afectado' => $nd->doc_afectado_serie,
                     'correlativo_afectado' => $nd->doc_afectado_correlativo,
-                    'doc_afectado' => $nd->doc_afectado_serie . '-' . $nd->doc_afectado_correlativo,
+                    'doc_afectado' => $nd->doc_afectado_serie.'-'.$nd->doc_afectado_correlativo,
                     'cod_motivo' => $nd->cod_motivo,
                     'des_motivo' => $nd->des_motivo,
                     'client_num_doc' => $nd->client_num_doc,
@@ -694,6 +792,9 @@ class ReportService
             'mto_imp_venta' => (float) $doc->mto_imp_venta,
             'tipo_moneda' => $doc->tipo_moneda,
             'estado_sunat' => $doc->sunat_status,
+            'ambiente' => $doc->ambiente,
+            'con_observaciones' => $doc->sunat_status === 'aceptado'
+                && (! in_array((string) $doc->sunat_code, ['', '0'], true) || ! empty($doc->sunat_notes)),
         ];
     }
 
@@ -819,7 +920,7 @@ class ReportService
         $desde = $filters['fecha_desde'];
         $hasta = $filters['fecha_hasta'];
 
-        $query = "
+        $query = '
             SELECT descripcion, SUM(cantidad) as total_cantidad, SUM(cantidad * mto_precio_unitario) as total_monto
             FROM (
                 SELECT ii.descripcion, ii.cantidad, ii.mto_precio_unitario
@@ -835,7 +936,7 @@ class ReportService
             GROUP BY descripcion
             ORDER BY total_monto DESC
             LIMIT 10
-        ";
+        ';
 
         $results = DB::select($query, [$tenant->id, $desde, $hasta, $tenant->id, $desde, $hasta]);
 

@@ -1,7 +1,7 @@
 import { router, usePage } from '@inertiajs/react';
-import { type ColumnDef } from '@tanstack/react-table';
-import { useState } from 'react';
+import type {ColumnDef} from '@tanstack/react-table';
 import { Ban, Download, FileMinus, FilePlus, FileText, Loader2, RefreshCw, Search, X } from 'lucide-react';
+import { useState } from 'react';
 import { StatusBadge } from '@/components/sunat/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -176,7 +176,7 @@ export function DocumentosTable({ documentos, searchPlaceholder = 'Buscar en res
                 const aceptado = doc.estado === 'aceptado';
                 const esComprobante = ['01', '03', '07', '08'].includes(doc.tipo_doc);
                 const esVenta = doc.tipo_doc === '01' || doc.tipo_doc === '03';
-                const puedeReenviar = esComprobante && doc.estado !== 'aceptado' && doc.estado !== 'enviado' && doc.estado !== 'anulado' && doc.estado !== 'anulacion_en_proceso';
+                const puedeReenviar = esComprobante && puede(`${TIPO_ABILITY[doc.tipo_doc]}.reenviar`) && doc.estado !== 'aceptado' && doc.estado !== 'enviado' && doc.estado !== 'anulado' && doc.estado !== 'anulacion_en_proceso';
                 const tieneDescarga = doc.tiene_pdf || doc.tiene_xml || doc.tiene_cdr;
 
                 const actions = [

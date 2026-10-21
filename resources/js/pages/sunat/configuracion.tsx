@@ -1,5 +1,4 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
 import {
     FileText,
     IdCard,
@@ -11,16 +10,18 @@ import {
     Store,
     Wifi,
     WifiOff,
-    X,
-    type LucideIcon,
+    X
+    
 } from 'lucide-react';
-import SunatLayout from '@/layouts/sunat-layout';
+import type {LucideIcon} from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
+import SunatLayout from '@/layouts/sunat-layout';
 import type { SharedData } from '@/types';
 import type { TenantSunat } from '@/types/sunat';
 
@@ -111,13 +112,29 @@ export default function Configuracion({ tenant }: Props) {
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         const hayArchivos = data.certificate instanceof File || data.logo instanceof File;
+        const datosPermitidos = (d: typeof data) => esSimple ? {
+            razon_social: d.razon_social,
+            nombre_comercial: d.nombre_comercial,
+            direccion: d.direccion,
+            ubigeo: d.ubigeo,
+            departamento: d.departamento,
+            provincia: d.provincia,
+            distrito: d.distrito,
+            telefonos: d.telefonos,
+            emails: d.emails,
+            logo: d.logo,
+            mensaje_agradecimiento: d.mensaje_agradecimiento,
+            mensaje_promocional: d.mensaje_promocional,
+            cuentas_bancarias: d.cuentas_bancarias,
+            billeteras_digitales: d.billeteras_digitales,
+        } : d;
 
         if (hayArchivos) {
             // Inertia + PUT no envía archivos: se usa POST con method spoofing.
-            transform((d) => ({ ...d, _method: 'put' }));
+            transform((d) => ({ ...datosPermitidos(d), _method: 'put' }));
             post('/sunat/configuracion', { forceFormData: true });
         } else {
-            transform((d) => d);
+            transform(datosPermitidos);
             put('/sunat/configuracion');
         }
     };
@@ -170,13 +187,20 @@ export default function Configuracion({ tenant }: Props) {
         <SunatLayout>
             <Head title="Configuración" />
 
-            <form onSubmit={submit} className="flex flex-1 flex-col gap-4 p-4">
+            <form onSubmit={submit} autoComplete="off" className="flex flex-1 flex-col gap-4 p-4">
                 <div>
                     <h1 className="text-xl font-semibold tracking-tight">Configuración de mi empresa</h1>
                     <p className="text-sm text-muted-foreground">
                         Actualiza todos los datos de tu empresa, credenciales SOL y opciones de emisión.
                     </p>
                 </div>
+
+                {esSimple && (
+                    <div className="grid gap-1.5 rounded-lg border border-border bg-card p-4 sm:max-w-xs">
+                        <Label htmlFor="environment_simple">Entorno</Label>
+                        <Input id="environment_simple" value="Producción" readOnly className="bg-muted" />
+                    </div>
+                )}
 
                 {/* 1. Identidad */}
                 <Section icon={IdCard} title="1. Identidad" required subtitle="RUC y datos legales de la empresa">
@@ -303,13 +327,13 @@ export default function Configuracion({ tenant }: Props) {
                 </Section>
 
                 {/* 3. Credenciales SUNAT */}
-                <Section icon={ShieldCheck} title="3. Credenciales SUNAT" required subtitle="Usuario secundario, certificado y entorno">
-                    {esSimple && <p className="mb-4 text-xs text-muted-foreground">Solo lectura para el rol simple.</p>}
+                {!esSimple && <Section icon={ShieldCheck} title="3. Credenciales SUNAT" required subtitle="Usuario secundario, certificado y entorno">
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
                             <Label htmlFor="sol_user">Usuario secundario <Req /></Label>
                             <Input
                                 id="sol_user"
+                                autoComplete="off"
                                 value={data.sol_user}
                                 onChange={(e) => setData('sol_user', e.target.value)}
                                 disabled={esSimple}
@@ -322,6 +346,7 @@ export default function Configuracion({ tenant }: Props) {
                             <Label htmlFor="sol_pass">Clave del usuario secundario {!tenant?.sol_user && <Req />}</Label>
                             <PasswordInput
                                 id="sol_pass"
+                                autoComplete="new-password"
                                 value={data.sol_pass}
                                 onChange={(e) => setData('sol_pass', e.target.value)}
                                 disabled={esSimple}
@@ -357,6 +382,7 @@ export default function Configuracion({ tenant }: Props) {
                             <Label htmlFor="certificate_password">Contraseña del certificado</Label>
                             <PasswordInput
                                 id="certificate_password"
+                                autoComplete="new-password"
                                 value={data.certificate_password}
                                 onChange={(e) => setData('certificate_password', e.target.value)}
                                 disabled={esSimple}
@@ -364,11 +390,10 @@ export default function Configuracion({ tenant }: Props) {
                             />
                         </div>
                     </div>
-                </Section>
+                </Section>}
 
                 {/* 4. Series de numeración */}
-                <Section icon={FileText} title="4. Series de numeración" required subtitle="Deben iniciar con F para facturas y B para boletas">
-                    {esSimple && <p className="mb-4 text-xs text-muted-foreground">Solo lectura para el rol simple.</p>}
+                {!esSimple && <Section icon={FileText} title="4. Series de numeración" required subtitle="Deben iniciar con F para facturas y B para boletas">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <Label htmlFor="serie_factura">Serie Factura <Req /></Label>
@@ -395,7 +420,7 @@ export default function Configuracion({ tenant }: Props) {
                             {errors.serie_boleta && <p className="mt-1 text-xs text-red-600">{errors.serie_boleta}</p>}
                         </div>
                     </div>
-                </Section>
+                </Section>}
 
                 {/* 5. Comercial */}
                 <Section icon={Store} title="5. Comercial" subtitle="Logo, mensajes y datos de pago del comprobante">

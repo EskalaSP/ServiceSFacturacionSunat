@@ -33,6 +33,10 @@ class FacturaController extends Controller
     {
         $tenant = app(\App\Services\Tenancy\EmpresaActiva::class)->actual();
 
+        if ($tenant) {
+            \Illuminate\Support\Facades\Gate::authorize('emitir', [$tenant, 'factura']);
+        }
+
         if (! $tenant || ! $tenant->sol_user) {
             return redirect()->route('sunat.configuracion')
                 ->with('warning', 'Configura tus credenciales SUNAT primero.');

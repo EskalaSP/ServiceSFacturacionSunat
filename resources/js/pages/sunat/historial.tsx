@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Filter, Search, X } from 'lucide-react';
 import { DocumentosTable } from '@/components/sunat/documentos-table';
 import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
+import { MultiSelect } from '@/components/multi-select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,30 +11,39 @@ import SunatLayout from '@/layouts/sunat-layout';
 import type { DocumentoSunat, SharedData } from '@/types';
 
 type Filtros = {
-    tipo: string;
-    estado: string;
+    tipos: string[];
+    estados: string[];
+    ambientes: string[];
     desde: string;
     hasta: string;
     cliente: string;
 };
 
-const TIPO_FILTRO_LABEL: Record<string, string> = {
-    facturas: 'Facturas',
-    boletas: 'Boletas',
-    'notas-credito': 'Notas de crédito',
-    'notas-debito': 'Notas de débito',
-    guias: 'Guías de remisión',
-    retenciones: 'Retenciones',
-    percepciones: 'Percepciones',
-};
-const ESTADO_FILTRO_LABEL: Record<string, string> = {
-    aceptado: 'Aceptado',
-    pendiente: 'Pendiente',
-    enviado: 'Enviado',
-    rechazado: 'Rechazado',
-    anulado: 'Anulado',
-    borrador: 'Borrador',
-};
+const TIPO_OPCIONES = [
+    { value: 'facturas', label: 'Facturas' },
+    { value: 'boletas', label: 'Boletas' },
+    { value: 'notas-credito', label: 'Notas de crédito' },
+    { value: 'notas-debito', label: 'Notas de débito' },
+    { value: 'guias', label: 'Guías de remisión' },
+    { value: 'retenciones', label: 'Retenciones' },
+    { value: 'percepciones', label: 'Percepciones' },
+];
+const ESTADO_OPCIONES = [
+    { value: 'aceptado', label: 'Aceptado' },
+    { value: 'aceptado_obs', label: 'Aceptado con observaciones' },
+    { value: 'pendiente', label: 'Pendiente' },
+    { value: 'enviado', label: 'Enviado' },
+    { value: 'rechazado', label: 'Rechazado' },
+    { value: 'anulado', label: 'Anulado' },
+    { value: 'anulacion_en_proceso', label: 'Anulación en proceso' },
+];
+const AMBIENTE_OPCIONES = [
+    { value: 'produccion', label: 'Producción' },
+    { value: 'prueba', label: 'Prueba' },
+];
+
+const etiquetas = (opciones: { value: string; label: string }[], valores: string[]) =>
+    valores.map((v) => opciones.find((o) => o.value === v)?.label ?? v).join(', ');
 
 type Props = {
     documentos: { data: DocumentoSunat[]; total: number };
@@ -45,8 +54,9 @@ type Props = {
 export default function Historial({ documentos, filtros }: Props) {
     const { props } = usePage<SharedData>();
     const esSimple = props.empresa?.rol === 'simple';
-    const [tipo, setTipo] = useState(filtros.tipo ?? 'todos');
-    const [estado, setEstado] = useState(filtros.estado ?? '');
+    const [tipos, setTipos] = useState<string[]>(filtros.tipos ?? []);
+    const [estados, setEstados] = useState<string[]>(filtros.estados ?? []);
+    const [ambientes, setAmbientes] = useState<string[]>(filtros.ambientes ?? []);
     const [desde, setDesde] = useState(filtros.desde ?? '');
     const [hasta, setHasta] = useState(filtros.hasta ?? '');
     const [cliente, setCliente] = useState(filtros.cliente ?? '');
@@ -57,27 +67,34 @@ export default function Historial({ documentos, filtros }: Props) {
     function aplicarFiltros() {
         router.get(
             '/sunat/historial',
-            { tipo, estado, desde, hasta, cliente },
+            { tipos, estados, ambientes, desde, hasta, cliente },
             { preserveState: true },
         );
     }
 
     function limpiarFiltros() {
-        setTipo('todos');
-        setEstado('');
+        setTipos([]);
+        setEstados([]);
+        setAmbientes([]);
         setDesde('');
         setHasta('');
         setCliente('');
         router.get('/sunat/historial', {}, { preserveState: false });
     }
 
-    const hayFiltros = estado || desde || hasta || cliente || tipo !== 'todos';
+    const hayFiltros =
+        estados.length > 0 || tipos.length > 0 || ambientes.length > 0 || desde || hasta || cliente;
 
     function quitarFiltro(key: keyof Filtros) {
-        const params: Filtros = { tipo, estado, desde, hasta, cliente };
-        params[key] = key === 'tipo' ? 'todos' : '';
-        setTipo(params.tipo);
-        setEstado(params.estado);
+        const params: Filtros = { tipos, estados, ambientes, desde, hasta, cliente };
+        if (Array.isArray(params[key])) {
+            (params[key] as string[]) = [];
+        } else {
+            (params[key] as string) = '';
+        }
+        setTipos(params.tipos);
+        setEstados(params.estados);
+        setAmbientes(params.ambientes);
         setDesde(params.desde);
         setHasta(params.hasta);
         setCliente(params.cliente);
@@ -85,17 +102,14 @@ export default function Historial({ documentos, filtros }: Props) {
     }
 
     const chips = [
-        tipo !== 'todos'
-            ? {
-                  key: 'tipo' as const,
-                  texto: `Tipo: ${TIPO_FILTRO_LABEL[tipo] ?? tipo}`,
-              }
+        tipos.length > 0
+            ? { key: 'tipos' as const, texto: `Tipo: ${etiquetas(TIPO_OPCIONES, tipos)}` }
             : null,
-        estado
-            ? {
-                  key: 'estado' as const,
-                  texto: `Estado: ${ESTADO_FILTRO_LABEL[estado] ?? estado}`,
-              }
+        estados.length > 0
+            ? { key: 'estados' as const, texto: `Estado: ${etiquetas(ESTADO_OPCIONES, estados)}` }
+            : null,
+        ambientes.length > 0
+            ? { key: 'ambientes' as const, texto: `Ambiente: ${etiquetas(AMBIENTE_OPCIONES, ambientes)}` }
             : null,
         desde ? { key: 'desde' as const, texto: `Desde: ${desde}` } : null,
         hasta ? { key: 'hasta' as const, texto: `Hasta: ${hasta}` } : null,
@@ -149,81 +163,29 @@ export default function Historial({ documentos, filtros }: Props) {
                 {showFiltros && (
                     <Card>
                         <CardContent className="pt-6">
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                                 <div className="flex flex-col gap-1.5">
                                     <Label>Tipo</Label>
-                                    <Combobox
-                                        value={tipo}
-                                        onChange={(v) => setTipo(v)}
-                                        searchable
-                                        options={[
-                                            { value: 'todos', label: 'Todos' },
-                                            {
-                                                value: 'facturas',
-                                                label: 'Facturas',
-                                            },
-                                            {
-                                                value: 'boletas',
-                                                label: 'Boletas',
-                                            },
-                                            {
-                                                value: 'notas-credito',
-                                                label: 'Notas de crédito',
-                                            },
-                                            {
-                                                value: 'notas-debito',
-                                                label: 'Notas de débito',
-                                            },
-                                            {
-                                                value: 'guias',
-                                                label: 'Guías de remisión',
-                                            },
-                                            {
-                                                value: 'retenciones',
-                                                label: 'Retenciones',
-                                            },
-                                            {
-                                                value: 'percepciones',
-                                                label: 'Percepciones',
-                                            },
-                                        ]}
-                                        className="h-9 rounded-md"
+                                    <MultiSelect
+                                        value={tipos}
+                                        onChange={setTipos}
+                                        options={TIPO_OPCIONES}
                                     />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <Label>Estado</Label>
-                                    <Combobox
-                                        value={estado}
-                                        onChange={(v) => setEstado(v)}
-                                        placeholder="Todos"
-                                        options={[
-                                            { value: '', label: 'Todos' },
-                                            {
-                                                value: 'aceptado',
-                                                label: 'Aceptado',
-                                            },
-                                            {
-                                                value: 'pendiente',
-                                                label: 'Pendiente',
-                                            },
-                                            {
-                                                value: 'enviado',
-                                                label: 'Enviado',
-                                            },
-                                            {
-                                                value: 'rechazado',
-                                                label: 'Rechazado',
-                                            },
-                                            {
-                                                value: 'anulado',
-                                                label: 'Anulado',
-                                            },
-                                            {
-                                                value: 'borrador',
-                                                label: 'Borrador',
-                                            },
-                                        ]}
-                                        className="h-9 rounded-md"
+                                    <MultiSelect
+                                        value={estados}
+                                        onChange={setEstados}
+                                        options={ESTADO_OPCIONES}
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <Label>Ambiente</Label>
+                                    <MultiSelect
+                                        value={ambientes}
+                                        onChange={setAmbientes}
+                                        options={AMBIENTE_OPCIONES}
                                     />
                                 </div>
                                 <div className="flex flex-col gap-1.5">

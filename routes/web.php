@@ -25,8 +25,8 @@ use App\Http\Controllers\Web\Sunat\ResumenController;
 use App\Http\Controllers\Web\Sunat\RetencionController;
 use App\Http\Controllers\Web\Sunat\ReversionController;
 use App\Http\Controllers\Web\Sunat\SerieController;
-use App\Http\Controllers\Web\Sunat\SucursalController;
 use App\Http\Controllers\Web\Sunat\SireController;
+use App\Http\Controllers\Web\Sunat\SucursalController;
 use Illuminate\Support\Facades\Route;
 
 // ── Home root ───────────────────────────────────────────────────────────────
@@ -211,6 +211,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes');
         Route::get('/reportes/registro-ventas', [ReporteController::class, 'registroVentas'])->name('reportes.registro-ventas');
+        Route::get('/reportes/registro-ventas/pdf', [ReporteController::class, 'registroVentasPdf'])->name('reportes.registro-ventas.pdf');
+        Route::get('/reportes/registro-ventas/excel', [ReporteController::class, 'registroVentasExcel'])->name('reportes.registro-ventas.excel');
 
         // Fase 5 — SIRE (RCE)
         Route::get('/sire', [SireController::class, 'index'])->name('sire');
