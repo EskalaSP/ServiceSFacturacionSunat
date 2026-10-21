@@ -64,7 +64,7 @@ export default function Register({ esPrimerUsuario = true }: Props) {
                                     tabIndex={1}
                                     autoComplete="name"
                                     name="name"
-                                    placeholder="Jorge Chavez"
+                                    placeholder="Eskala"
                                 />
                                 <InputError
                                     message={errors.name}
@@ -73,7 +73,9 @@ export default function Register({ esPrimerUsuario = true }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Correo electrónico</Label>
+                                <Label htmlFor="email">
+                                    Correo electrónico
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -96,7 +98,9 @@ export default function Register({ esPrimerUsuario = true }: Props) {
                                     name="password"
                                     placeholder="••••••••"
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) =>
+                                        setPassword(e.target.value)
+                                    }
                                 />
                                 <PasswordRequirements value={password} />
                                 <InputError message={errors.password} />

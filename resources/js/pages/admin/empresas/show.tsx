@@ -1,6 +1,17 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Check, Copy, Download, Infinity as InfinityIcon, KeyRound, Pencil, Power, Store, Trash2 } from 'lucide-react';
+import {
+    ArrowLeft,
+    Check,
+    Copy,
+    Download,
+    Infinity as InfinityIcon,
+    KeyRound,
+    Pencil,
+    Power,
+    Store,
+    Trash2,
+} from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { ConfettiBurst } from '@/components/ui/confetti-burst';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -8,7 +19,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { formatDateTimeLima } from '@/lib/lima-date';
 import type { BreadcrumbItem } from '@/types';
 
@@ -59,8 +77,12 @@ const breadcrumbs = (razon: string): BreadcrumbItem[] => [
 ];
 
 export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
-    const [credOpen, setCredOpen] = useState<boolean>(Boolean(credencialesNuevas));
-    const [copied, setCopied] = useState<'key' | 'secret' | 'base' | null>(null);
+    const [credOpen, setCredOpen] = useState<boolean>(
+        Boolean(credencialesNuevas),
+    );
+    const [copied, setCopied] = useState<'key' | 'secret' | 'base' | null>(
+        null,
+    );
     const confirm = useConfirm();
     const perms = usePermissions();
 
@@ -69,7 +91,8 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
     const baseUrl = `${window.location.origin}/api/v1`;
 
     // Confeti solo cuando la empresa se acaba de REGISTRAR (no al regenerar).
-    const flash = usePage<{ flash?: { empresa_creada?: boolean } }>().props.flash;
+    const flash = usePage<{ flash?: { empresa_creada?: boolean } }>().props
+        .flash;
     const [celebrar, setCelebrar] = useState(false);
     useEffect(() => {
         if (flash?.empresa_creada) setCelebrar(true);
@@ -97,7 +120,7 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
         if (!credencialesNuevas) return;
         const c = credencialesNuevas;
         const contenido = [
-            'CREDENCIALES DE API - Jorge Chavez API SUNAT',
+            'CREDENCIALES DE API - ESKALA API SUNAT',
             '===========================================',
             '',
             `Empresa: ${c.razon_social}`,
@@ -121,7 +144,9 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
             '',
         ].join('\r\n');
 
-        const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+        const blob = new Blob([contenido], {
+            type: 'text/plain;charset=utf-8',
+        });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -136,7 +161,8 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
         if (
             await confirm({
                 title: '¿Regenerar credenciales?',
-                description: 'Las credenciales anteriores dejarán de funcionar inmediatamente.',
+                description:
+                    'Las credenciales anteriores dejarán de funcionar inmediatamente.',
                 variant: 'danger',
                 confirmText: 'Regenerar',
             })
@@ -146,7 +172,11 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
     };
 
     const toggle = () => {
-        router.post(`/admin/empresas/${tenant.id}/toggle`, {}, { preserveScroll: true });
+        router.post(
+            `/admin/empresas/${tenant.id}/toggle`,
+            {},
+            { preserveScroll: true },
+        );
     };
 
     const eliminar = async () => {
@@ -179,76 +209,115 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                                 Credenciales de la API
                             </DialogTitle>
                             <DialogDescription>
-                                Cópialas ahora: son las únicas que debes darle al cliente. El{' '}
-                                <span className="font-medium text-foreground">api_secret</span> no se volverá a mostrar.
+                                Cópialas ahora: son las únicas que debes darle
+                                al cliente. El{' '}
+                                <span className="font-medium text-foreground">
+                                    api_secret
+                                </span>{' '}
+                                no se volverá a mostrar.
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="space-y-3">
                             {/* Empresa */}
                             <div className="rounded-xl border border-border bg-muted/30 px-3.5 py-2.5">
-                                <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                <div className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
                                     Empresa
                                 </div>
                                 <div className="mt-0.5 text-sm font-medium">
-                                    {credencialesNuevas.ruc} — {credencialesNuevas.razon_social}
+                                    {credencialesNuevas.ruc} —{' '}
+                                    {credencialesNuevas.razon_social}
                                 </div>
                             </div>
 
                             {/* Base URL + Credenciales */}
-                            {([
-                                { label: 'Base URL', value: baseUrl, which: 'base' as const },
-                                { label: 'X-Api-Key', value: credencialesNuevas.api_key, which: 'key' as const },
-                                { label: 'X-Api-Secret', value: credencialesNuevas.api_secret, which: 'secret' as const },
-                            ]).map((c) => (
-                                <div key={c.which} className="rounded-xl bg-muted/40 px-3.5 py-2.5">
+                            {[
+                                {
+                                    label: 'Base URL',
+                                    value: baseUrl,
+                                    which: 'base' as const,
+                                },
+                                {
+                                    label: 'X-Api-Key',
+                                    value: credencialesNuevas.api_key,
+                                    which: 'key' as const,
+                                },
+                                {
+                                    label: 'X-Api-Secret',
+                                    value: credencialesNuevas.api_secret,
+                                    which: 'secret' as const,
+                                },
+                            ].map((c) => (
+                                <div
+                                    key={c.which}
+                                    className="rounded-xl bg-muted/40 px-3.5 py-2.5"
+                                >
                                     <div className="mb-1.5 flex items-center justify-between">
-                                        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                        <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
                                             {c.label}
                                         </span>
                                         <button
                                             type="button"
-                                            onClick={() => copy(c.value, c.which)}
+                                            onClick={() =>
+                                                copy(c.value, c.which)
+                                            }
                                             className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                                         >
                                             {copied === c.which ? (
                                                 <>
-                                                    <Check className="size-3.5" /> Copiado
+                                                    <Check className="size-3.5" />{' '}
+                                                    Copiado
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Copy className="size-3.5" /> Copiar
+                                                    <Copy className="size-3.5" />{' '}
+                                                    Copiar
                                                 </>
                                             )}
                                         </button>
                                     </div>
-                                    <div className="break-all font-mono text-xs leading-relaxed">{c.value}</div>
+                                    <div className="font-mono text-xs leading-relaxed break-all">
+                                        {c.value}
+                                    </div>
                                 </div>
                             ))}
                         </div>
 
                         <DialogFooter className="gap-2 sm:justify-between">
-                            <Button type="button" variant="secondary" onClick={descargarTxt}>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={descargarTxt}
+                            >
                                 <Download className="size-4" />
                                 Descargar .txt
                             </Button>
-                            <Button onClick={() => setCredOpen(false)}>Ya guardé las credenciales</Button>
+                            <Button onClick={() => setCredOpen(false)}>
+                                Ya guardé las credenciales
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
             )}
 
             <div className="flex flex-1 flex-col gap-4 p-4">
-                {(!tenant.emails || tenant.emails.length === 0) && !tenant.user && (
-                    <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
-                        <strong>Sin destinatario para correos:</strong> esta empresa no tiene emails registrados ni un usuario asignado.
-                        Las credenciales no se enviarán automáticamente hasta que agregues al menos un email en{' '}
-                        <Link href={`/admin/empresas/${tenant.id}/editar`} className="underline font-medium">
-                            Editar empresa
-                        </Link>
-                        .
-                    </div>
-                )}
+                {(!tenant.emails || tenant.emails.length === 0) &&
+                    !tenant.user && (
+                        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+                            <strong>Sin destinatario para correos:</strong> esta
+                            empresa no tiene emails registrados ni un usuario
+                            asignado. Las credenciales no se enviarán
+                            automáticamente hasta que agregues al menos un email
+                            en{' '}
+                            <Link
+                                href={`/admin/empresas/${tenant.id}/editar`}
+                                className="font-medium underline"
+                            >
+                                Editar empresa
+                            </Link>
+                            .
+                        </div>
+                    )}
 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -259,15 +328,21 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                                     src={tenant.logo_url}
                                     alt={`Logo ${tenant.razon_social}`}
                                     className="size-full object-contain p-1"
-                                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                                    onError={(e) =>
+                                        (e.currentTarget.style.display = 'none')
+                                    }
                                 />
                             ) : (
                                 <Store className="size-6 text-muted-foreground/40" />
                             )}
                         </div>
                         <div>
-                            <h1 className="text-xl font-semibold tracking-tight">{tenant.razon_social}</h1>
-                            <p className="text-sm text-muted-foreground font-mono">{tenant.ruc}</p>
+                            <h1 className="text-xl font-semibold tracking-tight">
+                                {tenant.razon_social}
+                            </h1>
+                            <p className="font-mono text-sm text-muted-foreground">
+                                {tenant.ruc}
+                            </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -280,7 +355,9 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                         {perms.canWrite && (
                             <>
                                 <Button variant="secondary" asChild>
-                                    <Link href={`/admin/empresas/${tenant.id}/editar`}>
+                                    <Link
+                                        href={`/admin/empresas/${tenant.id}/editar`}
+                                    >
                                         <Pencil className="size-4" />
                                         Editar
                                     </Link>
@@ -289,9 +366,18 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                                     <KeyRound className="size-4" />
                                     Regenerar credenciales
                                 </Button>
-                                <Button variant={tenant.is_active ? 'destructive' : 'default'} onClick={toggle}>
+                                <Button
+                                    variant={
+                                        tenant.is_active
+                                            ? 'destructive'
+                                            : 'default'
+                                    }
+                                    onClick={toggle}
+                                >
                                     <Power className="size-4" />
-                                    {tenant.is_active ? 'Desactivar' : 'Activar'}
+                                    {tenant.is_active
+                                        ? 'Desactivar'
+                                        : 'Activar'}
                                 </Button>
                             </>
                         )}
@@ -307,80 +393,141 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                 <div className="grid gap-4 lg:grid-cols-3">
                     <div className="space-y-4 lg:col-span-2">
                         <Card className="p-6">
-                            <h3 className="mb-4 text-base font-semibold">Identidad</h3>
+                            <h3 className="mb-4 text-base font-semibold">
+                                Identidad
+                            </h3>
                             <dl className="grid gap-4 text-sm md:grid-cols-2">
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">Nombre comercial</dt>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Nombre comercial
+                                    </dt>
                                     <dd>{tenant.nombre_comercial ?? '—'}</dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">Dirección</dt>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Dirección
+                                    </dt>
                                     <dd>{tenant.direccion ?? '—'}</dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">Ubigeo</dt>
-                                    <dd className="font-mono">{tenant.ubigeo ?? '—'}</dd>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Ubigeo
+                                    </dt>
+                                    <dd className="font-mono">
+                                        {tenant.ubigeo ?? '—'}
+                                    </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">Depto / Prov / Distrito</dt>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Depto / Prov / Distrito
+                                    </dt>
                                     <dd>
-                                        {[tenant.departamento, tenant.provincia, tenant.distrito]
+                                        {[
+                                            tenant.departamento,
+                                            tenant.provincia,
+                                            tenant.distrito,
+                                        ]
                                             .filter(Boolean)
                                             .join(' / ') || '—'}
                                     </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">Teléfonos</dt>
-                                    <dd>{tenant.telefonos.length ? tenant.telefonos.join(', ') : '—'}</dd>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Teléfonos
+                                    </dt>
+                                    <dd>
+                                        {tenant.telefonos.length
+                                            ? tenant.telefonos.join(', ')
+                                            : '—'}
+                                    </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">Emails</dt>
-                                    <dd>{tenant.emails.length ? tenant.emails.join(', ') : '—'}</dd>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Emails
+                                    </dt>
+                                    <dd>
+                                        {tenant.emails.length
+                                            ? tenant.emails.join(', ')
+                                            : '—'}
+                                    </dd>
                                 </div>
                             </dl>
                         </Card>
 
                         <Card className="p-6">
-                            <h3 className="mb-4 text-base font-semibold">SUNAT & régimen</h3>
+                            <h3 className="mb-4 text-base font-semibold">
+                                SUNAT & régimen
+                            </h3>
                             <dl className="grid gap-4 text-sm md:grid-cols-2">
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">Entorno</dt>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Entorno
+                                    </dt>
                                     <dd>
                                         <Badge
-                                            variant={tenant.environment === 'production' ? 'default' : 'secondary'}
-                                            className="uppercase text-[10px]"
+                                            variant={
+                                                tenant.environment ===
+                                                'production'
+                                                    ? 'default'
+                                                    : 'secondary'
+                                            }
+                                            className="text-[10px] uppercase"
                                         >
                                             {tenant.environment}
                                         </Badge>
                                     </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">Régimen tributario</dt>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Régimen tributario
+                                    </dt>
                                     <dd>{tenant.tax_regime ?? '—'}</dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">Certificado</dt>
-                                    <dd>{tenant.has_certificado ? '✔ Cargado' : '— No cargado'}</dd>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Certificado
+                                    </dt>
+                                    <dd>
+                                        {tenant.has_certificado
+                                            ? '✔ Cargado'
+                                            : '— No cargado'}
+                                    </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">SIRE</dt>
-                                    <dd>{tenant.sire_enabled ? '✔ Activo' : 'Inactivo'}</dd>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        SIRE
+                                    </dt>
+                                    <dd>
+                                        {tenant.sire_enabled
+                                            ? '✔ Activo'
+                                            : 'Inactivo'}
+                                    </dd>
                                 </div>
                                 <div className="md:col-span-2">
-                                    <dt className="text-xs uppercase text-muted-foreground">Webhook</dt>
-                                    <dd className="truncate">{tenant.webhook_url ?? '—'}</dd>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Webhook
+                                    </dt>
+                                    <dd className="truncate">
+                                        {tenant.webhook_url ?? '—'}
+                                    </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-muted-foreground">Plan / Límite</dt>
+                                    <dt className="text-xs text-muted-foreground uppercase">
+                                        Plan / Límite
+                                    </dt>
                                     {tenant.emission_mode === 'unlimited' ? (
                                         <dd className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
                                             <InfinityIcon className="size-4" />
                                             Ilimitada
-                                            <span className="font-normal text-muted-foreground">· plan {tenant.plan}</span>
+                                            <span className="font-normal text-muted-foreground">
+                                                · plan {tenant.plan}
+                                            </span>
                                         </dd>
                                     ) : (
                                         <dd className="uppercase">
-                                            {tenant.plan} — {tenant.max_documents_month} docs/mes
+                                            {tenant.plan} —{' '}
+                                            {tenant.max_documents_month}{' '}
+                                            docs/mes
                                         </dd>
                                     )}
                                 </div>
@@ -390,7 +537,9 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
 
                     <div className="space-y-4">
                         <Card className="p-5">
-                            <div className="mb-1 text-xs uppercase text-muted-foreground">Estado</div>
+                            <div className="mb-1 text-xs text-muted-foreground uppercase">
+                                Estado
+                            </div>
                             {tenant.is_active ? (
                                 <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300">
                                     Activa
@@ -405,7 +554,9 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
 
                         <Card className="p-5">
                             <div className="mb-2 flex items-center justify-between">
-                                <span className="text-sm font-semibold">Sucursales</span>
+                                <span className="text-sm font-semibold">
+                                    Sucursales
+                                </span>
                                 <Link
                                     href={`/admin/empresas/${tenant.id}/sucursales`}
                                     className="text-xs text-primary hover:underline"
@@ -413,12 +564,16 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                                     Gestionar →
                                 </Link>
                             </div>
-                            <div className="text-2xl font-bold">{tenant.sucursales_count}</div>
+                            <div className="text-2xl font-bold">
+                                {tenant.sucursales_count}
+                            </div>
                         </Card>
 
                         <Card className="p-5">
                             <div className="mb-2 flex items-center justify-between">
-                                <span className="text-sm font-semibold">Series</span>
+                                <span className="text-sm font-semibold">
+                                    Series
+                                </span>
                                 <Link
                                     href={`/admin/empresas/${tenant.id}/series`}
                                     className="text-xs text-primary hover:underline"
@@ -426,18 +581,28 @@ export default function EmpresasShow({ tenant, credencialesNuevas }: Props) {
                                     Gestionar →
                                 </Link>
                             </div>
-                            <div className="text-2xl font-bold">{tenant.series_count}</div>
+                            <div className="text-2xl font-bold">
+                                {tenant.series_count}
+                            </div>
                         </Card>
 
                         <Card className="p-5">
-                            <div className="mb-1 text-xs uppercase text-muted-foreground">Usuario asignado</div>
+                            <div className="mb-1 text-xs text-muted-foreground uppercase">
+                                Usuario asignado
+                            </div>
                             {tenant.user ? (
                                 <>
-                                    <div className="text-sm">{tenant.user.name}</div>
-                                    <div className="text-xs text-muted-foreground">{tenant.user.email}</div>
+                                    <div className="text-sm">
+                                        {tenant.user.name}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {tenant.user.email}
+                                    </div>
                                 </>
                             ) : (
-                                <div className="text-sm text-muted-foreground">Sin asignar</div>
+                                <div className="text-sm text-muted-foreground">
+                                    Sin asignar
+                                </div>
                             )}
                         </Card>
                     </div>

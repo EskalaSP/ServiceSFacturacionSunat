@@ -12,9 +12,9 @@ export default function AuthSimpleLayout({
             {/* Marca (sin logo) */}
             <Link href={home()} className="mb-8 text-center">
                 <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
-                    Jorge Chavez
+                    ESKALA
                 </h2>
-                <p className="mt-1 text-xs font-bold uppercase tracking-[0.25em] text-primary">
+                <p className="mt-1 text-xs font-bold tracking-[0.25em] text-primary uppercase">
                     API SUNAT
                 </p>
             </Link>

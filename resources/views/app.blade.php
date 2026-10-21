@@ -20,7 +20,7 @@
             })();
         </script>
 
-        {{-- Background color matching Jorge Chavez API SUNAT palette --}}
+        {{-- Background color matching Eskala API SUNAT palette --}}
         <style>
             html {
                 background-color: hsl(0, 0%, 97%);
@@ -31,7 +31,7 @@
             }
         </style>
 
-        <title inertia>Jorge Chavez API SUNAT</title>
+        <title inertia>Eskala API SUNAT</title>
 
         <link rel="icon" type="image/png" href="/logo.png">
         <link rel="shortcut icon" type="image/png" href="/logo.png">
