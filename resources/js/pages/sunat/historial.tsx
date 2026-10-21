@@ -42,8 +42,13 @@ const AMBIENTE_OPCIONES = [
     { value: 'prueba', label: 'Prueba' },
 ];
 
-const etiquetas = (opciones: { value: string; label: string }[], valores: string[]) =>
-    valores.map((v) => opciones.find((o) => o.value === v)?.label ?? v).join(', ');
+const etiquetas = (
+    opciones: { value: string; label: string }[],
+    valores: string[],
+) =>
+    valores
+        .map((v) => opciones.find((o) => o.value === v)?.label ?? v)
+        .join(', ');
 
 type Props = {
     documentos: { data: DocumentoSunat[]; total: number };
@@ -56,7 +61,9 @@ export default function Historial({ documentos, filtros }: Props) {
     const esSimple = props.empresa?.rol === 'simple';
     const [tipos, setTipos] = useState<string[]>(filtros.tipos ?? []);
     const [estados, setEstados] = useState<string[]>(filtros.estados ?? []);
-    const [ambientes, setAmbientes] = useState<string[]>(filtros.ambientes ?? []);
+    const [ambientes, setAmbientes] = useState<string[]>(
+        filtros.ambientes ?? [],
+    );
     const [desde, setDesde] = useState(filtros.desde ?? '');
     const [hasta, setHasta] = useState(filtros.hasta ?? '');
     const [cliente, setCliente] = useState(filtros.cliente ?? '');
@@ -83,10 +90,22 @@ export default function Historial({ documentos, filtros }: Props) {
     }
 
     const hayFiltros =
-        estados.length > 0 || tipos.length > 0 || ambientes.length > 0 || desde || hasta || cliente;
+        estados.length > 0 ||
+        tipos.length > 0 ||
+        ambientes.length > 0 ||
+        desde ||
+        hasta ||
+        cliente;
 
     function quitarFiltro(key: keyof Filtros) {
-        const params: Filtros = { tipos, estados, ambientes, desde, hasta, cliente };
+        const params: Filtros = {
+            tipos,
+            estados,
+            ambientes,
+            desde,
+            hasta,
+            cliente,
+        };
         if (Array.isArray(params[key])) {
             (params[key] as string[]) = [];
         } else {
@@ -103,13 +122,22 @@ export default function Historial({ documentos, filtros }: Props) {
 
     const chips = [
         tipos.length > 0
-            ? { key: 'tipos' as const, texto: `Tipo: ${etiquetas(TIPO_OPCIONES, tipos)}` }
+            ? {
+                  key: 'tipos' as const,
+                  texto: `Tipo: ${etiquetas(TIPO_OPCIONES, tipos)}`,
+              }
             : null,
         estados.length > 0
-            ? { key: 'estados' as const, texto: `Estado: ${etiquetas(ESTADO_OPCIONES, estados)}` }
+            ? {
+                  key: 'estados' as const,
+                  texto: `Estado: ${etiquetas(ESTADO_OPCIONES, estados)}`,
+              }
             : null,
         ambientes.length > 0
-            ? { key: 'ambientes' as const, texto: `Ambiente: ${etiquetas(AMBIENTE_OPCIONES, ambientes)}` }
+            ? {
+                  key: 'ambientes' as const,
+                  texto: `Ambiente: ${etiquetas(AMBIENTE_OPCIONES, ambientes)}`,
+              }
             : null,
         desde ? { key: 'desde' as const, texto: `Desde: ${desde}` } : null,
         hasta ? { key: 'hasta' as const, texto: `Hasta: ${hasta}` } : null,

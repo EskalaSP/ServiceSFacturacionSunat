@@ -29,28 +29,28 @@ La respuesta es un archivo `.zip` descargable (no JSON). Si no hay archivos disp
 
 ## 2. Parámetros
 
-| Parámetro | Tipo | Requerido | Default | Descripción |
-|---|---|---|---|---|
-| `fecha_desde` | `Y-m-d` | ✅ | — | Inicio del rango de emisión (ej: `2026-05-01`) |
-| `fecha_hasta` | `Y-m-d` | ✅ | — | Fin del rango de emisión (ej: `2026-05-31`) |
-| `tipo` | string | — | `xml` | Archivos a incluir: `xml`, `pdf` o `ambos` |
-| `tipos` | string / array | — | `factura,boleta` | Tipos: `factura`, `boleta`, `nota-credito`, `nota-debito` (coma o `tipos[]=`) |
-| `estados` | string / array | — | `aceptado,aceptado_obs` | `aceptado`, `aceptado_obs` (aceptado con observaciones), `pendiente`, `enviado`, `rechazado`, `anulado`, `anulacion_en_proceso` |
-| `ambientes` | string / array | — | `produccion` | `produccion`, `prueba` |
-| `sucursal_id` | int | — | — | Filtra por sucursal específica |
-| `documentos` | string | — | — | **Legado**: equivale a `tipos` (`facturas,boletas,notas-credito,notas-debito`) |
-| `estado` | string | — | — | **Legado**: un solo estado, o `todos` para no filtrar por estado |
+| Parámetro     | Tipo           | Requerido | Default                 | Descripción                                                                                                                     |
+| ------------- | -------------- | --------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `fecha_desde` | `Y-m-d`        | ✅        | —                       | Inicio del rango de emisión (ej: `2026-05-01`)                                                                                  |
+| `fecha_hasta` | `Y-m-d`        | ✅        | —                       | Fin del rango de emisión (ej: `2026-05-31`)                                                                                     |
+| `tipo`        | string         | —         | `xml`                   | Archivos a incluir: `xml`, `pdf` o `ambos`                                                                                      |
+| `tipos`       | string / array | —         | `factura,boleta`        | Tipos: `factura`, `boleta`, `nota-credito`, `nota-debito` (coma o `tipos[]=`)                                                   |
+| `estados`     | string / array | —         | `aceptado,aceptado_obs` | `aceptado`, `aceptado_obs` (aceptado con observaciones), `pendiente`, `enviado`, `rechazado`, `anulado`, `anulacion_en_proceso` |
+| `ambientes`   | string / array | —         | `produccion`            | `produccion`, `prueba`                                                                                                          |
+| `sucursal_id` | int            | —         | —                       | Filtra por sucursal específica                                                                                                  |
+| `documentos`  | string         | —         | —                       | **Legado**: equivale a `tipos` (`facturas,boletas,notas-credito,notas-debito`)                                                  |
+| `estado`      | string         | —         | —                       | **Legado**: un solo estado, o `todos` para no filtrar por estado                                                                |
 
 > Llamadas antiguas con solo `fecha_desde`/`fecha_hasta` siguen funcionando, pero ahora devuelven por defecto solo facturas y boletas aceptadas de producción. Los comprobantes anteriores a la migración `2026_09_01_000001` quedaron con ambiente `prueba`; para incluirlos envía `ambientes=prueba`. El rango de fechas es inclusivo en ambos extremos.
 
 ### Valores de `documentos`
 
-| Valor | Tipo SUNAT | Descripción |
-|---|---|---|
-| `facturas` | 01 | Facturas electrónicas |
-| `boletas` | 03 | Boletas de venta |
-| `notas-credito` | 07 | Notas de crédito |
-| `notas-debito` | 08 | Notas de débito |
+| Valor           | Tipo SUNAT | Descripción           |
+| --------------- | ---------- | --------------------- |
+| `facturas`      | 01         | Facturas electrónicas |
+| `boletas`       | 03         | Boletas de venta      |
+| `notas-credito` | 07         | Notas de crédito      |
+| `notas-debito`  | 08         | Notas de débito       |
 
 Puedes combinar separando con comas: `facturas,boletas` o `facturas,boletas,notas-credito,notas-debito`.
 
@@ -86,6 +86,7 @@ comprobantes_20123456789_20260501_20260531_xml.zip
 ```
 
 **Nombre del archivo ZIP:**
+
 ```
 comprobantes_{ruc}_{fecha_desde}_{fecha_hasta}_{tipo}.zip
 ```
@@ -148,15 +149,15 @@ curl -X GET "https://tu-api.com/api/v1/comprobantes/exportar-zip\
 
 ### En Postman
 
-| Campo | Valor |
-|---|---|
-| Método | `GET` |
-| URL | `{{base_url}}/comprobantes/exportar-zip` |
-| Param `fecha_desde` | `2026-05-01` |
-| Param `fecha_hasta` | `2026-05-31` |
-| Param `tipo` | `xml` |
-| Headers | `X-Api-Key` / `X-Api-Secret` |
-| **Send and Download** | ✅ (no "Send") |
+| Campo                 | Valor                                    |
+| --------------------- | ---------------------------------------- |
+| Método                | `GET`                                    |
+| URL                   | `{{base_url}}/comprobantes/exportar-zip` |
+| Param `fecha_desde`   | `2026-05-01`                             |
+| Param `fecha_hasta`   | `2026-05-31`                             |
+| Param `tipo`          | `xml`                                    |
+| Headers               | `X-Api-Key` / `X-Api-Secret`             |
+| **Send and Download** | ✅ (no "Send")                           |
 
 > En Postman usa **Send and Download** (flecha al lado del botón Send) para guardar el archivo ZIP directamente.
 
@@ -168,22 +169,22 @@ curl -X GET "https://tu-api.com/api/v1/comprobantes/exportar-zip\
 
 ```json
 {
-  "estado": "error",
-  "mensaje": "Los parámetros fecha_desde y fecha_hasta son requeridos (formato Y-m-d)."
+    "estado": "error",
+    "mensaje": "Los parámetros fecha_desde y fecha_hasta son requeridos (formato Y-m-d)."
 }
 ```
 
 ```json
 {
-  "estado": "error",
-  "mensaje": "El rango máximo permitido es 366 días."
+    "estado": "error",
+    "mensaje": "El rango máximo permitido es 366 días."
 }
 ```
 
 ```json
 {
-  "estado": "error",
-  "mensaje": "El parámetro tipo debe ser xml, pdf o ambos."
+    "estado": "error",
+    "mensaje": "El parámetro tipo debe ser xml, pdf o ambos."
 }
 ```
 
@@ -191,14 +192,15 @@ curl -X GET "https://tu-api.com/api/v1/comprobantes/exportar-zip\
 
 ```json
 {
-  "estado": "error",
-  "mensaje": "No se encontraron archivos para los criterios especificados. Verifique que los documentos tengan XML/PDF generados y estén dentro del rango de fechas."
+    "estado": "error",
+    "mensaje": "No se encontraron archivos para los criterios especificados. Verifique que los documentos tengan XML/PDF generados y estén dentro del rango de fechas."
 }
 ```
 
 Hay dos mensajes distintos: uno cuando ningún documento cumple los filtros (tipos, estados, ambientes, fechas) y otro cuando hay documentos pero ninguno tiene el XML/PDF en disco.
 
 Esto ocurre cuando:
+
 - No hay documentos en el rango de fechas dado.
 - Los documentos existen pero son `pendiente` (aún no fueron enviados a SUNAT y no tienen XML).
 - El parámetro `estado=aceptado` y todos los documentos del período están rechazados o pendientes.
@@ -208,11 +210,11 @@ Esto ocurre cuando:
 
 ## 6. Límites y recomendaciones
 
-| Límite | Valor |
-|---|---|
-| Rango máximo de fechas | 366 días |
-| Tipo de archivo | `xml`, `pdf` o `ambos` |
-| Tamaño del ZIP | Sin límite (depende de la cantidad de archivos en disco) |
+| Límite                 | Valor                                                    |
+| ---------------------- | -------------------------------------------------------- |
+| Rango máximo de fechas | 366 días                                                 |
+| Tipo de archivo        | `xml`, `pdf` o `ambos`                                   |
+| Tamaño del ZIP         | Sin límite (depende de la cantidad de archivos en disco) |
 
 **Recomendaciones:**
 

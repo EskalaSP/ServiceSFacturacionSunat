@@ -5,31 +5,31 @@
 
 ## 📑 Endpoints
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| `GET` | `/panel/` | Vista completa del mes |
-| `GET` | `/panel/indicadores` | KPIs: hoy/semana/mes/año + crecimiento |
-| `GET` | `/panel/estado-sunat` | Breakdown SUNAT + rechazos recientes |
-| `GET` | `/panel/cobranzas` | Aging de cuentas por cobrar |
-| `GET` | `/panel/ventas-mensuales` | Gráfico 12 meses vs año anterior |
-| `GET` | `/panel/por-sucursal` | Ranking por sucursal |
-| `GET` | `/panel/por-moneda` | Desglose PEN/USD |
-| `GET` | `/panel/clientes` | Top + nuevos + recurrentes |
-| `GET` | `/panel/productos` | Top venta/cantidad + tipo IGV |
-| `GET` | `/panel/documentos-recientes` | Feed últimos 20 |
-| `GET` | `/panel/alertas` | Rechazos, vencimientos, series |
+| Método | Ruta                          | Descripción                            |
+| ------ | ----------------------------- | -------------------------------------- |
+| `GET`  | `/panel/`                     | Vista completa del mes                 |
+| `GET`  | `/panel/indicadores`          | KPIs: hoy/semana/mes/año + crecimiento |
+| `GET`  | `/panel/estado-sunat`         | Breakdown SUNAT + rechazos recientes   |
+| `GET`  | `/panel/cobranzas`            | Aging de cuentas por cobrar            |
+| `GET`  | `/panel/ventas-mensuales`     | Gráfico 12 meses vs año anterior       |
+| `GET`  | `/panel/por-sucursal`         | Ranking por sucursal                   |
+| `GET`  | `/panel/por-moneda`           | Desglose PEN/USD                       |
+| `GET`  | `/panel/clientes`             | Top + nuevos + recurrentes             |
+| `GET`  | `/panel/productos`            | Top venta/cantidad + tipo IGV          |
+| `GET`  | `/panel/documentos-recientes` | Feed últimos 20                        |
+| `GET`  | `/panel/alertas`              | Rechazos, vencimientos, series         |
 
 ## 📑 Reportes complementarios
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| `GET` | `/reportes/registro-ventas` | Registro de ventas (PLE) |
-| `GET` | `/reportes/ventas-consolidado` | Consolidado por periodo |
-| `GET` | `/reportes/notas` | NC/ND del periodo |
-| `GET` | `/reportes/cobranzas` | Detalle cobranzas |
-| `GET` | `/reportes/documentos-internos` | Cotizaciones + notas venta |
-| `GET` | `/reportes/por-cliente` | Ventas agrupadas por cliente |
-| `GET` | `/reportes/por-sucursal` | Ventas por sucursal |
+| Método | Ruta                            | Descripción                  |
+| ------ | ------------------------------- | ---------------------------- |
+| `GET`  | `/reportes/registro-ventas`     | Registro de ventas (PLE)     |
+| `GET`  | `/reportes/ventas-consolidado`  | Consolidado por periodo      |
+| `GET`  | `/reportes/notas`               | NC/ND del periodo            |
+| `GET`  | `/reportes/cobranzas`           | Detalle cobranzas            |
+| `GET`  | `/reportes/documentos-internos` | Cotizaciones + notas venta   |
+| `GET`  | `/reportes/por-cliente`         | Ventas agrupadas por cliente |
+| `GET`  | `/reportes/por-sucursal`        | Ventas por sucursal          |
 
 ---
 
@@ -52,39 +52,49 @@ curl "https://tu-api.com/api/v1/panel?mes=202604" \
 
 ```json
 {
-  "estado": "exito",
-  "datos": {
-    "periodo": {
-      "mes": "202604",
-      "desde": "2026-04-01",
-      "hasta": "2026-04-30",
-      "label": "Abril 2026"
-    },
-    "resumen_mes": {
-      "facturas": { "cantidad": 45, "monto": 85000.00, "igv": 12960.00 },
-      "boletas": { "cantidad": 128, "monto": 12500.00, "igv": 1906.78 },
-      "notas_credito": { "cantidad": 3, "monto": 1500.00 },
-      "notas_debito": { "cantidad": 1, "monto": 200.00 },
-      "internas": { "cantidad": 12, "monto": 3400.00 },
-      "total_neto": 98400.00
-    },
-    "chart_diario": [
-      { "fecha": "2026-04-01", "ventas": 1200.00, "cantidad": 5 },
-      { "fecha": "2026-04-02", "ventas": 2300.00, "cantidad": 8 }
-    ],
-    "top_productos": [
-      { "codigo": "P001", "descripcion": "LAPTOP HP", "cantidad": 15, "monto": 44250 }
-    ],
-    "top_clientes": [
-      { "num_doc": "20555666777", "razon_social": "ACME SAC", "cantidad": 8, "monto": 25000 }
-    ],
-    "comparacion": {
-      "mes_actual": 98400.00,
-      "mes_anterior": 87200.00,
-      "crecimiento_porcentaje": 12.8,
-      "crecimiento_monto": 11200.00
+    "estado": "exito",
+    "datos": {
+        "periodo": {
+            "mes": "202604",
+            "desde": "2026-04-01",
+            "hasta": "2026-04-30",
+            "label": "Abril 2026"
+        },
+        "resumen_mes": {
+            "facturas": { "cantidad": 45, "monto": 85000.0, "igv": 12960.0 },
+            "boletas": { "cantidad": 128, "monto": 12500.0, "igv": 1906.78 },
+            "notas_credito": { "cantidad": 3, "monto": 1500.0 },
+            "notas_debito": { "cantidad": 1, "monto": 200.0 },
+            "internas": { "cantidad": 12, "monto": 3400.0 },
+            "total_neto": 98400.0
+        },
+        "chart_diario": [
+            { "fecha": "2026-04-01", "ventas": 1200.0, "cantidad": 5 },
+            { "fecha": "2026-04-02", "ventas": 2300.0, "cantidad": 8 }
+        ],
+        "top_productos": [
+            {
+                "codigo": "P001",
+                "descripcion": "LAPTOP HP",
+                "cantidad": 15,
+                "monto": 44250
+            }
+        ],
+        "top_clientes": [
+            {
+                "num_doc": "20555666777",
+                "razon_social": "ACME SAC",
+                "cantidad": 8,
+                "monto": 25000
+            }
+        ],
+        "comparacion": {
+            "mes_actual": 98400.0,
+            "mes_anterior": 87200.0,
+            "crecimiento_porcentaje": 12.8,
+            "crecimiento_monto": 11200.0
+        }
     }
-  }
 }
 ```
 
@@ -103,21 +113,21 @@ curl https://tu-api.com/api/v1/panel/indicadores \
 
 ```json
 {
-  "estado": "exito",
-  "datos": {
-    "hoy": { "cantidad": 8, "monto": 3200.00 },
-    "ayer": { "cantidad": 10, "monto": 4100.00 },
-    "semana_actual": { "cantidad": 45, "monto": 22500.00 },
-    "mes_actual": { "cantidad": 173, "monto": 98400.00 },
-    "mes_anterior": { "cantidad": 165, "monto": 87200.00 },
-    "anio_actual": { "cantidad": 820, "monto": 450000.00 },
-    "anio_anterior": { "cantidad": 780, "monto": 420000.00 },
-    "crecimiento": {
-      "vs_ayer": -22.0,
-      "vs_mes_anterior": 12.8,
-      "vs_anio_anterior": 7.1
+    "estado": "exito",
+    "datos": {
+        "hoy": { "cantidad": 8, "monto": 3200.0 },
+        "ayer": { "cantidad": 10, "monto": 4100.0 },
+        "semana_actual": { "cantidad": 45, "monto": 22500.0 },
+        "mes_actual": { "cantidad": 173, "monto": 98400.0 },
+        "mes_anterior": { "cantidad": 165, "monto": 87200.0 },
+        "anio_actual": { "cantidad": 820, "monto": 450000.0 },
+        "anio_anterior": { "cantidad": 780, "monto": 420000.0 },
+        "crecimiento": {
+            "vs_ayer": -22.0,
+            "vs_mes_anterior": 12.8,
+            "vs_anio_anterior": 7.1
+        }
     }
-  }
 }
 ```
 
@@ -136,36 +146,65 @@ curl https://tu-api.com/api/v1/panel/estado-sunat \
 
 ```json
 {
-  "estado": "exito",
-  "datos": {
-    "por_tipo": {
-      "01_facturas": { "pendiente": 2, "enviado": 5, "aceptado": 120, "rechazado": 3, "anulado": 1 },
-      "03_boletas":  { "pendiente": 8, "enviado": 12, "aceptado": 450, "rechazado": 1, "anulado": 5 },
-      "07_nc":       { "pendiente": 0, "enviado": 1, "aceptado": 18, "rechazado": 0, "anulado": 0 },
-      "08_nd":       { "pendiente": 0, "enviado": 0, "aceptado": 4, "rechazado": 0, "anulado": 0 }
-    },
-    "por_estado": {
-      "pendiente": 10,
-      "enviado": 18,
-      "aceptado": 592,
-      "rechazado": 4,
-      "anulado": 6
-    },
-    "observados": [
-      { "tipo": "01", "numero": "F001-115", "codigo": "3xxx", "descripcion": "Observación..." }
-    ],
-    "tasa_aceptacion": 98.67,
-    "ultimos_rechazos": [
-      {
-        "id": 301,
-        "tipo_documento": "01",
-        "numero_completo": "F001-300",
-        "sunat_code": "2325",
-        "sunat_description": "El documento electrónico ingresado ha sido alterado",
-        "fecha_emision": "2026-04-18"
-      }
-    ]
-  }
+    "estado": "exito",
+    "datos": {
+        "por_tipo": {
+            "01_facturas": {
+                "pendiente": 2,
+                "enviado": 5,
+                "aceptado": 120,
+                "rechazado": 3,
+                "anulado": 1
+            },
+            "03_boletas": {
+                "pendiente": 8,
+                "enviado": 12,
+                "aceptado": 450,
+                "rechazado": 1,
+                "anulado": 5
+            },
+            "07_nc": {
+                "pendiente": 0,
+                "enviado": 1,
+                "aceptado": 18,
+                "rechazado": 0,
+                "anulado": 0
+            },
+            "08_nd": {
+                "pendiente": 0,
+                "enviado": 0,
+                "aceptado": 4,
+                "rechazado": 0,
+                "anulado": 0
+            }
+        },
+        "por_estado": {
+            "pendiente": 10,
+            "enviado": 18,
+            "aceptado": 592,
+            "rechazado": 4,
+            "anulado": 6
+        },
+        "observados": [
+            {
+                "tipo": "01",
+                "numero": "F001-115",
+                "codigo": "3xxx",
+                "descripcion": "Observación..."
+            }
+        ],
+        "tasa_aceptacion": 98.67,
+        "ultimos_rechazos": [
+            {
+                "id": 301,
+                "tipo_documento": "01",
+                "numero_completo": "F001-300",
+                "sunat_code": "2325",
+                "sunat_description": "El documento electrónico ingresado ha sido alterado",
+                "fecha_emision": "2026-04-18"
+            }
+        ]
+    }
 }
 ```
 
@@ -184,30 +223,35 @@ curl https://tu-api.com/api/v1/panel/cobranzas \
 
 ```json
 {
-  "estado": "exito",
-  "datos": {
-    "resumen": {
-      "pagado": { "cantidad": 150, "monto": 85000.00 },
-      "parcial": { "cantidad": 12, "monto": 15000.00, "cobrado": 8000, "pendiente": 7000 },
-      "pendiente": { "cantidad": 25, "monto": 32000.00 }
-    },
-    "aging": {
-      "por_vencer": { "cantidad": 8, "monto": 18000.00 },
-      "vencido_0_30": { "cantidad": 10, "monto": 8500.00 },
-      "vencido_31_60": { "cantidad": 5, "monto": 3000.00 },
-      "vencido_61_90": { "cantidad": 2, "monto": 1500.00 },
-      "vencido_mas_90": { "cantidad": 0, "monto": 0 }
-    },
-    "top_deudores": [
-      {
-        "num_doc": "20555666777",
-        "razon_social": "ACME SAC",
-        "docs_pendientes": 3,
-        "monto_pendiente": 8500.00,
-        "dias_mora_max": 45
-      }
-    ]
-  }
+    "estado": "exito",
+    "datos": {
+        "resumen": {
+            "pagado": { "cantidad": 150, "monto": 85000.0 },
+            "parcial": {
+                "cantidad": 12,
+                "monto": 15000.0,
+                "cobrado": 8000,
+                "pendiente": 7000
+            },
+            "pendiente": { "cantidad": 25, "monto": 32000.0 }
+        },
+        "aging": {
+            "por_vencer": { "cantidad": 8, "monto": 18000.0 },
+            "vencido_0_30": { "cantidad": 10, "monto": 8500.0 },
+            "vencido_31_60": { "cantidad": 5, "monto": 3000.0 },
+            "vencido_61_90": { "cantidad": 2, "monto": 1500.0 },
+            "vencido_mas_90": { "cantidad": 0, "monto": 0 }
+        },
+        "top_deudores": [
+            {
+                "num_doc": "20555666777",
+                "razon_social": "ACME SAC",
+                "docs_pendientes": 3,
+                "monto_pendiente": 8500.0,
+                "dias_mora_max": 45
+            }
+        ]
+    }
 }
 ```
 
@@ -224,20 +268,29 @@ curl https://tu-api.com/api/v1/panel/ventas-mensuales \
 
 ```json
 {
-  "estado": "exito",
-  "datos": {
-    "meses": [
-      {
-        "mes": "202505", "label": "May 2025",
-        "actual": 75000.00, "anterior": 68000.00,
-        "cantidad_actual": 140, "cantidad_anterior": 125,
-        "crecimiento_porcentaje": 10.3
-      },
-      { "mes": "202506", "label": "Jun 2025", "actual": 82000, "anterior": 71000, "crecimiento_porcentaje": 15.5 }
-    ],
-    "promedio_mensual": 85400.00,
-    "total_anio": 1024800.00
-  }
+    "estado": "exito",
+    "datos": {
+        "meses": [
+            {
+                "mes": "202505",
+                "label": "May 2025",
+                "actual": 75000.0,
+                "anterior": 68000.0,
+                "cantidad_actual": 140,
+                "cantidad_anterior": 125,
+                "crecimiento_porcentaje": 10.3
+            },
+            {
+                "mes": "202506",
+                "label": "Jun 2025",
+                "actual": 82000,
+                "anterior": 71000,
+                "crecimiento_porcentaje": 15.5
+            }
+        ],
+        "promedio_mensual": 85400.0,
+        "total_anio": 1024800.0
+    }
 }
 ```
 
@@ -254,25 +307,25 @@ curl https://tu-api.com/api/v1/panel/por-sucursal \
 
 ```json
 {
-  "estado": "exito",
-  "datos": [
-    {
-      "sucursal_id": 1,
-      "nombre": "Sede Principal",
-      "cod_local": "0000",
-      "cantidad_docs": 180,
-      "monto_total": 65000.00,
-      "share_porcentaje": 66.06
-    },
-    {
-      "sucursal_id": 2,
-      "nombre": "Sucursal Norte",
-      "cod_local": "0001",
-      "cantidad_docs": 95,
-      "monto_total": 33400.00,
-      "share_porcentaje": 33.94
-    }
-  ]
+    "estado": "exito",
+    "datos": [
+        {
+            "sucursal_id": 1,
+            "nombre": "Sede Principal",
+            "cod_local": "0000",
+            "cantidad_docs": 180,
+            "monto_total": 65000.0,
+            "share_porcentaje": 66.06
+        },
+        {
+            "sucursal_id": 2,
+            "nombre": "Sucursal Norte",
+            "cod_local": "0001",
+            "cantidad_docs": 95,
+            "monto_total": 33400.0,
+            "share_porcentaje": 33.94
+        }
+    ]
 }
 ```
 
@@ -289,12 +342,12 @@ curl https://tu-api.com/api/v1/panel/por-moneda \
 
 ```json
 {
-  "estado": "exito",
-  "datos": {
-    "PEN": { "cantidad": 265, "monto": 85000.00, "igv": 12960.00 },
-    "USD": { "cantidad": 10, "monto": 3500.00, "igv": 534.00 },
-    "EUR": { "cantidad": 0, "monto": 0, "igv": 0 }
-  }
+    "estado": "exito",
+    "datos": {
+        "PEN": { "cantidad": 265, "monto": 85000.0, "igv": 12960.0 },
+        "USD": { "cantidad": 10, "monto": 3500.0, "igv": 534.0 },
+        "EUR": { "cantidad": 0, "monto": 0, "igv": 0 }
+    }
 }
 ```
 
@@ -311,20 +364,30 @@ curl https://tu-api.com/api/v1/panel/clientes \
 
 ```json
 {
-  "estado": "exito",
-  "datos": {
-    "top_20": [
-      { "num_doc": "20555666777", "razon_social": "ACME SAC", "cantidad_docs": 12, "monto_total": 35000 }
-    ],
-    "clientes_nuevos": [
-      { "num_doc": "20123456789", "razon_social": "NUEVO SAC", "primera_compra": "2026-04-05", "monto": 2500 }
-    ],
-    "clientes_recurrentes": {
-      "cantidad": 85,
-      "porcentaje": 62.0
-    },
-    "total_registrados": 137
-  }
+    "estado": "exito",
+    "datos": {
+        "top_20": [
+            {
+                "num_doc": "20555666777",
+                "razon_social": "ACME SAC",
+                "cantidad_docs": 12,
+                "monto_total": 35000
+            }
+        ],
+        "clientes_nuevos": [
+            {
+                "num_doc": "20123456789",
+                "razon_social": "NUEVO SAC",
+                "primera_compra": "2026-04-05",
+                "monto": 2500
+            }
+        ],
+        "clientes_recurrentes": {
+            "cantidad": 85,
+            "porcentaje": 62.0
+        },
+        "total_registrados": 137
+    }
 }
 ```
 
@@ -341,19 +404,39 @@ curl https://tu-api.com/api/v1/panel/productos \
 
 ```json
 {
-  "estado": "exito",
-  "datos": {
-    "top_por_venta": [
-      { "codigo": "P001", "descripcion": "LAPTOP HP PAVILION 15", "cantidad_vendida": 15, "monto_total": 44250 }
-    ],
-    "top_por_cantidad": [
-      { "codigo": "P002", "descripcion": "MOUSE LOGITECH", "cantidad_vendida": 230, "monto_total": 13570 }
-    ],
-    "por_tipo_igv": [
-      { "tip_afe_igv": "10", "descripcion": "Gravado - Operación Onerosa", "cantidad_items": 420, "monto_total": 88000 },
-      { "tip_afe_igv": "20", "descripcion": "Exonerado - Operación Onerosa", "cantidad_items": 35, "monto_total": 2500 }
-    ]
-  }
+    "estado": "exito",
+    "datos": {
+        "top_por_venta": [
+            {
+                "codigo": "P001",
+                "descripcion": "LAPTOP HP PAVILION 15",
+                "cantidad_vendida": 15,
+                "monto_total": 44250
+            }
+        ],
+        "top_por_cantidad": [
+            {
+                "codigo": "P002",
+                "descripcion": "MOUSE LOGITECH",
+                "cantidad_vendida": 230,
+                "monto_total": 13570
+            }
+        ],
+        "por_tipo_igv": [
+            {
+                "tip_afe_igv": "10",
+                "descripcion": "Gravado - Operación Onerosa",
+                "cantidad_items": 420,
+                "monto_total": 88000
+            },
+            {
+                "tip_afe_igv": "20",
+                "descripcion": "Exonerado - Operación Onerosa",
+                "cantidad_items": 35,
+                "monto_total": 2500
+            }
+        ]
+    }
 }
 ```
 
@@ -370,18 +453,18 @@ curl https://tu-api.com/api/v1/panel/documentos-recientes \
 
 ```json
 {
-  "estado": "exito",
-  "datos": [
-    {
-      "tipo_documento": "01",
-      "tipo_descripcion": "Factura",
-      "numero_completo": "F001-123",
-      "cliente": "ACME SAC",
-      "monto_total": 7052.86,
-      "fecha_emision": "2026-04-18T14:30:00Z",
-      "sunat_status": "aceptado"
-    }
-  ]
+    "estado": "exito",
+    "datos": [
+        {
+            "tipo_documento": "01",
+            "tipo_descripcion": "Factura",
+            "numero_completo": "F001-123",
+            "cliente": "ACME SAC",
+            "monto_total": 7052.86,
+            "fecha_emision": "2026-04-18T14:30:00Z",
+            "sunat_status": "aceptado"
+        }
+    ]
 }
 ```
 
@@ -402,39 +485,48 @@ curl https://tu-api.com/api/v1/panel/alertas \
 
 ```json
 {
-  "estado": "exito",
-  "datos": {
-    "rechazados_7_dias": {
-      "cantidad": 3,
-      "docs": [
-        { "numero_completo": "F001-300", "sunat_code": "2325", "fecha": "2026-04-17" }
-      ]
-    },
-    "vencen_proximos_7_dias": {
-      "cantidad": 5,
-      "monto": 8500.00,
-      "docs": [
-        { "numero_completo": "F001-250", "cliente": "ACME SAC", "fecha_vencimiento": "2026-04-22", "saldo": 2500 }
-      ]
-    },
-    "vencidos": {
-      "cantidad": 12,
-      "monto": 15000.00
-    },
-    "pendientes_envio_sunat": {
-      "cantidad": 8,
-      "docs": []
-    },
-    "series_por_agotar": [
-      {
-        "tipo": "factura",
-        "serie": "F001",
-        "correlativo_actual": 99000000,
-        "restantes": 1000000,
-        "alerta": "⚠️ Serie por agotar"
-      }
-    ]
-  }
+    "estado": "exito",
+    "datos": {
+        "rechazados_7_dias": {
+            "cantidad": 3,
+            "docs": [
+                {
+                    "numero_completo": "F001-300",
+                    "sunat_code": "2325",
+                    "fecha": "2026-04-17"
+                }
+            ]
+        },
+        "vencen_proximos_7_dias": {
+            "cantidad": 5,
+            "monto": 8500.0,
+            "docs": [
+                {
+                    "numero_completo": "F001-250",
+                    "cliente": "ACME SAC",
+                    "fecha_vencimiento": "2026-04-22",
+                    "saldo": 2500
+                }
+            ]
+        },
+        "vencidos": {
+            "cantidad": 12,
+            "monto": 15000.0
+        },
+        "pendientes_envio_sunat": {
+            "cantidad": 8,
+            "docs": []
+        },
+        "series_por_agotar": [
+            {
+                "tipo": "factura",
+                "serie": "F001",
+                "correlativo_actual": 99000000,
+                "restantes": 1000000,
+                "alerta": "⚠️ Serie por agotar"
+            }
+        ]
+    }
 }
 ```
 
@@ -456,11 +548,11 @@ curl "https://tu-api.com/api/v1/reportes/registro-ventas?mes=202604&formato=xlsx
 
 **Filtros opcionales** (coma o arreglo):
 
-| Parámetro | Valores | Default |
-|---|---|---|
-| `tipos` | `factura`, `boleta`, `nota-credito`, `nota-debito` | `factura,boleta` |
-| `estados` | `aceptado`, `aceptado_obs`, `rechazado`, `anulado` | todos |
-| `ambientes` | `produccion`, `prueba` | ambos |
+| Parámetro   | Valores                                            | Default          |
+| ----------- | -------------------------------------------------- | ---------------- |
+| `tipos`     | `factura`, `boleta`, `nota-credito`, `nota-debito` | `factura,boleta` |
+| `estados`   | `aceptado`, `aceptado_obs`, `rechazado`, `anulado` | todos            |
+| `ambientes` | `produccion`, `prueba`                             | ambos            |
 
 El detalle se ordena por fecha de emisión y Serie-Correlativo. PDF y Excel muestran únicamente los tipos y ambientes seleccionados, con bloques de totales independientes para Producción y Prueba; no generan filas de total sin documentos. Las notas de crédito y débito solo aparecen cuando se solicitan explícitamente. En Excel, el detalle tiene autofiltro, encabezado congelado, fechas reales y totales que se recalculan con las filas visibles. **TOTAL ACEPTADOS** es el único total contable válido; rechazados y anulados se muestran de forma informativa y no se calcula ningún neto. Pendientes, enviados y `anulacion_en_proceso` no forman parte del registro de ventas.
 
@@ -495,11 +587,11 @@ Breakdown detallado por sucursal.
 ```javascript
 // Dashboard principal — carga en paralelo
 Promise.all([
-  fetch('/panel/indicadores', { headers }),
-  fetch('/panel/ventas-mensuales', { headers }),
-  fetch('/panel/estado-sunat', { headers }),
-  fetch('/panel/alertas', { headers }),
-  fetch('/panel/documentos-recientes', { headers }),
+    fetch('/panel/indicadores', { headers }),
+    fetch('/panel/ventas-mensuales', { headers }),
+    fetch('/panel/estado-sunat', { headers }),
+    fetch('/panel/alertas', { headers }),
+    fetch('/panel/documentos-recientes', { headers }),
 ]).then(renderDashboard);
 
 // Sección específica

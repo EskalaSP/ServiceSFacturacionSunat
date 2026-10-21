@@ -10,10 +10,9 @@ import {
     Store,
     Wifi,
     WifiOff,
-    X
-    
+    X,
 } from 'lucide-react';
-import type {LucideIcon} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -59,10 +58,14 @@ const Section = ({
                 <Icon className="size-5" />
             </div>
             <div className="flex-1">
-                <h3 className="text-base font-semibold leading-tight">
+                <h3 className="text-base leading-tight font-semibold">
                     {title} {required && <Req />}
                 </h3>
-                {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
+                {subtitle && (
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                        {subtitle}
+                    </p>
+                )}
             </div>
         </div>
         {children}
@@ -80,7 +83,16 @@ export default function Configuracion({ tenant }: Props) {
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<TestResult>(null);
 
-    const { data, setData, post, put, transform, processing, errors, progress } = useForm({
+    const {
+        data,
+        setData,
+        post,
+        put,
+        transform,
+        processing,
+        errors,
+        progress,
+    } = useForm({
         // Identidad
         razon_social: tenant?.razon_social ?? '',
         nombre_comercial: tenant?.nombre_comercial ?? '',
@@ -90,8 +102,12 @@ export default function Configuracion({ tenant }: Props) {
         departamento: tenant?.departamento ?? '',
         provincia: tenant?.provincia ?? '',
         distrito: tenant?.distrito ?? '',
-        telefonos: (tenant?.telefonos && tenant.telefonos.length > 0) ? tenant.telefonos : [''],
-        emails: (tenant?.emails && tenant.emails.length > 0) ? tenant.emails : [''],
+        telefonos:
+            tenant?.telefonos && tenant.telefonos.length > 0
+                ? tenant.telefonos
+                : [''],
+        emails:
+            tenant?.emails && tenant.emails.length > 0 ? tenant.emails : [''],
         // Credenciales SUNAT
         sol_user: tenant?.sol_user ?? '',
         sol_pass: '',
@@ -111,23 +127,27 @@ export default function Configuracion({ tenant }: Props) {
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        const hayArchivos = data.certificate instanceof File || data.logo instanceof File;
-        const datosPermitidos = (d: typeof data) => esSimple ? {
-            razon_social: d.razon_social,
-            nombre_comercial: d.nombre_comercial,
-            direccion: d.direccion,
-            ubigeo: d.ubigeo,
-            departamento: d.departamento,
-            provincia: d.provincia,
-            distrito: d.distrito,
-            telefonos: d.telefonos,
-            emails: d.emails,
-            logo: d.logo,
-            mensaje_agradecimiento: d.mensaje_agradecimiento,
-            mensaje_promocional: d.mensaje_promocional,
-            cuentas_bancarias: d.cuentas_bancarias,
-            billeteras_digitales: d.billeteras_digitales,
-        } : d;
+        const hayArchivos =
+            data.certificate instanceof File || data.logo instanceof File;
+        const datosPermitidos = (d: typeof data) =>
+            esSimple
+                ? {
+                      razon_social: d.razon_social,
+                      nombre_comercial: d.nombre_comercial,
+                      direccion: d.direccion,
+                      ubigeo: d.ubigeo,
+                      departamento: d.departamento,
+                      provincia: d.provincia,
+                      distrito: d.distrito,
+                      telefonos: d.telefonos,
+                      emails: d.emails,
+                      logo: d.logo,
+                      mensaje_agradecimiento: d.mensaje_agradecimiento,
+                      mensaje_promocional: d.mensaje_promocional,
+                      cuentas_bancarias: d.cuentas_bancarias,
+                      billeteras_digitales: d.billeteras_digitales,
+                  }
+                : d;
 
         if (hayArchivos) {
             // Inertia + PUT no envía archivos: se usa POST con method spoofing.
@@ -139,14 +159,26 @@ export default function Configuracion({ tenant }: Props) {
         }
     };
 
-    const addRepeat = <K extends 'telefonos' | 'emails' | 'cuentas_bancarias' | 'billeteras_digitales'>(
+    const addRepeat = <
+        K extends
+            | 'telefonos'
+            | 'emails'
+            | 'cuentas_bancarias'
+            | 'billeteras_digitales',
+    >(
         key: K,
         emptyItem: unknown,
     ) => {
         setData(key, [...(data[key] as unknown[]), emptyItem] as never);
     };
 
-    const rmRepeat = <K extends 'telefonos' | 'emails' | 'cuentas_bancarias' | 'billeteras_digitales'>(
+    const rmRepeat = <
+        K extends
+            | 'telefonos'
+            | 'emails'
+            | 'cuentas_bancarias'
+            | 'billeteras_digitales',
+    >(
         key: K,
         i: number,
     ) => {
@@ -157,11 +189,15 @@ export default function Configuracion({ tenant }: Props) {
 
     function guardarToken() {
         setSavingToken(true);
-        router.put('/sunat/configuracion/consulta-token', { consulta_token: consultaToken }, {
-            preserveScroll: true,
-            onSuccess: () => setConsultaToken(''),
-            onFinish: () => setSavingToken(false),
-        });
+        router.put(
+            '/sunat/configuracion/consulta-token',
+            { consulta_token: consultaToken },
+            {
+                preserveScroll: true,
+                onSuccess: () => setConsultaToken(''),
+                onFinish: () => setSavingToken(false),
+            },
+        );
     }
 
     async function probarConexion() {
@@ -172,7 +208,9 @@ export default function Configuracion({ tenant }: Props) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''),
+                    'X-XSRF-TOKEN': decodeURIComponent(
+                        document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '',
+                    ),
                 },
             });
             setTestResult(await res.json());
@@ -187,46 +225,82 @@ export default function Configuracion({ tenant }: Props) {
         <SunatLayout>
             <Head title="Configuración" />
 
-            <form onSubmit={submit} autoComplete="off" className="flex flex-1 flex-col gap-4 p-4">
+            <form
+                onSubmit={submit}
+                autoComplete="off"
+                className="flex flex-1 flex-col gap-4 p-4"
+            >
                 <div>
-                    <h1 className="text-xl font-semibold tracking-tight">Configuración de mi empresa</h1>
+                    <h1 className="text-xl font-semibold tracking-tight">
+                        Configuración de mi empresa
+                    </h1>
                     <p className="text-sm text-muted-foreground">
-                        Actualiza todos los datos de tu empresa, credenciales SOL y opciones de emisión.
+                        Actualiza todos los datos de tu empresa, credenciales
+                        SOL y opciones de emisión.
                     </p>
                 </div>
 
                 {esSimple && (
                     <div className="grid gap-1.5 rounded-lg border border-border bg-card p-4 sm:max-w-xs">
                         <Label htmlFor="environment_simple">Entorno</Label>
-                        <Input id="environment_simple" value="Producción" readOnly className="bg-muted" />
+                        <Input
+                            id="environment_simple"
+                            value="Producción"
+                            readOnly
+                            className="bg-muted"
+                        />
                     </div>
                 )}
 
                 {/* 1. Identidad */}
-                <Section icon={IdCard} title="1. Identidad" required subtitle="RUC y datos legales de la empresa">
+                <Section
+                    icon={IdCard}
+                    title="1. Identidad"
+                    required
+                    subtitle="RUC y datos legales de la empresa"
+                >
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
                             <Label htmlFor="ruc">RUC</Label>
-                            <Input id="ruc" value={tenant?.ruc ?? ''} readOnly className="bg-muted" />
-                            <p className="mt-1 text-xs text-muted-foreground">Tu identidad fiscal. No se puede cambiar aquí.</p>
+                            <Input
+                                id="ruc"
+                                value={tenant?.ruc ?? ''}
+                                readOnly
+                                className="bg-muted"
+                            />
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                Tu identidad fiscal. No se puede cambiar aquí.
+                            </p>
                         </div>
                         <div className="md:col-span-2">
-                            <Label htmlFor="razon_social">Razón social <Req /></Label>
+                            <Label htmlFor="razon_social">
+                                Razón social <Req />
+                            </Label>
                             <Input
                                 id="razon_social"
                                 value={data.razon_social}
-                                onChange={(e) => setData('razon_social', e.target.value)}
+                                onChange={(e) =>
+                                    setData('razon_social', e.target.value)
+                                }
                                 maxLength={255}
                                 placeholder="EMPRESA EJEMPLO S.A.C."
                             />
-                            {errors.razon_social && <p className="mt-1 text-xs text-red-600">{errors.razon_social}</p>}
+                            {errors.razon_social && (
+                                <p className="mt-1 text-xs text-red-600">
+                                    {errors.razon_social}
+                                </p>
+                            )}
                         </div>
                         <div className="md:col-span-3">
-                            <Label htmlFor="nombre_comercial">Nombre comercial</Label>
+                            <Label htmlFor="nombre_comercial">
+                                Nombre comercial
+                            </Label>
                             <Input
                                 id="nombre_comercial"
                                 value={data.nombre_comercial}
-                                onChange={(e) => setData('nombre_comercial', e.target.value)}
+                                onChange={(e) =>
+                                    setData('nombre_comercial', e.target.value)
+                                }
                                 maxLength={255}
                                 placeholder="Ej: TIENDA MODAS AMÉRICA (opcional)"
                             />
@@ -235,14 +309,20 @@ export default function Configuracion({ tenant }: Props) {
                 </Section>
 
                 {/* 2. Ubicación */}
-                <Section icon={MapPin} title="2. Ubicación" subtitle="Dirección fiscal y contacto">
+                <Section
+                    icon={MapPin}
+                    title="2. Ubicación"
+                    subtitle="Dirección fiscal y contacto"
+                >
                     <div className="grid gap-4 md:grid-cols-6">
                         <div className="md:col-span-6">
                             <Label htmlFor="direccion">Dirección fiscal</Label>
                             <Input
                                 id="direccion"
                                 value={data.direccion}
-                                onChange={(e) => setData('direccion', e.target.value)}
+                                onChange={(e) =>
+                                    setData('direccion', e.target.value)
+                                }
                                 maxLength={500}
                                 placeholder="Av. Arequipa 1234, San Isidro"
                             />
@@ -252,23 +332,55 @@ export default function Configuracion({ tenant }: Props) {
                             <Input
                                 id="ubigeo"
                                 value={data.ubigeo}
-                                onChange={(e) => setData('ubigeo', e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                onChange={(e) =>
+                                    setData(
+                                        'ubigeo',
+                                        e.target.value
+                                            .replace(/\D/g, '')
+                                            .slice(0, 6),
+                                    )
+                                }
                                 maxLength={6}
                                 placeholder="150101"
                             />
-                            {errors.ubigeo && <p className="mt-1 text-xs text-red-600">{errors.ubigeo}</p>}
+                            {errors.ubigeo && (
+                                <p className="mt-1 text-xs text-red-600">
+                                    {errors.ubigeo}
+                                </p>
+                            )}
                         </div>
                         <div className="md:col-span-2">
                             <Label htmlFor="departamento">Departamento</Label>
-                            <Input id="departamento" value={data.departamento} onChange={(e) => setData('departamento', e.target.value)} placeholder="LIMA" />
+                            <Input
+                                id="departamento"
+                                value={data.departamento}
+                                onChange={(e) =>
+                                    setData('departamento', e.target.value)
+                                }
+                                placeholder="LIMA"
+                            />
                         </div>
                         <div className="md:col-span-2">
                             <Label htmlFor="provincia">Provincia</Label>
-                            <Input id="provincia" value={data.provincia} onChange={(e) => setData('provincia', e.target.value)} placeholder="LIMA" />
+                            <Input
+                                id="provincia"
+                                value={data.provincia}
+                                onChange={(e) =>
+                                    setData('provincia', e.target.value)
+                                }
+                                placeholder="LIMA"
+                            />
                         </div>
                         <div>
                             <Label htmlFor="distrito">Distrito</Label>
-                            <Input id="distrito" value={data.distrito} onChange={(e) => setData('distrito', e.target.value)} placeholder="SAN ISIDRO" />
+                            <Input
+                                id="distrito"
+                                value={data.distrito}
+                                onChange={(e) =>
+                                    setData('distrito', e.target.value)
+                                }
+                                placeholder="SAN ISIDRO"
+                            />
                         </div>
 
                         <div className="md:col-span-3">
@@ -285,13 +397,24 @@ export default function Configuracion({ tenant }: Props) {
                                         maxLength={20}
                                         placeholder="Ej: +51 999 999 999"
                                     />
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => rmRepeat('telefonos', i)}>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => rmRepeat('telefonos', i)}
+                                    >
                                         <X className="size-4" />
                                     </Button>
                                 </div>
                             ))}
                             {data.telefonos.length < 5 && (
-                                <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={() => addRepeat('telefonos', '')}>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="mt-2"
+                                    onClick={() => addRepeat('telefonos', '')}
+                                >
                                     <Plus className="size-3" /> Añadir teléfono
                                 </Button>
                             )}
@@ -312,13 +435,24 @@ export default function Configuracion({ tenant }: Props) {
                                         maxLength={100}
                                         placeholder="Ej: ventas@empresa.com"
                                     />
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => rmRepeat('emails', i)}>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => rmRepeat('emails', i)}
+                                    >
                                         <X className="size-4" />
                                     </Button>
                                 </div>
                             ))}
                             {data.emails.length < 5 && (
-                                <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={() => addRepeat('emails', '')}>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="mt-2"
+                                    onClick={() => addRepeat('emails', '')}
+                                >
                                     <Plus className="size-3" /> Añadir email
                                 </Button>
                             )}
@@ -327,112 +461,218 @@ export default function Configuracion({ tenant }: Props) {
                 </Section>
 
                 {/* 3. Credenciales SUNAT */}
-                {!esSimple && <Section icon={ShieldCheck} title="3. Credenciales SUNAT" required subtitle="Usuario secundario, certificado y entorno">
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <div>
-                            <Label htmlFor="sol_user">Usuario secundario <Req /></Label>
-                            <Input
-                                id="sol_user"
-                                autoComplete="off"
-                                value={data.sol_user}
-                                onChange={(e) => setData('sol_user', e.target.value)}
-                                disabled={esSimple}
-                                maxLength={20}
-                                placeholder="MODDATOS (para beta)"
-                            />
-                            {errors.sol_user && <p className="mt-1 text-xs text-red-600">{errors.sol_user}</p>}
+                {!esSimple && (
+                    <Section
+                        icon={ShieldCheck}
+                        title="3. Credenciales SUNAT"
+                        required
+                        subtitle="Usuario secundario, certificado y entorno"
+                    >
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <div>
+                                <Label htmlFor="sol_user">
+                                    Usuario secundario <Req />
+                                </Label>
+                                <Input
+                                    id="sol_user"
+                                    autoComplete="off"
+                                    value={data.sol_user}
+                                    onChange={(e) =>
+                                        setData('sol_user', e.target.value)
+                                    }
+                                    disabled={esSimple}
+                                    maxLength={20}
+                                    placeholder="MODDATOS (para beta)"
+                                />
+                                {errors.sol_user && (
+                                    <p className="mt-1 text-xs text-red-600">
+                                        {errors.sol_user}
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <Label htmlFor="sol_pass">
+                                    Clave del usuario secundario{' '}
+                                    {!tenant?.sol_user && <Req />}
+                                </Label>
+                                <PasswordInput
+                                    id="sol_pass"
+                                    autoComplete="new-password"
+                                    value={data.sol_pass}
+                                    onChange={(e) =>
+                                        setData('sol_pass', e.target.value)
+                                    }
+                                    disabled={esSimple}
+                                    placeholder={
+                                        tenant?.sol_user
+                                            ? '••••• (dejar vacío = sin cambios)'
+                                            : 'MODDATOS (para beta)'
+                                    }
+                                />
+                                {errors.sol_pass && (
+                                    <p className="mt-1 text-xs text-red-600">
+                                        {errors.sol_pass}
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <Label htmlFor="environment">
+                                    Entorno <Req />
+                                </Label>
+                                <Combobox
+                                    value={data.environment}
+                                    onChange={(v) =>
+                                        setData(
+                                            'environment',
+                                            v as 'beta' | 'produccion',
+                                        )
+                                    }
+                                    disabled={esSimple}
+                                    options={[
+                                        {
+                                            value: 'beta',
+                                            label: 'Beta (pruebas)',
+                                        },
+                                        {
+                                            value: 'produccion',
+                                            label: 'Producción',
+                                        },
+                                    ]}
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <Label htmlFor="certificate">
+                                    Certificado digital (.pfx / .p12 / .pem)
+                                </Label>
+                                <Input
+                                    id="certificate"
+                                    type="file"
+                                    accept=".pfx,.p12,.pem"
+                                    disabled={esSimple}
+                                    onChange={(e) =>
+                                        setData(
+                                            'certificate',
+                                            e.target.files?.[0] ?? null,
+                                        )
+                                    }
+                                />
+                                {errors.certificate && (
+                                    <p className="mt-1 text-xs text-red-600">
+                                        {errors.certificate}
+                                    </p>
+                                )}
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Opcional si ya subiste uno antes.
+                                </p>
+                            </div>
+                            <div>
+                                <Label htmlFor="certificate_password">
+                                    Contraseña del certificado
+                                </Label>
+                                <PasswordInput
+                                    id="certificate_password"
+                                    autoComplete="new-password"
+                                    value={data.certificate_password}
+                                    onChange={(e) =>
+                                        setData(
+                                            'certificate_password',
+                                            e.target.value,
+                                        )
+                                    }
+                                    disabled={esSimple}
+                                    placeholder="Solo si subes un archivo nuevo o cambiaste la clave"
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <Label htmlFor="sol_pass">Clave del usuario secundario {!tenant?.sol_user && <Req />}</Label>
-                            <PasswordInput
-                                id="sol_pass"
-                                autoComplete="new-password"
-                                value={data.sol_pass}
-                                onChange={(e) => setData('sol_pass', e.target.value)}
-                                disabled={esSimple}
-                                placeholder={tenant?.sol_user ? '••••• (dejar vacío = sin cambios)' : 'MODDATOS (para beta)'}
-                            />
-                            {errors.sol_pass && <p className="mt-1 text-xs text-red-600">{errors.sol_pass}</p>}
-                        </div>
-                        <div>
-                            <Label htmlFor="environment">Entorno <Req /></Label>
-                            <Combobox
-                                value={data.environment}
-                                onChange={(v) => setData('environment', v as 'beta' | 'produccion')}
-                                disabled={esSimple}
-                                options={[
-                                    { value: 'beta', label: 'Beta (pruebas)' },
-                                    { value: 'produccion', label: 'Producción' },
-                                ]}
-                            />
-                        </div>
-                        <div className="md:col-span-2">
-                            <Label htmlFor="certificate">Certificado digital (.pfx / .p12 / .pem)</Label>
-                            <Input
-                                id="certificate"
-                                type="file"
-                                accept=".pfx,.p12,.pem"
-                                disabled={esSimple}
-                                onChange={(e) => setData('certificate', e.target.files?.[0] ?? null)}
-                            />
-                            {errors.certificate && <p className="mt-1 text-xs text-red-600">{errors.certificate}</p>}
-                            <p className="mt-1 text-xs text-muted-foreground">Opcional si ya subiste uno antes.</p>
-                        </div>
-                        <div>
-                            <Label htmlFor="certificate_password">Contraseña del certificado</Label>
-                            <PasswordInput
-                                id="certificate_password"
-                                autoComplete="new-password"
-                                value={data.certificate_password}
-                                onChange={(e) => setData('certificate_password', e.target.value)}
-                                disabled={esSimple}
-                                placeholder="Solo si subes un archivo nuevo o cambiaste la clave"
-                            />
-                        </div>
-                    </div>
-                </Section>}
+                    </Section>
+                )}
 
                 {/* 4. Series de numeración */}
-                {!esSimple && <Section icon={FileText} title="4. Series de numeración" required subtitle="Deben iniciar con F para facturas y B para boletas">
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div>
-                            <Label htmlFor="serie_factura">Serie Factura <Req /></Label>
-                            <Input
-                                id="serie_factura"
-                                value={data.serie_factura}
-                                onChange={(e) => setData('serie_factura', e.target.value.toUpperCase())}
-                                disabled={esSimple}
-                                maxLength={4}
-                                placeholder="F001"
-                            />
-                            {errors.serie_factura && <p className="mt-1 text-xs text-red-600">{errors.serie_factura}</p>}
+                {!esSimple && (
+                    <Section
+                        icon={FileText}
+                        title="4. Series de numeración"
+                        required
+                        subtitle="Deben iniciar con F para facturas y B para boletas"
+                    >
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <Label htmlFor="serie_factura">
+                                    Serie Factura <Req />
+                                </Label>
+                                <Input
+                                    id="serie_factura"
+                                    value={data.serie_factura}
+                                    onChange={(e) =>
+                                        setData(
+                                            'serie_factura',
+                                            e.target.value.toUpperCase(),
+                                        )
+                                    }
+                                    disabled={esSimple}
+                                    maxLength={4}
+                                    placeholder="F001"
+                                />
+                                {errors.serie_factura && (
+                                    <p className="mt-1 text-xs text-red-600">
+                                        {errors.serie_factura}
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <Label htmlFor="serie_boleta">
+                                    Serie Boleta <Req />
+                                </Label>
+                                <Input
+                                    id="serie_boleta"
+                                    value={data.serie_boleta}
+                                    onChange={(e) =>
+                                        setData(
+                                            'serie_boleta',
+                                            e.target.value.toUpperCase(),
+                                        )
+                                    }
+                                    disabled={esSimple}
+                                    maxLength={4}
+                                    placeholder="B001"
+                                />
+                                {errors.serie_boleta && (
+                                    <p className="mt-1 text-xs text-red-600">
+                                        {errors.serie_boleta}
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <div>
-                            <Label htmlFor="serie_boleta">Serie Boleta <Req /></Label>
-                            <Input
-                                id="serie_boleta"
-                                value={data.serie_boleta}
-                                onChange={(e) => setData('serie_boleta', e.target.value.toUpperCase())}
-                                disabled={esSimple}
-                                maxLength={4}
-                                placeholder="B001"
-                            />
-                            {errors.serie_boleta && <p className="mt-1 text-xs text-red-600">{errors.serie_boleta}</p>}
-                        </div>
-                    </div>
-                </Section>}
+                    </Section>
+                )}
 
                 {/* 5. Comercial */}
-                <Section icon={Store} title="5. Comercial" subtitle="Logo, mensajes y datos de pago del comprobante">
+                <Section
+                    icon={Store}
+                    title="5. Comercial"
+                    subtitle="Logo, mensajes y datos de pago del comprobante"
+                >
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="md:col-span-2">
                             <Label htmlFor="logo">Logo (jpg/png/webp)</Label>
                             <div className="flex items-start gap-4">
                                 <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/40">
                                     {logoPreview ? (
-                                        <img src={logoPreview} alt="Vista previa del logo" className="size-full object-contain p-1" />
+                                        <img
+                                            src={logoPreview}
+                                            alt="Vista previa del logo"
+                                            className="size-full object-contain p-1"
+                                        />
                                     ) : tenant?.logo_url ? (
-                                        <img src={tenant.logo_url} alt="Logo actual" className="size-full object-contain p-1" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                        <img
+                                            src={tenant.logo_url}
+                                            alt="Logo actual"
+                                            className="size-full object-contain p-1"
+                                            onError={(e) =>
+                                                (e.currentTarget.style.display =
+                                                    'none')
+                                            }
+                                        />
                                     ) : (
                                         <Store className="size-7 text-muted-foreground/40" />
                                     )}
@@ -443,40 +683,67 @@ export default function Configuracion({ tenant }: Props) {
                                         type="file"
                                         accept=".jpg,.jpeg,.png,.webp"
                                         onChange={(e) => {
-                                            const file = e.target.files?.[0] ?? null;
+                                            const file =
+                                                e.target.files?.[0] ?? null;
                                             setData('logo', file);
-                                            if (logoPreview) URL.revokeObjectURL(logoPreview);
-                                            setLogoPreview(file ? URL.createObjectURL(file) : null);
+                                            if (logoPreview)
+                                                URL.revokeObjectURL(
+                                                    logoPreview,
+                                                );
+                                            setLogoPreview(
+                                                file
+                                                    ? URL.createObjectURL(file)
+                                                    : null,
+                                            );
                                         }}
                                     />
                                     <p className="mt-1.5 text-xs text-muted-foreground">
-                                        Cuadrado <strong>300×300 px</strong>, PNG. Máx. 2 MB.
+                                        Cuadrado <strong>300×300 px</strong>,
+                                        PNG. Máx. 2 MB.
                                     </p>
-                                    {errors.logo && <p className="mt-1 text-xs text-red-600">{errors.logo}</p>}
+                                    {errors.logo && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {errors.logo}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
                         <div className="md:col-span-2">
-                            <Label htmlFor="mensaje_agradecimiento">Mensaje de agradecimiento (PDFs)</Label>
+                            <Label htmlFor="mensaje_agradecimiento">
+                                Mensaje de agradecimiento (PDFs)
+                            </Label>
                             <textarea
                                 id="mensaje_agradecimiento"
                                 rows={2}
                                 maxLength={500}
                                 className="form-input"
                                 value={data.mensaje_agradecimiento}
-                                onChange={(e) => setData('mensaje_agradecimiento', e.target.value)}
+                                onChange={(e) =>
+                                    setData(
+                                        'mensaje_agradecimiento',
+                                        e.target.value,
+                                    )
+                                }
                                 placeholder="Ej: Gracias por su compra. Vuelva pronto."
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <Label htmlFor="mensaje_promocional">Mensaje promocional</Label>
+                            <Label htmlFor="mensaje_promocional">
+                                Mensaje promocional
+                            </Label>
                             <textarea
                                 id="mensaje_promocional"
                                 rows={2}
                                 maxLength={500}
                                 className="form-input"
                                 value={data.mensaje_promocional}
-                                onChange={(e) => setData('mensaje_promocional', e.target.value)}
+                                onChange={(e) =>
+                                    setData(
+                                        'mensaje_promocional',
+                                        e.target.value,
+                                    )
+                                }
                                 placeholder="Ej: Síguenos en @tuempresa • www.tuempresa.com"
                             />
                         </div>
@@ -485,22 +752,111 @@ export default function Configuracion({ tenant }: Props) {
                         <div className="md:col-span-2">
                             <Label>Cuentas bancarias</Label>
                             {data.cuentas_bancarias.map((c, i) => (
-                                <div key={i} className="mt-2 grid gap-2 rounded bg-muted/30 p-3 md:grid-cols-6">
-                                    <Input placeholder="Banco" value={c.banco} onChange={(e) => { const arr = [...data.cuentas_bancarias]; arr[i] = { ...arr[i], banco: e.target.value }; setData('cuentas_bancarias', arr); }} />
-                                    <Input placeholder="Tipo (ahorros/cte)" value={c.tipo ?? ''} onChange={(e) => { const arr = [...data.cuentas_bancarias]; arr[i] = { ...arr[i], tipo: e.target.value }; setData('cuentas_bancarias', arr); }} />
+                                <div
+                                    key={i}
+                                    className="mt-2 grid gap-2 rounded bg-muted/30 p-3 md:grid-cols-6"
+                                >
+                                    <Input
+                                        placeholder="Banco"
+                                        value={c.banco}
+                                        onChange={(e) => {
+                                            const arr = [
+                                                ...data.cuentas_bancarias,
+                                            ];
+                                            arr[i] = {
+                                                ...arr[i],
+                                                banco: e.target.value,
+                                            };
+                                            setData('cuentas_bancarias', arr);
+                                        }}
+                                    />
+                                    <Input
+                                        placeholder="Tipo (ahorros/cte)"
+                                        value={c.tipo ?? ''}
+                                        onChange={(e) => {
+                                            const arr = [
+                                                ...data.cuentas_bancarias,
+                                            ];
+                                            arr[i] = {
+                                                ...arr[i],
+                                                tipo: e.target.value,
+                                            };
+                                            setData('cuentas_bancarias', arr);
+                                        }}
+                                    />
                                     <Combobox
                                         value={c.moneda ?? ''}
-                                        onChange={(v) => { const arr = [...data.cuentas_bancarias]; arr[i] = { ...arr[i], moneda: v }; setData('cuentas_bancarias', arr); }}
-                                        options={[{ value: '', label: 'Moneda' }, { value: 'PEN', label: 'PEN' }, { value: 'USD', label: 'USD' }]}
+                                        onChange={(v) => {
+                                            const arr = [
+                                                ...data.cuentas_bancarias,
+                                            ];
+                                            arr[i] = { ...arr[i], moneda: v };
+                                            setData('cuentas_bancarias', arr);
+                                        }}
+                                        options={[
+                                            { value: '', label: 'Moneda' },
+                                            { value: 'PEN', label: 'PEN' },
+                                            { value: 'USD', label: 'USD' },
+                                        ]}
                                         placeholder="Moneda"
                                     />
-                                    <Input placeholder="Número" value={c.numero} onChange={(e) => { const arr = [...data.cuentas_bancarias]; arr[i] = { ...arr[i], numero: e.target.value }; setData('cuentas_bancarias', arr); }} />
-                                    <Input placeholder="CCI (opcional)" value={c.cci ?? ''} onChange={(e) => { const arr = [...data.cuentas_bancarias]; arr[i] = { ...arr[i], cci: e.target.value }; setData('cuentas_bancarias', arr); }} />
-                                    <Button type="button" variant="ghost" size="sm" onClick={() => rmRepeat('cuentas_bancarias', i)} className="text-red-600">Eliminar</Button>
+                                    <Input
+                                        placeholder="Número"
+                                        value={c.numero}
+                                        onChange={(e) => {
+                                            const arr = [
+                                                ...data.cuentas_bancarias,
+                                            ];
+                                            arr[i] = {
+                                                ...arr[i],
+                                                numero: e.target.value,
+                                            };
+                                            setData('cuentas_bancarias', arr);
+                                        }}
+                                    />
+                                    <Input
+                                        placeholder="CCI (opcional)"
+                                        value={c.cci ?? ''}
+                                        onChange={(e) => {
+                                            const arr = [
+                                                ...data.cuentas_bancarias,
+                                            ];
+                                            arr[i] = {
+                                                ...arr[i],
+                                                cci: e.target.value,
+                                            };
+                                            setData('cuentas_bancarias', arr);
+                                        }}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                            rmRepeat('cuentas_bancarias', i)
+                                        }
+                                        className="text-red-600"
+                                    >
+                                        Eliminar
+                                    </Button>
                                 </div>
                             ))}
                             {data.cuentas_bancarias.length < 5 && (
-                                <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={() => addRepeat('cuentas_bancarias', { banco: '', tipo: '', moneda: 'PEN', numero: '', cci: '' })}>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="mt-2"
+                                    onClick={() =>
+                                        addRepeat('cuentas_bancarias', {
+                                            banco: '',
+                                            tipo: '',
+                                            moneda: 'PEN',
+                                            numero: '',
+                                            cci: '',
+                                        })
+                                    }
+                                >
                                     <Plus className="size-3" /> Añadir cuenta
                                 </Button>
                             )}
@@ -510,14 +866,70 @@ export default function Configuracion({ tenant }: Props) {
                         <div className="md:col-span-2">
                             <Label>Billeteras digitales</Label>
                             {data.billeteras_digitales.map((b, i) => (
-                                <div key={i} className="mt-2 grid gap-2 rounded bg-muted/30 p-3 md:grid-cols-3">
-                                    <Input placeholder="Ej: Yape / Plin / Tunki..." value={b.tipo} onChange={(e) => { const arr = [...data.billeteras_digitales]; arr[i] = { ...arr[i], tipo: e.target.value }; setData('billeteras_digitales', arr); }} />
-                                    <Input placeholder="Número" value={b.numero} onChange={(e) => { const arr = [...data.billeteras_digitales]; arr[i] = { ...arr[i], numero: e.target.value }; setData('billeteras_digitales', arr); }} />
-                                    <Button type="button" variant="ghost" size="sm" onClick={() => rmRepeat('billeteras_digitales', i)} className="text-red-600">Eliminar</Button>
+                                <div
+                                    key={i}
+                                    className="mt-2 grid gap-2 rounded bg-muted/30 p-3 md:grid-cols-3"
+                                >
+                                    <Input
+                                        placeholder="Ej: Yape / Plin / Tunki..."
+                                        value={b.tipo}
+                                        onChange={(e) => {
+                                            const arr = [
+                                                ...data.billeteras_digitales,
+                                            ];
+                                            arr[i] = {
+                                                ...arr[i],
+                                                tipo: e.target.value,
+                                            };
+                                            setData(
+                                                'billeteras_digitales',
+                                                arr,
+                                            );
+                                        }}
+                                    />
+                                    <Input
+                                        placeholder="Número"
+                                        value={b.numero}
+                                        onChange={(e) => {
+                                            const arr = [
+                                                ...data.billeteras_digitales,
+                                            ];
+                                            arr[i] = {
+                                                ...arr[i],
+                                                numero: e.target.value,
+                                            };
+                                            setData(
+                                                'billeteras_digitales',
+                                                arr,
+                                            );
+                                        }}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                            rmRepeat('billeteras_digitales', i)
+                                        }
+                                        className="text-red-600"
+                                    >
+                                        Eliminar
+                                    </Button>
                                 </div>
                             ))}
                             {data.billeteras_digitales.length < 5 && (
-                                <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={() => addRepeat('billeteras_digitales', { tipo: '', numero: '' })}>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="mt-2"
+                                    onClick={() =>
+                                        addRepeat('billeteras_digitales', {
+                                            tipo: '',
+                                            numero: '',
+                                        })
+                                    }
+                                >
                                     <Plus className="size-3" /> Añadir billetera
                                 </Button>
                             )}
@@ -527,15 +939,27 @@ export default function Configuracion({ tenant }: Props) {
 
                 {/* 6. Consulta RUC / DNI */}
                 {!esSimple && (
-                    <Section icon={Search} title="6. Consulta RUC / DNI" subtitle="Tu propio token de api.json.pe para autocompletar clientes">
+                    <Section
+                        icon={Search}
+                        title="6. Consulta RUC / DNI"
+                        subtitle="Tu propio token de api.json.pe para autocompletar clientes"
+                    >
                         <div className="grid gap-3 md:max-w-xl">
                             <div>
-                                <Label htmlFor="consulta_token">Token de consulta</Label>
+                                <Label htmlFor="consulta_token">
+                                    Token de consulta
+                                </Label>
                                 <PasswordInput
                                     id="consulta_token"
                                     value={consultaToken}
-                                    onChange={(e) => setConsultaToken(e.target.value)}
-                                    placeholder={tenant?.consulta_token_set ? '•••••••• (token configurado)' : 'Pega aquí tu token de api.json.pe'}
+                                    onChange={(e) =>
+                                        setConsultaToken(e.target.value)
+                                    }
+                                    placeholder={
+                                        tenant?.consulta_token_set
+                                            ? '•••••••• (token configurado)'
+                                            : 'Pega aquí tu token de api.json.pe'
+                                    }
                                     autoComplete="off"
                                 />
                                 <p className="mt-1 text-xs text-muted-foreground">
@@ -545,8 +969,15 @@ export default function Configuracion({ tenant }: Props) {
                                 </p>
                             </div>
                             <div>
-                                <Button type="button" variant="outline" disabled={savingToken} onClick={guardarToken}>
-                                    {savingToken && <Loader2 className="mr-2 size-4 animate-spin" />}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={savingToken}
+                                    onClick={guardarToken}
+                                >
+                                    {savingToken && (
+                                        <Loader2 className="mr-2 size-4 animate-spin" />
+                                    )}
                                     Guardar token
                                 </Button>
                             </div>
@@ -556,30 +987,51 @@ export default function Configuracion({ tenant }: Props) {
 
                 {/* Resultado de "probar conexión" */}
                 {testResult && (
-                    <div className={`flex items-start gap-3 rounded-lg border p-4 ${testResult.ok
-                        ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300'
-                        : 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300'}`}>
-                        {testResult.ok ? <Wifi className="mt-0.5 size-4 shrink-0" /> : <WifiOff className="mt-0.5 size-4 shrink-0" />}
+                    <div
+                        className={`flex items-start gap-3 rounded-lg border p-4 ${
+                            testResult.ok
+                                ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300'
+                                : 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300'
+                        }`}
+                    >
+                        {testResult.ok ? (
+                            <Wifi className="mt-0.5 size-4 shrink-0" />
+                        ) : (
+                            <WifiOff className="mt-0.5 size-4 shrink-0" />
+                        )}
                         <div className="text-sm">
                             <p className="font-medium">{testResult.mensaje}</p>
                             {testResult.ok && testResult.ambiente && (
-                                <p className="mt-0.5 text-xs opacity-80">{testResult.ambiente} &middot; RUC {testResult.ruc} &middot; Usuario {testResult.usuario}</p>
+                                <p className="mt-0.5 text-xs opacity-80">
+                                    {testResult.ambiente} &middot; RUC{' '}
+                                    {testResult.ruc} &middot; Usuario{' '}
+                                    {testResult.usuario}
+                                </p>
                             )}
                         </div>
                     </div>
                 )}
 
                 {progress && (
-                    <div className="text-xs text-muted-foreground">Subiendo archivos: {progress.percentage}%</div>
+                    <div className="text-xs text-muted-foreground">
+                        Subiendo archivos: {progress.percentage}%
+                    </div>
                 )}
 
                 {/* Errores generales */}
                 {Object.keys(errors).length > 0 && (
                     <Card className="border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/20">
-                        <p className="mb-2 text-sm font-medium text-red-800 dark:text-red-300">Corrige los siguientes errores:</p>
+                        <p className="mb-2 text-sm font-medium text-red-800 dark:text-red-300">
+                            Corrige los siguientes errores:
+                        </p>
                         <ul className="list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-400">
                             {Object.entries(errors).map(([key, msg]) => (
-                                <li key={key}><span className="font-mono text-xs">{key}</span>: {msg as string}</li>
+                                <li key={key}>
+                                    <span className="font-mono text-xs">
+                                        {key}
+                                    </span>
+                                    : {msg as string}
+                                </li>
                             ))}
                         </ul>
                     </Card>
@@ -587,13 +1039,24 @@ export default function Configuracion({ tenant }: Props) {
 
                 <div className="flex flex-wrap justify-end gap-3 border-t pt-4">
                     {!esSimple && (
-                        <Button type="button" variant="outline" disabled={testing} onClick={probarConexion}>
-                            {testing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Wifi className="mr-2 size-4" />}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={testing}
+                            onClick={probarConexion}
+                        >
+                            {testing ? (
+                                <Loader2 className="mr-2 size-4 animate-spin" />
+                            ) : (
+                                <Wifi className="mr-2 size-4" />
+                            )}
                             Probar conexión
                         </Button>
                     )}
                     <Button type="submit" disabled={processing}>
-                        {processing && <Loader2 className="mr-2 size-4 animate-spin" />}
+                        {processing && (
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                        )}
                         Guardar configuración
                     </Button>
                 </div>

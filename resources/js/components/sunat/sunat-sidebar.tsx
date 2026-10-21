@@ -302,18 +302,20 @@ export function SunatSidebar() {
             <SidebarContent>
                 <SidebarGroup className="px-2 py-0">
                     <SidebarMenu>
-                        {!esSimple && <SidebarMenuItem>
-                            <SidebarMenuButton
-                                asChild
-                                isActive={isCurrentUrl('/sunat')}
-                                tooltip={{ children: 'Panel' }}
-                            >
-                                <Link href="/sunat" prefetch>
-                                    <LayoutDashboard />
-                                    <span>Panel</span>
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>}
+                        {!esSimple && (
+                            <SidebarMenuItem>
+                                <SidebarMenuButton
+                                    asChild
+                                    isActive={isCurrentUrl('/sunat')}
+                                    tooltip={{ children: 'Panel' }}
+                                >
+                                    <Link href="/sunat" prefetch>
+                                        <LayoutDashboard />
+                                        <span>Panel</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        )}
 
                         {GRUPOS.map((grupo) => {
                             const items = itemsVisibles(grupo);

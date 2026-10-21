@@ -21,7 +21,10 @@ export async function descargarArchivo(
     let res: Response;
     try {
         res = await fetch(url, {
-            headers: { Accept: 'application/json, */*', 'X-Requested-With': 'XMLHttpRequest' },
+            headers: {
+                Accept: 'application/json, */*',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
             credentials: 'same-origin',
         });
     } catch {
@@ -32,7 +35,9 @@ export async function descargarArchivo(
         let error = `Error ${res.status} al generar el archivo.`;
         try {
             const j = await res.json();
-            const primero = j?.errors ? Object.values(j.errors as Record<string, string[]>)[0]?.[0] : undefined;
+            const primero = j?.errors
+                ? Object.values(j.errors as Record<string, string[]>)[0]?.[0]
+                : undefined;
             error = primero ?? j?.message ?? j?.mensaje ?? j?.error ?? error;
         } catch {
             // respuesta sin JSON: se deja el mensaje genérico
@@ -41,7 +46,8 @@ export async function descargarArchivo(
     }
 
     const cd = res.headers.get('Content-Disposition') ?? '';
-    const nombre = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd)?.[1] ?? nombreFallback;
+    const nombre =
+        /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd)?.[1] ?? nombreFallback;
     const blob = await res.blob();
     const href = URL.createObjectURL(blob);
     const a = document.createElement('a');
